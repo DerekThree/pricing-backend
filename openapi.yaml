@@ -1,0 +1,712 @@
+# yaml-language-server: $schema=https://spec.openapis.org/oas/3.0/schema/2024-10-18
+
+openapi: 3.0.3
+info:
+  title: Pricing Backend API
+  description: REST API for managing branches, regions, products, and pricing plans.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Branches
+  - name: Regions
+  - name: Products
+  - name: Pricing Plans
+
+paths:
+  /branches:
+    get:
+      tags: [Branches]
+      operationId: listBranches
+      summary: List all branches
+      responses:
+        "200":
+          description: Branches sorted by branch code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Branch"
+    post:
+      tags: [Branches]
+      operationId: createBranch
+      summary: Create a branch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchRequest"
+      responses:
+        "201":
+          description: Branch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /branches/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Branches]
+      operationId: getBranch
+      summary: Get a branch by ID
+      responses:
+        "200":
+          description: Branch found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Branches]
+      operationId: updateBranch
+      summary: Replace a branch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchRequest"
+      responses:
+        "200":
+          description: Branch updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Branches]
+      operationId: deleteBranch
+      summary: Delete a branch
+      responses:
+        "204":
+          description: Branch deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /regions:
+    get:
+      tags: [Regions]
+      operationId: listRegions
+      summary: List all regions
+      responses:
+        "200":
+          description: Regions sorted by region code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Region"
+    post:
+      tags: [Regions]
+      operationId: createRegion
+      summary: Create a region
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegionRequest"
+      responses:
+        "201":
+          description: Region created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /regions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Regions]
+      operationId: getRegion
+      summary: Get a region by ID
+      responses:
+        "200":
+          description: Region found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Regions]
+      operationId: updateRegion
+      summary: Replace a region
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegionRequest"
+      responses:
+        "200":
+          description: Region updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Region"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Regions]
+      operationId: deleteRegion
+      summary: Delete a region
+      responses:
+        "204":
+          description: Region deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /products:
+    get:
+      tags: [Products]
+      operationId: listProducts
+      summary: List all products
+      responses:
+        "200":
+          description: Products sorted by product code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      tags: [Products]
+      operationId: createProduct
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductRequest"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /products/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Products]
+      operationId: getProduct
+      summary: Get a product by ID
+      responses:
+        "200":
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Products]
+      operationId: updateProduct
+      summary: Replace a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductRequest"
+      responses:
+        "200":
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Products]
+      operationId: deleteProduct
+      summary: Delete a product
+      responses:
+        "204":
+          description: Product deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /pricing-plans:
+    get:
+      tags: [Pricing Plans]
+      operationId: listPricingPlans
+      summary: List all pricing plans
+      responses:
+        "200":
+          description: Pricing plans sorted by plan code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PricingPlan"
+    post:
+      tags: [Pricing Plans]
+      operationId: createPricingPlan
+      summary: Create a pricing plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PricingPlanRequest"
+      responses:
+        "201":
+          description: Pricing plan created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PricingPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /pricing-plans/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Pricing Plans]
+      operationId: getPricingPlan
+      summary: Get a pricing plan by ID
+      responses:
+        "200":
+          description: Pricing plan found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PricingPlan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Pricing Plans]
+      operationId: updatePricingPlan
+      summary: Replace a pricing plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PricingPlanRequest"
+      responses:
+        "200":
+          description: Pricing plan updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PricingPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Pricing Plans]
+      operationId: deletePricingPlan
+      summary: Delete a pricing plan
+      responses:
+        "204":
+          description: Pricing plan deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      description: Numeric resource ID
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+
+  responses:
+    BadRequest:
+      description: The request body is malformed or a required field is blank
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: The request body is malformed or a required field is blank
+    NotFound:
+      description: No resource exists with the supplied ID
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: No resource exists with the supplied ID
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          example: No resource exists with the supplied ID
+
+    Branch:
+      type: object
+      required:
+        - id
+        - branchCode
+        - branchName
+        - state
+        - zipCode
+        - updatedBy
+        - updatedOn
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        branchCode:
+          $ref: "#/components/schemas/BranchCode"
+        branchName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Chicago 104th St.
+        state:
+          $ref: "#/components/schemas/State"
+        zipCode:
+          $ref: "#/components/schemas/ZipCode"
+        updatedOn:
+          type: string
+          format: date-time
+          example: "2026-06-06T09:00:00+08:00"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    BranchRequest:
+      type: object
+      required:
+        - branchCode
+        - branchName
+        - state
+        - zipCode
+        - updatedBy
+      properties:
+        branchCode:
+          $ref: "#/components/schemas/BranchCode"
+        branchName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Chicago 104th St.
+        state:
+          $ref: "#/components/schemas/State"
+        zipCode:
+          $ref: "#/components/schemas/ZipCode"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    Region:
+      type: object
+      required:
+        - id
+        - regionCode
+        - regionName
+        - states
+        - zipCodes
+        - branches
+        - updatedOn
+        - updatedBy
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        regionCode:
+          $ref: "#/components/schemas/RegionCode"
+        regionName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Midwest
+        states:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/State"
+        zipCodes:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/ZipCode"
+        branches:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/BranchCode"
+        updatedOn:
+          type: string
+          format: date-time
+          example: "2026-06-06T09:30:00+08:00"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    RegionRequest:
+      type: object
+      required:
+        - regionCode
+        - regionName
+        - states
+        - zipCodes
+        - branches
+        - updatedBy
+      properties:
+        regionCode:
+          $ref: "#/components/schemas/RegionCode"
+        regionName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Midwest
+        states:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/State"
+        zipCodes:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/ZipCode"
+        branches:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/BranchCode"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    Product:
+      type: object
+      required:
+        - id
+        - productCode
+        - productName
+        - accountType
+        - updatedOn
+        - updatedBy
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        productCode:
+          $ref: "#/components/schemas/ProductCode"
+        productName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Free Checking
+        accountType:
+          $ref: "#/components/schemas/AccountType"
+        updatedOn:
+          type: string
+          format: date-time
+          example: "2026-06-06T10:00:00+08:00"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    ProductRequest:
+      type: object
+      required:
+        - productCode
+        - productName
+        - accountType
+        - updatedBy
+      properties:
+        productCode:
+          $ref: "#/components/schemas/ProductCode"
+        productName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Personal Loan
+        accountType:
+          $ref: "#/components/schemas/AccountType"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    PricingPlan:
+      type: object
+      required:
+        - id
+        - planCode
+        - planName
+        - productCode
+        - productName
+        - regionCode
+        - regionName
+        - activeFrom
+        - activeTo
+        - updatedOn
+        - updatedBy
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        planCode:
+          $ref: "#/components/schemas/PlanCode"
+        planName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Free Checking Midwest
+        productCode:
+          $ref: "#/components/schemas/ProductCode"
+        productName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Free Checking
+        regionCode:
+          $ref: "#/components/schemas/RegionCode"
+        regionName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Midwest
+        activeFrom:
+          type: string
+          format: date-time
+          example: "2026-06-01T00:00:00+08:00"
+        activeTo:
+          type: string
+          format: date-time
+          example: "2026-12-31T23:59:59+08:00"
+        updatedOn:
+          type: string
+          format: date-time
+          example: "2026-06-06T10:30:00+08:00"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    PricingPlanRequest:
+      type: object
+      required:
+        - planCode
+        - planName
+        - productCode
+        - productName
+        - regionCode
+        - regionName
+        - activeFrom
+        - activeTo
+        - updatedBy
+      properties:
+        planCode:
+          $ref: "#/components/schemas/PlanCode"
+        planName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Free Checking Midwest
+        productCode:
+          $ref: "#/components/schemas/ProductCode"
+        productName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Free Checking
+        regionCode:
+          $ref: "#/components/schemas/RegionCode"
+        regionName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Midwest
+        activeFrom:
+          type: string
+          format: date-time
+          example: "2026-06-01T00:00:00+08:00"
+        activeTo:
+          type: string
+          format: date-time
+          example: "2026-12-31T23:59:59+08:00"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    BranchCode:
+      type: string
+      pattern: "^[0-9]{8}$"
+      example: "10000001"
+
+    State:
+      type: string
+      pattern: "^[A-Z]{2}$"
+      example: IL
+
+    ZipCode:
+      type: string
+      pattern: "^[0-9]{5}$"
+      example: "60459"
+
+    RegionCode:
+      type: string
+      pattern: "^[A-Z0-9]{8}$"
+      example: MIDWEST1
+
+    ProductCode:
+      type: string
+      pattern: "^[A-Z0-9]{8}$"
+      example: 1FC00012
+
+    PlanCode:
+      type: string
+      pattern: "^[A-Z0-9]{8}$"
+      example: DC11R112
+
+    AccountType:
+      type: string
+      enum:
+        - DEPOSIT
+        - CREDIT
+      example: DEPOSIT
+
+    UpdatedBy:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Derek Ochal
