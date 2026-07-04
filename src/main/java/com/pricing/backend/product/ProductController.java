@@ -2,6 +2,7 @@ package com.pricing.backend.product;
 
 import java.util.List;
 
+import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.api.ProductsApi;
 import com.pricing.backend.generated.model.Product;
 import com.pricing.backend.generated.model.ProductRequest;
@@ -25,9 +26,10 @@ public class ProductController implements ProductsApi {
 
 	@Override
 	public ResponseEntity<Product> getProduct(Long id) {
-		return productService.get(id)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.notFound().build());
+		Product product = productService.get(id)
+				.orElseThrow(() -> new RecordNotFoundException("Product", id));
+
+		return ResponseEntity.ok(product);
 	}
 
 	@Override
@@ -37,9 +39,10 @@ public class ProductController implements ProductsApi {
 
 	@Override
 	public ResponseEntity<Product> updateProduct(Long id, ProductRequest request) {
-		return productService.update(id, request)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.notFound().build());
+		Product product = productService.update(id, request)
+				.orElseThrow(() -> new RecordNotFoundException("Product", id));
+
+		return ResponseEntity.ok(product);
 	}
 
 	@Override
@@ -48,6 +51,6 @@ public class ProductController implements ProductsApi {
 			return ResponseEntity.noContent().build();
 		}
 
-		return ResponseEntity.notFound().build();
+		throw new RecordNotFoundException("Product", id);
 	}
 }

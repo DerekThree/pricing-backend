@@ -1,97 +1,98 @@
 package com.pricing.backend.region;
 
 import java.time.OffsetDateTime;
-import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
+import com.pricing.backend.branch.BranchService;
 import com.pricing.backend.generated.model.Region;
+import com.pricing.backend.generated.model.RegionBranchOption;
+import com.pricing.backend.generated.model.RegionOptions;
 import com.pricing.backend.generated.model.RegionRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RegionService {
 
-	private final Map<Long, Region> regions = new ConcurrentHashMap<>();
-	private final AtomicLong nextId = new AtomicLong(3);
+	private final RegionRepository regionRepository;
+	private final BranchService branchService;
 
-	public RegionService() {
-		regions.put(1L, new Region(
-				1L,
-				"MIDWEST1",
-				"Midwest",
-				Set.of("IL", "IN", "MI", "OH", "WI"),
-				Set.of("60459", "60601", "46204", "48201", "53202"),
-				Set.of("10000001"),
-				OffsetDateTime.parse("2026-06-06T09:30:00+08:00"),
-				"Derek Ochal"
-		));
-		regions.put(2L, new Region(
-				2L,
-				"SOUTH001",
-				"South",
-				Set.of("TX", "FL", "GA"),
-				Set.of("78759", "33101", "30301"),
-				Set.of("10000002"),
-				OffsetDateTime.parse("2026-06-06T09:45:00+08:00"),
-				"John Smith"
-		));
+	public RegionService(RegionRepository regionRepository, BranchService branchService) {
+		this.regionRepository = regionRepository;
+		this.branchService = branchService;
 	}
 
+	@Transactional(readOnly = true)
 	public List<Region> list() {
-		return regions.values().stream()
-				.sorted(Comparator.comparing(Region::getRegionCode))
+		return regionRepository.findAllByOrderByRegionCodeAsc().stream()
+				.map(this::toModel)
 				.toList();
 	}
 
+	@Transactional(readOnly = true)
 	public Optional<Region> get(Long id) {
-		return Optional.ofNullable(regions.get(id));
+		return regionRepository.findById(id).map(this::toModel);
 	}
 
-	public Region create(RegionRequest request) {
-		Region region = new Region(
-				nextId.getAndIncrement(),
-				request.getRegionCode(),
-				request.getRegionName(),
-				request.getStates(),
-				request.getZipCodes(),
-				request.getBranches(),
-				now(),
-				request.getUpdatedBy()
+	@Transactional(readOnly = true)
+	public RegionOptions options() {
+		return new RegionOptions(
+				list().stream().flatMap(region -> region.getStates().stream()).distinct().sorted().toList(),
+				list().stream().flatMap(region -> region.getZipCodes().stream()).distinct().sorted().toList(),
+				branchService.list().stream()
+						.map(branch -> new RegionBranchOption(branch.getBranchCode(), branch.getBranchName()))
+						.toList()
 		);
-		regions.put(region.getId(), region);
-		return region;
 	}
 
+	@Transactional
+	public Region create(RegionRequest request) {
+		RegionEntity entity = new RegionEntity();
+		apply(entity, request);
+		return toModel(regionRepository.save(entity));
+	}
+
+	@Transactional
 	public Optional<Region> update(Long id, RegionRequest request) {
-		Optional<Region> existingRegion = get(id);
-		if (existingRegion.isEmpty()) {
-			return Optional.empty();
+		return regionRepository.findById(id)
+				.map(entity -> {
+					apply(entity, request);
+					return toModel(regionRepository.save(entity));
+				});
+	}
+
+	@Transactional
+	public boolean delete(Long id) {
+		if (!regionRepository.existsById(id)) {
+			return false;
 		}
 
-		Region region = new Region(
-				id,
-				request.getRegionCode(),
-				request.getRegionName(),
-				request.getStates(),
-				request.getZipCodes(),
-				request.getBranches(),
-				now(),
-				request.getUpdatedBy()
+		regionRepository.deleteById(id);
+		return true;
+	}
+
+	private void apply(RegionEntity entity, RegionRequest request) {
+		entity.setRegionCode(request.getRegionCode());
+		entity.setRegionName(request.getRegionName());
+		entity.setStates(new LinkedHashSet<>(request.getStates()));
+		entity.setZipCodes(new LinkedHashSet<>(request.getZipCodes()));
+		entity.setBranches(new LinkedHashSet<>(request.getBranches()));
+		entity.setUpdatedBy(request.getUpdatedBy());
+		entity.setUpdatedOn(OffsetDateTime.now());
+	}
+
+	private Region toModel(RegionEntity entity) {
+		return new Region(
+				entity.getId(),
+				entity.getRegionCode(),
+				entity.getRegionName(),
+				entity.getStates(),
+				entity.getZipCodes(),
+				entity.getBranches(),
+				entity.getUpdatedOn(),
+				entity.getUpdatedBy()
 		);
-		regions.put(id, region);
-		return Optional.of(region);
-	}
-
-	public boolean delete(Long id) {
-		return regions.remove(id) != null;
-	}
-
-	private OffsetDateTime now() {
-		return OffsetDateTime.now();
 	}
 }

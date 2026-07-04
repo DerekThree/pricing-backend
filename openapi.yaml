@@ -31,6 +31,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Branch"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     post:
       tags: [Branches]
       operationId: createBranch
@@ -43,13 +47,13 @@ paths:
               $ref: "#/components/schemas/BranchRequest"
       responses:
         "201":
-          description: Branch created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Branch"
+          $ref: "#/components/responses/Branch"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
 
   /branches/{id}:
     parameters:
@@ -60,13 +64,13 @@ paths:
       summary: Get a branch by ID
       responses:
         "200":
-          description: Branch found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Branch"
+          $ref: "#/components/responses/Branch"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     put:
       tags: [Branches]
       operationId: updateBranch
@@ -79,15 +83,15 @@ paths:
               $ref: "#/components/schemas/BranchRequest"
       responses:
         "200":
-          description: Branch updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Branch"
+          $ref: "#/components/responses/Branch"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/Error"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     delete:
       tags: [Branches]
       operationId: deleteBranch
@@ -96,7 +100,11 @@ paths:
         "204":
           description: Branch deleted
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
 
   /regions:
     get:
@@ -112,6 +120,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Region"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     post:
       tags: [Regions]
       operationId: createRegion
@@ -124,14 +136,30 @@ paths:
               $ref: "#/components/schemas/RegionRequest"
       responses:
         "201":
-          description: Region created
+          $ref: "#/components/responses/Region"
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
+  /regions/options:
+    get:
+      tags: [Regions]
+      operationId: getRegionOptions
+      summary: List available region options
+      responses:
+        "200":
+          description: Available state, ZIP code, and branch code options for regions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Region"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-
+                $ref: "#/components/schemas/RegionOptions"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
   /regions/{id}:
     parameters:
       - $ref: "#/components/parameters/ResourceId"
@@ -141,13 +169,13 @@ paths:
       summary: Get a region by ID
       responses:
         "200":
-          description: Region found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Region"
+          $ref: "#/components/responses/Region"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     put:
       tags: [Regions]
       operationId: updateRegion
@@ -160,15 +188,15 @@ paths:
               $ref: "#/components/schemas/RegionRequest"
       responses:
         "200":
-          description: Region updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Region"
+          $ref: "#/components/responses/Region"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/Error"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     delete:
       tags: [Regions]
       operationId: deleteRegion
@@ -177,7 +205,11 @@ paths:
         "204":
           description: Region deleted
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
 
   /products:
     get:
@@ -193,6 +225,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Product"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     post:
       tags: [Products]
       operationId: createProduct
@@ -205,13 +241,13 @@ paths:
               $ref: "#/components/schemas/ProductRequest"
       responses:
         "201":
-          description: Product created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Product"
+          $ref: "#/components/responses/Product"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
 
   /products/{id}:
     parameters:
@@ -222,13 +258,13 @@ paths:
       summary: Get a product by ID
       responses:
         "200":
-          description: Product found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Product"
+          $ref: "#/components/responses/Product"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     put:
       tags: [Products]
       operationId: updateProduct
@@ -241,15 +277,15 @@ paths:
               $ref: "#/components/schemas/ProductRequest"
       responses:
         "200":
-          description: Product updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Product"
+          $ref: "#/components/responses/Product"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/Error"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     delete:
       tags: [Products]
       operationId: deleteProduct
@@ -258,7 +294,11 @@ paths:
         "204":
           description: Product deleted
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
 
   /pricing-plans:
     get:
@@ -274,6 +314,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PricingPlan"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     post:
       tags: [Pricing Plans]
       operationId: createPricingPlan
@@ -286,13 +330,13 @@ paths:
               $ref: "#/components/schemas/PricingPlanRequest"
       responses:
         "201":
-          description: Pricing plan created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PricingPlan"
+          $ref: "#/components/responses/PricingPlan"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
 
   /pricing-plans/{id}:
     parameters:
@@ -303,13 +347,13 @@ paths:
       summary: Get a pricing plan by ID
       responses:
         "200":
-          description: Pricing plan found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PricingPlan"
+          $ref: "#/components/responses/PricingPlan"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     put:
       tags: [Pricing Plans]
       operationId: updatePricingPlan
@@ -322,15 +366,15 @@ paths:
               $ref: "#/components/schemas/PricingPlanRequest"
       responses:
         "200":
-          description: Pricing plan updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PricingPlan"
+          $ref: "#/components/responses/PricingPlan"
         "400":
-          $ref: "#/components/responses/BadRequest"
+          $ref: "#/components/responses/Error"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
     delete:
       tags: [Pricing Plans]
       operationId: deletePricingPlan
@@ -339,7 +383,11 @@ paths:
         "204":
           description: Pricing plan deleted
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/Error"
 
 components:
   parameters:
@@ -354,22 +402,46 @@ components:
         minimum: 1
 
   responses:
-    BadRequest:
-      description: The request body is malformed or a required field is blank
+    Branch:
+      description: Branch response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Branch"
+    Region:
+      description: Region response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Region"
+    Product:
+      description: Product response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Product"
+    PricingPlan:
+      description: Pricing plan response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PricingPlan"
+    Error:
+      description: Error response
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            message: The request body is malformed or a required field is blank
-    NotFound:
-      description: No resource exists with the supplied ID
+            message: The request could not be completed
+    SyntheticServiceUnavailable:
+      description: Service unavailable. This 503 response is generated by the frontend mutator when the pricing backend is unreachable.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
-            message: No resource exists with the supplied ID
+            message: The app could not complete the backend request. Please try again later.
 
   schemas:
     ErrorResponse:
@@ -517,6 +589,40 @@ components:
             $ref: "#/components/schemas/BranchCode"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
+
+    RegionOptions:
+      type: object
+      required:
+        - states
+        - zipCodes
+        - branches
+      properties:
+        states:
+          type: array
+          items:
+            $ref: "#/components/schemas/State"
+        zipCodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ZipCode"
+        branches:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegionBranchOption"
+
+    RegionBranchOption:
+      type: object
+      required:
+        - branchCode
+        - branchName
+      properties:
+        branchCode:
+          $ref: "#/components/schemas/BranchCode"
+        branchName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Chicago 104th St.
 
     Product:
       type: object

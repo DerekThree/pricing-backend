@@ -2,6 +2,7 @@ package com.pricing.backend.branch;
 
 import java.util.List;
 
+import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.api.BranchesApi;
 import com.pricing.backend.generated.model.Branch;
 import com.pricing.backend.generated.model.BranchRequest;
@@ -25,9 +26,10 @@ public class BranchController implements BranchesApi {
 
 	@Override
 	public ResponseEntity<Branch> getBranch(Long id) {
-		return branchService.get(id)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.notFound().build());
+		Branch branch = branchService.get(id)
+				.orElseThrow(() -> new RecordNotFoundException("Branch", id));
+
+		return ResponseEntity.ok(branch);
 	}
 
 	@Override
@@ -37,9 +39,10 @@ public class BranchController implements BranchesApi {
 
 	@Override
 	public ResponseEntity<Branch> updateBranch(Long id, BranchRequest request) {
-		return branchService.update(id, request)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.notFound().build());
+		Branch branch = branchService.update(id, request)
+				.orElseThrow(() -> new RecordNotFoundException("Branch", id));
+
+		return ResponseEntity.ok(branch);
 	}
 
 	@Override
@@ -48,6 +51,6 @@ public class BranchController implements BranchesApi {
 			return ResponseEntity.noContent().build();
 		}
 
-		return ResponseEntity.notFound().build();
+		throw new RecordNotFoundException("Branch", id);
 	}
 }

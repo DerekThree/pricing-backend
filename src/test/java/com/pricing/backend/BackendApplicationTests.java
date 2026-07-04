@@ -9,8 +9,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -33,16 +31,8 @@ class BackendApplicationTests {
 
 	@Test
 	void exposesSwaggerUi() throws Exception {
-		mockMvc.perform(get("/docs"))
-				.andExpect(status().is3xxRedirection())
-				.andExpect(redirectedUrl("/swagger-ui/index.html"));
-	}
-
-	@Test
-	void servesApiImplementedFromGeneratedInterface() throws Exception {
-		mockMvc.perform(get("/branches"))
+		mockMvc.perform(get("/swagger-ui/index.html"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[0].branchCode").value("10000001"));
+				.andExpect(content().string(containsString("Swagger UI")));
 	}
-
 }

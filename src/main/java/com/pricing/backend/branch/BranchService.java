@@ -1,92 +1,79 @@
 package com.pricing.backend.branch;
 
 import java.time.OffsetDateTime;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.pricing.backend.generated.model.Branch;
 import com.pricing.backend.generated.model.BranchRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BranchService {
 
-	private final Map<Long, Branch> branches = new ConcurrentHashMap<>();
-	private final AtomicLong nextId = new AtomicLong(3);
+	private final BranchRepository branchRepository;
 
-	public BranchService() {
-		branches.put(1L, new Branch(
-				1L,
-				"10000001",
-				"Chicago 104th",
-				"IL",
-				"60459",
-				OffsetDateTime.parse("2026-06-06T09:00:00+08:00"),
-				"Derek Ochal"
-		));
-		branches.put(2L, new Branch(
-				2L,
-				"10000002",
-				"Austin Mopec",
-				"TX",
-				"78759",
-				OffsetDateTime.parse("2026-06-06T09:15:00+08:00"),
-				"John Smith"
-		));
+	public BranchService(BranchRepository branchRepository) {
+		this.branchRepository = branchRepository;
 	}
 
+	@Transactional(readOnly = true)
 	public List<Branch> list() {
-		return branches.values().stream()
-				.sorted(Comparator.comparing(Branch::getBranchCode))
+		return branchRepository.findAllByOrderByBranchCodeAsc().stream()
+				.map(this::toModel)
 				.toList();
 	}
 
+	@Transactional(readOnly = true)
 	public Optional<Branch> get(Long id) {
-		return Optional.ofNullable(branches.get(id));
+		return branchRepository.findById(id).map(this::toModel);
 	}
 
+	@Transactional
 	public Branch create(BranchRequest request) {
-		Branch branch = new Branch(
-				nextId.getAndIncrement(),
-				request.getBranchCode(),
-				request.getBranchName(),
-				request.getState(),
-				request.getZipCode(),
-				now(),
-				request.getUpdatedBy()
-		);
-		branches.put(branch.getId(), branch);
-		return branch;
+		BranchEntity entity = new BranchEntity();
+		apply(entity, request);
+		return toModel(branchRepository.save(entity));
 	}
 
+	@Transactional
 	public Optional<Branch> update(Long id, BranchRequest request) {
-		Optional<Branch> existingBranch = get(id);
-		if (existingBranch.isEmpty()) {
-			return Optional.empty();
+		return branchRepository.findById(id)
+				.map(entity -> {
+					apply(entity, request);
+					return toModel(branchRepository.save(entity));
+				});
+	}
+
+	@Transactional
+	public boolean delete(Long id) {
+		if (!branchRepository.existsById(id)) {
+			return false;
 		}
 
-		Branch branch = new Branch(
-				id,
-				request.getBranchCode(),
-				request.getBranchName(),
-				request.getState(),
-				request.getZipCode(),
-				now(),
-				request.getUpdatedBy()
+		branchRepository.deleteById(id);
+		return true;
+	}
+
+	private void apply(BranchEntity entity, BranchRequest request) {
+		entity.setBranchCode(request.getBranchCode());
+		entity.setBranchName(request.getBranchName());
+		entity.setState(request.getState());
+		entity.setZipCode(request.getZipCode());
+		entity.setUpdatedBy(request.getUpdatedBy());
+		entity.setUpdatedOn(OffsetDateTime.now());
+	}
+
+	private Branch toModel(BranchEntity entity) {
+		return new Branch(
+				entity.getId(),
+				entity.getBranchCode(),
+				entity.getBranchName(),
+				entity.getState(),
+				entity.getZipCode(),
+				entity.getUpdatedOn(),
+				entity.getUpdatedBy()
 		);
-		branches.put(id, branch);
-		return Optional.of(branch);
-	}
-
-	public boolean delete(Long id) {
-		return branches.remove(id) != null;
-	}
-
-	private OffsetDateTime now() {
-		return OffsetDateTime.now();
 	}
 }

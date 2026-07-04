@@ -2,8 +2,10 @@ package com.pricing.backend.region;
 
 import java.util.List;
 
+import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.api.RegionsApi;
 import com.pricing.backend.generated.model.Region;
+import com.pricing.backend.generated.model.RegionOptions;
 import com.pricing.backend.generated.model.RegionRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,10 +26,16 @@ public class RegionController implements RegionsApi {
 	}
 
 	@Override
+	public ResponseEntity<RegionOptions> getRegionOptions() {
+		return ResponseEntity.ok(regionService.options());
+	}
+
+	@Override
 	public ResponseEntity<Region> getRegion(Long id) {
-		return regionService.get(id)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.notFound().build());
+		Region region = regionService.get(id)
+				.orElseThrow(() -> new RecordNotFoundException("Region", id));
+
+		return ResponseEntity.ok(region);
 	}
 
 	@Override
@@ -37,9 +45,10 @@ public class RegionController implements RegionsApi {
 
 	@Override
 	public ResponseEntity<Region> updateRegion(Long id, RegionRequest request) {
-		return regionService.update(id, request)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.notFound().build());
+		Region region = regionService.update(id, request)
+				.orElseThrow(() -> new RecordNotFoundException("Region", id));
+
+		return ResponseEntity.ok(region);
 	}
 
 	@Override
@@ -48,6 +57,6 @@ public class RegionController implements RegionsApi {
 			return ResponseEntity.noContent().build();
 		}
 
-		return ResponseEntity.notFound().build();
+		throw new RecordNotFoundException("Region", id);
 	}
 }

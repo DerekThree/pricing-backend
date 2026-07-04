@@ -2,6 +2,7 @@ package com.pricing.backend.pricingplan;
 
 import java.util.List;
 
+import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.api.PricingPlansApi;
 import com.pricing.backend.generated.model.PricingPlan;
 import com.pricing.backend.generated.model.PricingPlanRequest;
@@ -25,9 +26,10 @@ public class PricingPlanController implements PricingPlansApi {
 
 	@Override
 	public ResponseEntity<PricingPlan> getPricingPlan(Long id) {
-		return pricingPlanService.get(id)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.notFound().build());
+		PricingPlan pricingPlan = pricingPlanService.get(id)
+				.orElseThrow(() -> new RecordNotFoundException("Pricing plan", id));
+
+		return ResponseEntity.ok(pricingPlan);
 	}
 
 	@Override
@@ -37,9 +39,10 @@ public class PricingPlanController implements PricingPlansApi {
 
 	@Override
 	public ResponseEntity<PricingPlan> updatePricingPlan(Long id, PricingPlanRequest request) {
-		return pricingPlanService.update(id, request)
-				.map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.notFound().build());
+		PricingPlan pricingPlan = pricingPlanService.update(id, request)
+				.orElseThrow(() -> new RecordNotFoundException("Pricing plan", id));
+
+		return ResponseEntity.ok(pricingPlan);
 	}
 
 	@Override
@@ -48,6 +51,6 @@ public class PricingPlanController implements PricingPlansApi {
 			return ResponseEntity.noContent().build();
 		}
 
-		return ResponseEntity.notFound().build();
+		throw new RecordNotFoundException("Pricing plan", id);
 	}
 }

@@ -1,89 +1,77 @@
 package com.pricing.backend.product;
 
 import java.time.OffsetDateTime;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
-import com.pricing.backend.generated.model.AccountType;
 import com.pricing.backend.generated.model.Product;
 import com.pricing.backend.generated.model.ProductRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProductService {
 
-	private final Map<Long, Product> products = new ConcurrentHashMap<>();
-	private final AtomicLong nextId = new AtomicLong(3);
+	private final ProductRepository productRepository;
 
-	public ProductService() {
-		products.put(1L, new Product(
-				1L,
-				"1FC00012",
-				"Free Checking",
-				AccountType.DEPOSIT,
-				OffsetDateTime.parse("2026-06-06T10:00:00+08:00"),
-				"Derek Ochal"
-		));
-		products.put(2L, new Product(
-				2L,
-				"1PL00056",
-				"Personal Loan",
-				AccountType.CREDIT,
-				OffsetDateTime.parse("2026-06-06T10:15:00+08:00"),
-				"John Smith"
-		));
+	public ProductService(ProductRepository productRepository) {
+		this.productRepository = productRepository;
 	}
 
+	@Transactional(readOnly = true)
 	public List<Product> list() {
-		return products.values().stream()
-				.sorted(Comparator.comparing(Product::getProductCode))
+		return productRepository.findAllByOrderByProductCodeAsc().stream()
+				.map(this::toModel)
 				.toList();
 	}
 
+	@Transactional(readOnly = true)
 	public Optional<Product> get(Long id) {
-		return Optional.ofNullable(products.get(id));
+		return productRepository.findById(id).map(this::toModel);
 	}
 
+	@Transactional
 	public Product create(ProductRequest request) {
-		Product product = new Product(
-				nextId.getAndIncrement(),
-				request.getProductCode(),
-				request.getProductName(),
-				request.getAccountType(),
-				now(),
-				request.getUpdatedBy()
-		);
-		products.put(product.getId(), product);
-		return product;
+		ProductEntity entity = new ProductEntity();
+		apply(entity, request);
+		return toModel(productRepository.save(entity));
 	}
 
+	@Transactional
 	public Optional<Product> update(Long id, ProductRequest request) {
-		Optional<Product> existingProduct = get(id);
-		if (existingProduct.isEmpty()) {
-			return Optional.empty();
+		return productRepository.findById(id)
+				.map(entity -> {
+					apply(entity, request);
+					return toModel(productRepository.save(entity));
+				});
+	}
+
+	@Transactional
+	public boolean delete(Long id) {
+		if (!productRepository.existsById(id)) {
+			return false;
 		}
 
-		Product product = new Product(
-				id,
-				request.getProductCode(),
-				request.getProductName(),
-				request.getAccountType(),
-				now(),
-				request.getUpdatedBy()
+		productRepository.deleteById(id);
+		return true;
+	}
+
+	private void apply(ProductEntity entity, ProductRequest request) {
+		entity.setProductCode(request.getProductCode());
+		entity.setProductName(request.getProductName());
+		entity.setAccountType(request.getAccountType());
+		entity.setUpdatedBy(request.getUpdatedBy());
+		entity.setUpdatedOn(OffsetDateTime.now());
+	}
+
+	private Product toModel(ProductEntity entity) {
+		return new Product(
+				entity.getId(),
+				entity.getProductCode(),
+				entity.getProductName(),
+				entity.getAccountType(),
+				entity.getUpdatedOn(),
+				entity.getUpdatedBy()
 		);
-		products.put(id, product);
-		return Optional.of(product);
-	}
-
-	public boolean delete(Long id) {
-		return products.remove(id) != null;
-	}
-
-	private OffsetDateTime now() {
-		return OffsetDateTime.now();
 	}
 }
