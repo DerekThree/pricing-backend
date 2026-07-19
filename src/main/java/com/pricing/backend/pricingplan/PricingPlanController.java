@@ -4,8 +4,10 @@ import java.util.List;
 
 import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.api.PricingPlansApi;
-import com.pricing.backend.generated.model.PricingPlan;
+import com.pricing.backend.generated.model.PricingPlanDetail;
+import com.pricing.backend.generated.model.PricingPlanListItem;
 import com.pricing.backend.generated.model.PricingPlanRequest;
+import com.pricing.backend.generated.model.ProductRegionOptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,26 +22,31 @@ public class PricingPlanController implements PricingPlansApi {
 	}
 
 	@Override
-	public ResponseEntity<List<PricingPlan>> listPricingPlans() {
+	public ResponseEntity<List<PricingPlanListItem>> listPricingPlans() {
 		return ResponseEntity.ok(pricingPlanService.list());
 	}
 
 	@Override
-	public ResponseEntity<PricingPlan> getPricingPlan(Long id) {
-		PricingPlan pricingPlan = pricingPlanService.get(id)
+	public ResponseEntity<PricingPlanDetail> getPricingPlan(Long id) {
+		PricingPlanDetail pricingPlan = pricingPlanService.get(id)
 				.orElseThrow(() -> new RecordNotFoundException("Pricing plan", id));
 
 		return ResponseEntity.ok(pricingPlan);
 	}
 
 	@Override
-	public ResponseEntity<PricingPlan> createPricingPlan(PricingPlanRequest request) {
+	public ResponseEntity<ProductRegionOptions> getProductRegionOptions() {
+		return ResponseEntity.ok(pricingPlanService.getOptions());
+	}
+
+	@Override
+	public ResponseEntity<PricingPlanDetail> createPricingPlan(PricingPlanRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(pricingPlanService.create(request));
 	}
 
 	@Override
-	public ResponseEntity<PricingPlan> updatePricingPlan(Long id, PricingPlanRequest request) {
-		PricingPlan pricingPlan = pricingPlanService.update(id, request)
+	public ResponseEntity<PricingPlanDetail> updatePricingPlan(Long id, PricingPlanRequest request) {
+		PricingPlanDetail pricingPlan = pricingPlanService.update(id, request)
 				.orElseThrow(() -> new RecordNotFoundException("Pricing plan", id));
 
 		return ResponseEntity.ok(pricingPlan);

@@ -4,8 +4,16 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.pricing.backend.generated.model.PricingPlan;
+import com.pricing.backend.generated.model.PricingPlanDetail;
+import com.pricing.backend.generated.model.PricingPlanListItem;
 import com.pricing.backend.generated.model.PricingPlanRequest;
+import com.pricing.backend.generated.model.ProductRegionOptions;
+import com.pricing.backend.generated.model.ProductOption;
+import com.pricing.backend.generated.model.RegionOption;
+import com.pricing.backend.product.ProductEntity;
+import com.pricing.backend.product.ProductRepository;
+import com.pricing.backend.region.RegionEntity;
+import com.pricing.backend.region.RegionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,36 +21,46 @@ import org.springframework.transaction.annotation.Transactional;
 public class PricingPlanService {
 
 	private final PricingPlanRepository pricingPlanRepository;
+	private final ProductRepository productRepository;
+	private final RegionRepository regionRepository;
 
-	public PricingPlanService(PricingPlanRepository pricingPlanRepository) {
+	public PricingPlanService(PricingPlanRepository pricingPlanRepository, ProductRepository productRepository,
+			RegionRepository regionRepository) {
 		this.pricingPlanRepository = pricingPlanRepository;
+		this.productRepository = productRepository;
+		this.regionRepository = regionRepository;
 	}
 
 	@Transactional(readOnly = true)
-	public List<PricingPlan> list() {
+	public List<PricingPlanListItem> list() {
 		return pricingPlanRepository.findAllByOrderByPlanCodeAsc().stream()
-				.map(this::toModel)
+				.map(this::toListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
-	public Optional<PricingPlan> get(Long id) {
-		return pricingPlanRepository.findById(id).map(this::toModel);
+	public Optional<PricingPlanDetail> get(Long id) {
+		return pricingPlanRepository.findById(id).map(this::toDetail);
+	}
+
+	@Transactional(readOnly = true)
+	public ProductRegionOptions getOptions() {
+		return buildProductRegionOptions();
 	}
 
 	@Transactional
-	public PricingPlan create(PricingPlanRequest request) {
+	public PricingPlanDetail create(PricingPlanRequest request) {
 		PricingPlanEntity entity = new PricingPlanEntity();
 		apply(entity, request);
-		return toModel(pricingPlanRepository.save(entity));
+		return toDetail(pricingPlanRepository.save(entity));
 	}
 
 	@Transactional
-	public Optional<PricingPlan> update(Long id, PricingPlanRequest request) {
+	public Optional<PricingPlanDetail> update(Long id, PricingPlanRequest request) {
 		return pricingPlanRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return toModel(pricingPlanRepository.save(entity));
+					return toDetail(pricingPlanRepository.save(entity));
 				});
 	}
 
@@ -57,31 +75,59 @@ public class PricingPlanService {
 	}
 
 	private void apply(PricingPlanEntity entity, PricingPlanRequest request) {
+		ProductEntity product = productRepository.findById(request.getProductId())
+				.orElseThrow(() -> new IllegalArgumentException("Product with id " + request.getProductId() + " was not found"));
+		RegionEntity region = regionRepository.findById(request.getRegionId())
+				.orElseThrow(() -> new IllegalArgumentException("Region with id " + request.getRegionId() + " was not found"));
 		entity.setPlanCode(request.getPlanCode());
 		entity.setPlanName(request.getPlanName());
-		entity.setProductCode(request.getProductCode());
-		entity.setProductName(request.getProductName());
-		entity.setRegionCode(request.getRegionCode());
-		entity.setRegionName(request.getRegionName());
+		entity.setProduct(product);
+		entity.setRegion(region);
 		entity.setActiveFrom(request.getActiveFrom());
 		entity.setActiveTo(request.getActiveTo());
 		entity.setUpdatedBy(request.getUpdatedBy());
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
 
-	private PricingPlan toModel(PricingPlanEntity entity) {
-		return new PricingPlan(
+	private PricingPlanListItem toListItem(PricingPlanEntity entity) {
+		return new PricingPlanListItem(
 				entity.getId(),
-				entity.getPlanCode(),
-				entity.getPlanName(),
-				entity.getProductCode(),
-				entity.getProductName(),
-				entity.getRegionCode(),
-				entity.getRegionName(),
+				formatCodeAndName(entity.getPlanCode(), entity.getPlanName()),
+				formatCodeAndName(entity.getProduct().getProductCode(), entity.getProduct().getProductName()),
+				formatCodeAndName(entity.getRegion().getRegionCode(), entity.getRegion().getRegionName()),
 				entity.getActiveFrom(),
 				entity.getActiveTo(),
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
+		);
+	}
+
+	private PricingPlanDetail toDetail(PricingPlanEntity entity) {
+		return new PricingPlanDetail(
+				entity.getId(),
+				entity.getPlanCode(),
+				entity.getPlanName(),
+				new ProductOption(entity.getProduct().getId(), entity.getProduct().getProductCode(), entity.getProduct().getProductName()),
+				new RegionOption(entity.getRegion().getId(), entity.getRegion().getRegionCode(), entity.getRegion().getRegionName()),
+				entity.getActiveFrom(),
+				entity.getActiveTo(),
+				entity.getUpdatedOn(),
+				entity.getUpdatedBy()
+		);
+	}
+
+	private String formatCodeAndName(String code, String name) {
+		return code + " - " + name;
+	}
+
+	private ProductRegionOptions buildProductRegionOptions() {
+		return new ProductRegionOptions(
+				productRepository.findAllByOrderByProductCodeAsc().stream()
+						.map(product -> new ProductOption(product.getId(), product.getProductCode(), product.getProductName()))
+						.toList(),
+				regionRepository.findAllByOrderByRegionCodeAsc().stream()
+						.map(region -> new RegionOption(region.getId(), region.getRegionCode(), region.getRegionName()))
+						.toList()
 		);
 	}
 }

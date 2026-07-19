@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 import com.pricing.backend.config.RecordNotFoundException;
-import com.pricing.backend.generated.model.Branch;
+import com.pricing.backend.generated.model.BranchDetail;
+import com.pricing.backend.generated.model.BranchListItem;
 import com.pricing.backend.generated.model.BranchRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,11 +34,11 @@ class BranchControllerTests {
 
 	@Test
 	void createsBranch() {
-		Branch createdBranch = getBranch();
+		BranchDetail createdBranch = getBranchDetail();
 		BranchRequest request = getRequest(createdBranch);
 		when(branchService.create(request)).thenReturn(createdBranch);
 
-		ResponseEntity<Branch> response = branchController.createBranch(request);
+		ResponseEntity<BranchDetail> response = branchController.createBranch(request);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 		assertThat(response.getBody()).isEqualTo(createdBranch);
@@ -46,20 +47,19 @@ class BranchControllerTests {
 
 	@Test
 	void listsBranches() {
-		Branch firstBranch = getBranch();
-		Branch secondBranch = new Branch(
+		BranchListItem firstBranch = getBranchListItem();
+		BranchListItem secondBranch = new BranchListItem(
 				2L,
-				"10000100",
-				"Austin Central",
+				"10000100 - Austin Central",
 				"TX",
 				"73301",
 				OffsetDateTime.parse("2026-06-08T09:00:00+08:00"),
 				"John Smith"
 		);
-		List<Branch> branches = List.of(firstBranch, secondBranch);
+		List<BranchListItem> branches = List.of(firstBranch, secondBranch);
 		when(branchService.list()).thenReturn(branches);
 
-		ResponseEntity<List<Branch>> response = branchController.listBranches();
+		ResponseEntity<List<BranchListItem>> response = branchController.listBranches();
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(response.getBody()).isEqualTo(branches);
@@ -68,10 +68,10 @@ class BranchControllerTests {
 
 	@Test
 	void returnsStoredBranch() {
-		Branch storedBranch = getBranch();
+		BranchDetail storedBranch = getBranchDetail();
 		when(branchService.get(storedBranch.getId())).thenReturn(Optional.of(storedBranch));
 
-		ResponseEntity<Branch> response = branchController.getBranch(storedBranch.getId());
+		ResponseEntity<BranchDetail> response = branchController.getBranch(storedBranch.getId());
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(response.getBody()).isEqualTo(storedBranch);
@@ -80,11 +80,11 @@ class BranchControllerTests {
 
 	@Test
 	void updatesStoredBranch() {
-		Branch updatedBranch = getBranch();
+		BranchDetail updatedBranch = getBranchDetail();
 		BranchRequest request = getRequest(updatedBranch);
 		when(branchService.update(updatedBranch.getId(), request)).thenReturn(Optional.of(updatedBranch));
 
-		ResponseEntity<Branch> response = branchController.updateBranch(updatedBranch.getId(), request);
+		ResponseEntity<BranchDetail> response = branchController.updateBranch(updatedBranch.getId(), request);
 
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(response.getBody()).isEqualTo(updatedBranch);
@@ -93,7 +93,7 @@ class BranchControllerTests {
 
 	@Test
 	void deletesStoredBranch() {
-		Branch branch = getBranch();
+		BranchDetail branch = getBranchDetail();
 		when(branchService.delete(branch.getId())).thenReturn(true);
 
 		ResponseEntity<Void> response = branchController.deleteBranch(branch.getId());
@@ -115,7 +115,7 @@ class BranchControllerTests {
 
 	@Test
 	void throwsWhenUpdatingMissingBranch() {
-		BranchRequest request = getRequest(getBranch());
+		BranchRequest request = getRequest(getBranchDetail());
 		when(branchService.update(MISSING_BRANCH_ID, request)).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> branchController.updateBranch(MISSING_BRANCH_ID, request))
@@ -134,11 +134,22 @@ class BranchControllerTests {
 		verify(branchService).delete(MISSING_BRANCH_ID);
 	}
 
-	private Branch getBranch() {
-		return new Branch(
-				1L,
+	private BranchDetail getBranchDetail() {
+		return new BranchDetail(
 				"10000099",
 				"Chicago Loop",
+				"IL",
+				"60601",
+				"Jane Smith",
+				1L,
+				OffsetDateTime.parse("2026-06-07T09:00:00+08:00")
+		);
+	}
+
+	private BranchListItem getBranchListItem() {
+		return new BranchListItem(
+				1L,
+				"10000099 - Chicago Loop",
 				"IL",
 				"60601",
 				OffsetDateTime.parse("2026-06-07T09:00:00+08:00"),
@@ -146,7 +157,7 @@ class BranchControllerTests {
 		);
 	}
 
-	private BranchRequest getRequest(Branch branch) {
+	private BranchRequest getRequest(BranchDetail branch) {
 		return new BranchRequest(
 				branch.getBranchCode(),
 				branch.getBranchName(),

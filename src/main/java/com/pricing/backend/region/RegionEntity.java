@@ -57,10 +57,10 @@ public class RegionEntity {
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "region_branches", joinColumns = @JoinColumn(name = "region_id"))
-	@Column(name = "branch_code", nullable = false, length = 8)
+	@Column(name = "branch_id", nullable = false)
 	@OrderBy("value asc")
 	@Default
-	private Set<String> branches = new LinkedHashSet<>();
+	private Set<Long> branches = new LinkedHashSet<>();
 
 	@Column(name = "updated_on", nullable = false)
 	private OffsetDateTime updatedOn;

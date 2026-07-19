@@ -2,11 +2,16 @@ package com.pricing.backend.pricingplan;
 
 import java.time.OffsetDateTime;
 
+import com.pricing.backend.product.ProductEntity;
+import com.pricing.backend.region.RegionEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,17 +38,13 @@ public class PricingPlanEntity {
 	@Column(name = "plan_name", nullable = false, length = 100)
 	private String planName;
 
-	@Column(name = "product_code", nullable = false, length = 8)
-	private String productCode;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "product_id", nullable = false)
+	private ProductEntity product;
 
-	@Column(name = "product_name", nullable = false, length = 100)
-	private String productName;
-
-	@Column(name = "region_code", nullable = false, length = 8)
-	private String regionCode;
-
-	@Column(name = "region_name", nullable = false, length = 100)
-	private String regionName;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "region_id", nullable = false)
+	private RegionEntity region;
 
 	@Column(name = "active_from", nullable = false)
 	private OffsetDateTime activeFrom;

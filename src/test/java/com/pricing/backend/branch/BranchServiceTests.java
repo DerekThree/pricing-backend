@@ -2,7 +2,7 @@ package com.pricing.backend.branch;
 
 import java.time.OffsetDateTime;
 
-import com.pricing.backend.generated.model.Branch;
+import com.pricing.backend.generated.model.BranchDetail;
 import com.pricing.backend.generated.model.BranchRequest;
 import com.pricing.backend.region.RegionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,7 @@ class BranchServiceTests {
 				"Derek Ochal"
 		);
 
-		Branch createdBranch = branchService.create(request);
+		BranchDetail createdBranch = branchService.create(request);
 
 		assertThat(createdBranch.getId()).isNotNull();
 		assertThat(createdBranch.getBranchCode()).isEqualTo(request.getBranchCode());
@@ -64,16 +64,16 @@ class BranchServiceTests {
 				"Derek Ochal"
 		));
 
-		Branch returnedBranch = branchService.get(savedBranch.getId()).orElseThrow();
+		BranchDetail returnedBranch = branchService.get(savedBranch.getId()).orElseThrow();
 
-		assertThat(returnedBranch).isEqualTo(new Branch(
-				savedBranch.getId(),
+		assertThat(returnedBranch).isEqualTo(new BranchDetail(
 				savedBranch.getBranchCode(),
 				savedBranch.getBranchName(),
 				savedBranch.getState(),
 				savedBranch.getZipCode(),
-				savedBranch.getUpdatedOn(),
-				savedBranch.getUpdatedBy()
+				savedBranch.getUpdatedBy(),
+				savedBranch.getId(),
+				savedBranch.getUpdatedOn()
 		));
 	}
 
@@ -96,7 +96,7 @@ class BranchServiceTests {
 				"Jane Smith"
 		);
 
-		Branch updatedBranch = branchService.update(savedBranch.getId(), request).orElseThrow();
+		BranchDetail updatedBranch = branchService.update(savedBranch.getId(), request).orElseThrow();
 
 		assertThat(updatedBranch.getId()).isEqualTo(savedBranch.getId());
 		assertThat(updatedBranch.getBranchCode()).isEqualTo(request.getBranchCode());

@@ -4,7 +4,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.pricing.backend.generated.model.Product;
+import com.pricing.backend.generated.model.ProductDetail;
+import com.pricing.backend.generated.model.ProductListItem;
 import com.pricing.backend.generated.model.ProductRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,30 +20,30 @@ public class ProductService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<Product> list() {
+	public List<ProductListItem> list() {
 		return productRepository.findAllByOrderByProductCodeAsc().stream()
-				.map(this::toModel)
+				.map(this::toListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
-	public Optional<Product> get(Long id) {
-		return productRepository.findById(id).map(this::toModel);
+	public Optional<ProductDetail> get(Long id) {
+		return productRepository.findById(id).map(this::toDetail);
 	}
 
 	@Transactional
-	public Product create(ProductRequest request) {
+	public ProductDetail create(ProductRequest request) {
 		ProductEntity entity = new ProductEntity();
 		apply(entity, request);
-		return toModel(productRepository.save(entity));
+		return toDetail(productRepository.save(entity));
 	}
 
 	@Transactional
-	public Optional<Product> update(Long id, ProductRequest request) {
+	public Optional<ProductDetail> update(Long id, ProductRequest request) {
 		return productRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return toModel(productRepository.save(entity));
+					return toDetail(productRepository.save(entity));
 				});
 	}
 
@@ -64,14 +65,28 @@ public class ProductService {
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
 
-	private Product toModel(ProductEntity entity) {
-		return new Product(
+	private ProductListItem toListItem(ProductEntity entity) {
+		return new ProductListItem(
 				entity.getId(),
-				entity.getProductCode(),
-				entity.getProductName(),
+				formatCodeAndName(entity.getProductCode(), entity.getProductName()),
 				entity.getAccountType(),
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
 		);
+	}
+
+	private ProductDetail toDetail(ProductEntity entity) {
+		return new ProductDetail(
+				entity.getProductCode(),
+				entity.getProductName(),
+				entity.getAccountType(),
+				entity.getUpdatedBy(),
+				entity.getId(),
+				entity.getUpdatedOn()
+		);
+	}
+
+	private String formatCodeAndName(String code, String name) {
+		return code + " - " + name;
 	}
 }

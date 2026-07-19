@@ -4,8 +4,9 @@ import java.util.List;
 
 import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.api.RegionsApi;
-import com.pricing.backend.generated.model.Region;
-import com.pricing.backend.generated.model.RegionOptions;
+import com.pricing.backend.generated.model.CoverageOptions;
+import com.pricing.backend.generated.model.RegionDetail;
+import com.pricing.backend.generated.model.RegionListItem;
 import com.pricing.backend.generated.model.RegionRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,31 +22,31 @@ public class RegionController implements RegionsApi {
 	}
 
 	@Override
-	public ResponseEntity<List<Region>> listRegions() {
+	public ResponseEntity<List<RegionListItem>> listRegions() {
 		return ResponseEntity.ok(regionService.list());
 	}
 
 	@Override
-	public ResponseEntity<RegionOptions> getRegionOptions() {
-		return ResponseEntity.ok(regionService.options());
-	}
-
-	@Override
-	public ResponseEntity<Region> getRegion(Long id) {
-		Region region = regionService.get(id)
+	public ResponseEntity<RegionDetail> getRegion(Long id) {
+		RegionDetail region = regionService.get(id)
 				.orElseThrow(() -> new RecordNotFoundException("Region", id));
 
 		return ResponseEntity.ok(region);
 	}
 
 	@Override
-	public ResponseEntity<Region> createRegion(RegionRequest request) {
+	public ResponseEntity<CoverageOptions> getCoverageOptions() {
+		return ResponseEntity.ok(regionService.getOptions());
+	}
+
+	@Override
+	public ResponseEntity<RegionDetail> createRegion(RegionRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(regionService.create(request));
 	}
 
 	@Override
-	public ResponseEntity<Region> updateRegion(Long id, RegionRequest request) {
-		Region region = regionService.update(id, request)
+	public ResponseEntity<RegionDetail> updateRegion(Long id, RegionRequest request) {
+		RegionDetail region = regionService.update(id, request)
 				.orElseThrow(() -> new RecordNotFoundException("Region", id));
 
 		return ResponseEntity.ok(region);

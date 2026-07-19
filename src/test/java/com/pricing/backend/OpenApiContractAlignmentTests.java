@@ -194,7 +194,7 @@ class OpenApiContractAlignmentTests {
 		ObjectNode comparable = JSON_MAPPER.createObjectNode();
 		schemas.fieldNames().forEachRemaining(name -> {
 			JsonNode schema = schemas.get(name);
-			if (!schema.has("properties") && !schema.has("items")) {
+			if (!schema.has("properties") && !schema.has("items") && !schema.has("allOf")) {
 				return;
 			}
 
@@ -224,6 +224,10 @@ class OpenApiContractAlignmentTests {
 
 		if (!resolvedSchema.isObject()) {
 			return resolvedSchema;
+		}
+
+		if (resolvedSchema.has("allOf")) {
+			return comparableAllOfSchema(resolvedSchema.get("allOf"), root);
 		}
 
 		ObjectNode comparable = JSON_MAPPER.createObjectNode();
@@ -257,6 +261,21 @@ class OpenApiContractAlignmentTests {
 		}
 
 		return comparable;
+	}
+
+	private ObjectNode comparableAllOfSchema(JsonNode allOf, JsonNode root) {
+		ObjectNode merged = JSON_MAPPER.createObjectNode();
+
+		for (JsonNode item : allOf) {
+			JsonNode comparableItem = comparableSchema(item, root);
+			if (!comparableItem.isObject()) {
+				continue;
+			}
+
+			mergeObjectNode(merged, (ObjectNode) comparableItem);
+		}
+
+		return merged;
 	}
 
 	private ArrayNode sortedComparableArray(JsonNode array, JsonNode root) {
@@ -301,6 +320,53 @@ class OpenApiContractAlignmentTests {
 		}
 
 		target.set(field, value);
+	}
+
+	private void mergeObjectNode(ObjectNode target, ObjectNode source) {
+		source.fields().forEachRemaining(entry -> {
+			String field = entry.getKey();
+			JsonNode value = entry.getValue();
+
+			if (!target.has(field)) {
+				target.set(field, value.deepCopy());
+				return;
+			}
+
+			JsonNode existing = target.get(field);
+			if (existing.isObject() && value.isObject()) {
+				mergeObjectNode((ObjectNode) existing, (ObjectNode) value);
+				return;
+			}
+
+			if (existing.isArray() && value.isArray()) {
+				target.set(field, mergeArrays(existing, value));
+				return;
+			}
+
+			target.set(field, value.deepCopy());
+		});
+	}
+
+	private ArrayNode mergeArrays(JsonNode left, JsonNode right) {
+		ArrayNode merged = JSON_MAPPER.createArrayNode();
+		List<JsonNode> normalizedItems = new ArrayList<>();
+
+		left.forEach(normalizedItems::add);
+		right.forEach(normalizedItems::add);
+
+		normalizedItems.stream()
+				.map(JsonNode::toString)
+				.distinct()
+				.sorted()
+				.map(value -> {
+					try {
+						return JSON_MAPPER.readTree(value);
+					} catch (IOException exception) {
+						throw new IllegalStateException("Failed to merge OpenAPI schema arrays", exception);
+					}
+				})
+				.forEach(merged::add);
+		return merged;
 	}
 
 	private void copyIfMeaningfulMaxLength(JsonNode source, ObjectNode target) {

@@ -30,7 +30,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Branch"
+                  $ref: "#/components/schemas/BranchListItem"
         "500":
           $ref: "#/components/responses/Error"
         "503":
@@ -47,7 +47,7 @@ paths:
               $ref: "#/components/schemas/BranchRequest"
       responses:
         "201":
-          $ref: "#/components/responses/Branch"
+          $ref: "#/components/responses/BranchDetail"
         "400":
           $ref: "#/components/responses/Error"
         "500":
@@ -64,7 +64,7 @@ paths:
       summary: Get a branch by ID
       responses:
         "200":
-          $ref: "#/components/responses/Branch"
+          $ref: "#/components/responses/BranchDetail"
         "404":
           $ref: "#/components/responses/Error"
         "500":
@@ -83,7 +83,7 @@ paths:
               $ref: "#/components/schemas/BranchRequest"
       responses:
         "200":
-          $ref: "#/components/responses/Branch"
+          $ref: "#/components/responses/BranchDetail"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -119,7 +119,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Region"
+                  $ref: "#/components/schemas/RegionListItem"
         "500":
           $ref: "#/components/responses/Error"
         "503":
@@ -136,7 +136,7 @@ paths:
               $ref: "#/components/schemas/RegionRequest"
       responses:
         "201":
-          $ref: "#/components/responses/Region"
+          $ref: "#/components/responses/RegionDetail"
         "400":
           $ref: "#/components/responses/Error"
         "500":
@@ -147,19 +147,20 @@ paths:
   /regions/options:
     get:
       tags: [Regions]
-      operationId: getRegionOptions
-      summary: List available region options
+      operationId: getCoverageOptions
+      summary: Get available region options
       responses:
         "200":
-          description: Available state, ZIP code, and branch code options for regions
+          description: Available states, zip codes, and branches for region forms
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RegionOptions"
+                $ref: "#/components/schemas/CoverageOptions"
         "500":
           $ref: "#/components/responses/Error"
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
+
   /regions/{id}:
     parameters:
       - $ref: "#/components/parameters/ResourceId"
@@ -169,7 +170,7 @@ paths:
       summary: Get a region by ID
       responses:
         "200":
-          $ref: "#/components/responses/Region"
+          $ref: "#/components/responses/RegionDetail"
         "404":
           $ref: "#/components/responses/Error"
         "500":
@@ -188,7 +189,7 @@ paths:
               $ref: "#/components/schemas/RegionRequest"
       responses:
         "200":
-          $ref: "#/components/responses/Region"
+          $ref: "#/components/responses/RegionDetail"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -224,7 +225,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Product"
+                  $ref: "#/components/schemas/ProductListItem"
         "500":
           $ref: "#/components/responses/Error"
         "503":
@@ -241,7 +242,7 @@ paths:
               $ref: "#/components/schemas/ProductRequest"
       responses:
         "201":
-          $ref: "#/components/responses/Product"
+          $ref: "#/components/responses/ProductDetail"
         "400":
           $ref: "#/components/responses/Error"
         "500":
@@ -258,7 +259,7 @@ paths:
       summary: Get a product by ID
       responses:
         "200":
-          $ref: "#/components/responses/Product"
+          $ref: "#/components/responses/ProductDetail"
         "404":
           $ref: "#/components/responses/Error"
         "500":
@@ -277,7 +278,7 @@ paths:
               $ref: "#/components/schemas/ProductRequest"
       responses:
         "200":
-          $ref: "#/components/responses/Product"
+          $ref: "#/components/responses/ProductDetail"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -313,7 +314,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/PricingPlan"
+                  $ref: "#/components/schemas/PricingPlanListItem"
         "500":
           $ref: "#/components/responses/Error"
         "503":
@@ -330,9 +331,26 @@ paths:
               $ref: "#/components/schemas/PricingPlanRequest"
       responses:
         "201":
-          $ref: "#/components/responses/PricingPlan"
+          $ref: "#/components/responses/PricingPlanDetail"
         "400":
           $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
+  /pricing-plans/options:
+    get:
+      tags: [Pricing Plans]
+      operationId: getProductRegionOptions
+      summary: Get available pricing plan options
+      responses:
+        "200":
+          description: Available products and regions for pricing plan forms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductRegionOptions"
         "500":
           $ref: "#/components/responses/Error"
         "503":
@@ -347,7 +365,7 @@ paths:
       summary: Get a pricing plan by ID
       responses:
         "200":
-          $ref: "#/components/responses/PricingPlan"
+          $ref: "#/components/responses/PricingPlanDetail"
         "404":
           $ref: "#/components/responses/Error"
         "500":
@@ -366,7 +384,7 @@ paths:
               $ref: "#/components/schemas/PricingPlanRequest"
       responses:
         "200":
-          $ref: "#/components/responses/PricingPlan"
+          $ref: "#/components/responses/PricingPlanDetail"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -402,30 +420,30 @@ components:
         minimum: 1
 
   responses:
-    Branch:
+    BranchDetail:
       description: Branch response
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Branch"
-    Region:
+            $ref: "#/components/schemas/BranchDetail"
+    RegionDetail:
       description: Region response
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Region"
-    Product:
+            $ref: "#/components/schemas/RegionDetail"
+    ProductDetail:
       description: Product response
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Product"
-    PricingPlan:
+            $ref: "#/components/schemas/ProductDetail"
+    PricingPlanDetail:
       description: Pricing plan response
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/PricingPlan"
+            $ref: "#/components/schemas/PricingPlanDetail"
     Error:
       description: Error response
       content:
@@ -454,38 +472,46 @@ components:
           minLength: 1
           example: No resource exists with the supplied ID
 
-    Branch:
+    Id:
+      type: integer
+      format: int64
+      example: 1
+
+    BranchListItem:
       type: object
       required:
         - id
-        - branchCode
-        - branchName
+        - branch
         - state
         - zipCode
         - updatedBy
         - updatedOn
       properties:
         id:
-          type: integer
-          format: int64
-          example: 1
-        branchCode:
-          $ref: "#/components/schemas/BranchCode"
-        branchName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Chicago 104th St.
+          $ref: "#/components/schemas/Id"
+        branch:
+          $ref: "#/components/schemas/BranchCodeAndName"
         state:
           $ref: "#/components/schemas/State"
         zipCode:
           $ref: "#/components/schemas/ZipCode"
         updatedOn:
-          type: string
-          format: date-time
-          example: "2026-06-06T09:00:00+08:00"
+          $ref: "#/components/schemas/DateTime"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
+
+    BranchDetail:
+      allOf:
+        - $ref: "#/components/schemas/BranchRequest"
+        - type: object
+          required:
+            - id
+            - updatedOn
+          properties:
+            id:
+              $ref: "#/components/schemas/Id"
+            updatedOn:
+              $ref: "#/components/schemas/DateTime"
 
     BranchRequest:
       type: object
@@ -499,10 +525,7 @@ components:
         branchCode:
           $ref: "#/components/schemas/BranchCode"
         branchName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Chicago 104th St.
+          $ref: "#/components/schemas/BranchName"
         state:
           $ref: "#/components/schemas/State"
         zipCode:
@@ -510,7 +533,39 @@ components:
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    Region:
+    RegionListItem:
+      type: object
+      required:
+        - id
+        - region
+        - states
+        - zipCodes
+        - branches
+        - updatedOn
+        - updatedBy
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        region:
+          $ref: "#/components/schemas/RegionCodeAndName"
+        states:
+          type: array
+          items:
+            $ref: "#/components/schemas/State"
+        zipCodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ZipCode"
+        branches:
+          type: array
+          items:
+            $ref: "#/components/schemas/BranchCode"
+        updatedOn:
+          $ref: "#/components/schemas/DateTime"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    RegionDetail:
       type: object
       required:
         - id
@@ -523,35 +578,25 @@ components:
         - updatedBy
       properties:
         id:
-          type: integer
-          format: int64
-          example: 1
+          $ref: "#/components/schemas/Id"
         regionCode:
           $ref: "#/components/schemas/RegionCode"
         regionName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Midwest
+          $ref: "#/components/schemas/RegionName"
         states:
           type: array
-          uniqueItems: true
           items:
             $ref: "#/components/schemas/State"
         zipCodes:
           type: array
-          uniqueItems: true
           items:
             $ref: "#/components/schemas/ZipCode"
         branches:
           type: array
-          uniqueItems: true
           items:
-            $ref: "#/components/schemas/BranchCode"
+            $ref: "#/components/schemas/BranchOption"
         updatedOn:
-          type: string
-          format: date-time
-          example: "2026-06-06T09:30:00+08:00"
+          $ref: "#/components/schemas/DateTime"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
@@ -568,29 +613,23 @@ components:
         regionCode:
           $ref: "#/components/schemas/RegionCode"
         regionName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Midwest
+          $ref: "#/components/schemas/RegionName"
         states:
           type: array
-          uniqueItems: true
           items:
             $ref: "#/components/schemas/State"
         zipCodes:
           type: array
-          uniqueItems: true
           items:
             $ref: "#/components/schemas/ZipCode"
         branches:
           type: array
-          uniqueItems: true
           items:
-            $ref: "#/components/schemas/BranchCode"
+            $ref: "#/components/schemas/Id"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    RegionOptions:
+    CoverageOptions:
       type: object
       required:
         - states
@@ -608,51 +647,54 @@ components:
         branches:
           type: array
           items:
-            $ref: "#/components/schemas/RegionBranchOption"
+            $ref: "#/components/schemas/BranchOption"
 
-    RegionBranchOption:
-      type: object
-      required:
-        - branchCode
-        - branchName
-      properties:
-        branchCode:
-          $ref: "#/components/schemas/BranchCode"
-        branchName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Chicago 104th St.
-
-    Product:
+    BranchOption:
       type: object
       required:
         - id
-        - productCode
-        - productName
+        - code
+        - name
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        code:
+          $ref: "#/components/schemas/BranchCode"
+        name:
+          $ref: "#/components/schemas/BranchName"
+
+    ProductListItem:
+      type: object
+      required:
+        - id
+        - product
         - accountType
         - updatedOn
         - updatedBy
       properties:
         id:
-          type: integer
-          format: int64
-          example: 1
-        productCode:
-          $ref: "#/components/schemas/ProductCode"
-        productName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Free Checking
+          $ref: "#/components/schemas/Id"
+        product:
+          $ref: "#/components/schemas/ProductCodeAndName"
         accountType:
           $ref: "#/components/schemas/AccountType"
         updatedOn:
-          type: string
-          format: date-time
-          example: "2026-06-06T10:00:00+08:00"
+          $ref: "#/components/schemas/DateTime"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
+
+    ProductDetail:
+      allOf:
+        - $ref: "#/components/schemas/ProductRequest"
+        - type: object
+          required:
+            - id
+            - updatedOn
+          properties:
+            id:
+              $ref: "#/components/schemas/Id"
+            updatedOn:
+              $ref: "#/components/schemas/DateTime"
 
     ProductRequest:
       type: object
@@ -665,67 +707,70 @@ components:
         productCode:
           $ref: "#/components/schemas/ProductCode"
         productName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Personal Loan
+          $ref: "#/components/schemas/ProductName"
         accountType:
           $ref: "#/components/schemas/AccountType"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    PricingPlan:
+    PricingPlanListItem:
       type: object
       required:
         - id
-        - planCode
-        - planName
-        - productCode
-        - productName
-        - regionCode
-        - regionName
+        - pricingPlan
+        - product
+        - region
         - activeFrom
         - activeTo
         - updatedOn
         - updatedBy
       properties:
         id:
-          type: integer
-          format: int64
-          example: 1
-        planCode:
-          $ref: "#/components/schemas/PlanCode"
-        planName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Free Checking Midwest
-        productCode:
-          $ref: "#/components/schemas/ProductCode"
-        productName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Free Checking
-        regionCode:
-          $ref: "#/components/schemas/RegionCode"
-        regionName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Midwest
+          $ref: "#/components/schemas/Id"
+        pricingPlan:
+          $ref: "#/components/schemas/PricingPlanCodeAndName"
+        product:
+          $ref: "#/components/schemas/ProductCodeAndName"
+        region:
+          $ref: "#/components/schemas/RegionCodeAndName"
         activeFrom:
-          type: string
-          format: date-time
-          example: "2026-06-01T00:00:00+08:00"
+          $ref: "#/components/schemas/DateTime"
         activeTo:
-          type: string
-          format: date-time
-          example: "2026-12-31T23:59:59+08:00"
+          $ref: "#/components/schemas/DateTime"
         updatedOn:
-          type: string
-          format: date-time
-          example: "2026-06-06T10:30:00+08:00"
+          $ref: "#/components/schemas/DateTime"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    PricingPlanDetail:
+      type: object
+      required:
+        - id
+        - planCode
+        - planName
+        - product
+        - region
+        - activeFrom
+        - activeTo
+        - updatedOn
+        - updatedBy
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        planCode:
+          $ref: "#/components/schemas/PricingPlanCode"
+        planName:
+          $ref: "#/components/schemas/PricingPlanName"
+        product:
+          $ref: "#/components/schemas/ProductOption"
+        region:
+          $ref: "#/components/schemas/RegionOption"
+        activeFrom:
+          $ref: "#/components/schemas/DateTime"
+        activeTo:
+          $ref: "#/components/schemas/DateTime"
+        updatedOn:
+          $ref: "#/components/schemas/DateTime"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
@@ -734,60 +779,74 @@ components:
       required:
         - planCode
         - planName
-        - productCode
-        - productName
-        - regionCode
-        - regionName
+        - productId
+        - regionId
         - activeFrom
         - activeTo
         - updatedBy
       properties:
         planCode:
-          $ref: "#/components/schemas/PlanCode"
+          $ref: "#/components/schemas/PricingPlanCode"
         planName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Free Checking Midwest
-        productCode:
-          $ref: "#/components/schemas/ProductCode"
-        productName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Free Checking
-        regionCode:
-          $ref: "#/components/schemas/RegionCode"
-        regionName:
-          type: string
-          minLength: 1
-          maxLength: 100
-          example: Midwest
+          $ref: "#/components/schemas/PricingPlanName"
+        productId:
+          $ref: "#/components/schemas/Id"
+        regionId:
+          $ref: "#/components/schemas/Id"
         activeFrom:
-          type: string
-          format: date-time
-          example: "2026-06-01T00:00:00+08:00"
+          $ref: "#/components/schemas/DateTime"
         activeTo:
-          type: string
-          format: date-time
-          example: "2026-12-31T23:59:59+08:00"
+          $ref: "#/components/schemas/DateTime"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
+    ProductRegionOptions:
+      type: object
+      required:
+        - products
+        - regions
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductOption"
+        regions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegionOption"
+
+    ProductOption:
+      type: object
+      required:
+        - id
+        - code
+        - name
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        code:
+          $ref: "#/components/schemas/ProductCode"
+        name:
+          $ref: "#/components/schemas/ProductName"
+
+    RegionOption:
+      type: object
+      required:
+        - id
+        - code
+        - name
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        code:
+          $ref: "#/components/schemas/RegionCode"
+        name:
+          $ref: "#/components/schemas/RegionName"
+
     BranchCode:
       type: string
-      pattern: "^[0-9]{8}$"
+      pattern: "^[A-Z0-9]{8}$"
       example: "10000001"
-
-    State:
-      type: string
-      pattern: "^[A-Z]{2}$"
-      example: IL
-
-    ZipCode:
-      type: string
-      pattern: "^[0-9]{5}$"
-      example: "60459"
 
     RegionCode:
       type: string
@@ -799,10 +858,70 @@ components:
       pattern: "^[A-Z0-9]{8}$"
       example: 1FC00012
 
-    PlanCode:
+    PricingPlanCode:
       type: string
       pattern: "^[A-Z0-9]{8}$"
       example: DC11R112
+
+    BranchName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Chicago 104th St.
+
+    RegionName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Midwest
+
+    ProductName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Free Checking
+
+    PricingPlanName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Free Checking Midwest
+
+    UpdatedBy:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Derek Ochal
+
+    BranchCodeAndName:
+      type: string
+      pattern: "^[0-9]{8} - .{1,100}$"
+      example: "10000001 - Chicago 104th St."
+
+    RegionCodeAndName:
+      type: string
+      pattern: "^[0-9]{8} - .{1,100}$"
+      example: "10000001 - Midwest"
+
+    ProductCodeAndName:
+      type: string
+      pattern: "^[0-9]{8} - .{1,100}$"
+      example: "10000001 - Free Checking"
+
+    PricingPlanCodeAndName:
+      type: string
+      pattern: "^[0-9]{8} - .{1,100}$"
+      example: "10000001 - Free Checking Midwest"
+
+    State:
+      type: string
+      pattern: "^[A-Z]{2}$"
+      example: IL
+
+    ZipCode:
+      type: string
+      pattern: "^[0-9]{5}$"
+      example: "60459"
 
     AccountType:
       type: string
@@ -811,8 +930,7 @@ components:
         - CREDIT
       example: DEPOSIT
 
-    UpdatedBy:
+    DateTime:
       type: string
-      minLength: 1
-      maxLength: 100
-      example: Derek Ochal
+      format: date-time
+      example: "2026-12-31T23:59:59+08:00"
