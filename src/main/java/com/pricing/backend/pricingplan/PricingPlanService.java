@@ -106,13 +106,15 @@ public class PricingPlanService {
 	}
 
 	private PricingPlanDetail toDetail(PricingPlanEntity entity) {
+		ProductOption product = new ProductOption(entity.getProduct().getId(), entity.getProduct().getProductCode(), entity.getProduct().getProductName());
+		RegionOption region = new RegionOption(entity.getRegion().getId(), entity.getRegion().getRegionCode(), entity.getRegion().getRegionName());
 		return new PricingPlanDetail(
 				entity.getId(),
 				entity.getPlanCode(),
 				entity.getPlanName(),
-				new ProductOption(entity.getProduct().getId(), entity.getProduct().getProductCode(), entity.getProduct().getProductName()),
-				new RegionOption(entity.getRegion().getId(), entity.getRegion().getRegionCode(), entity.getRegion().getRegionName()),
-				buildProductRegionOptions(),
+				product.getId(),
+				region.getId(),
+				new ProductRegionOptions(List.of(product), List.of(region)),
 				entity.getActiveFrom(),
 				entity.getActiveThrough(),
 				entity.getUpdatedOn(),

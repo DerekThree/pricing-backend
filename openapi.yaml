@@ -595,7 +595,7 @@ components:
         branches:
           type: array
           items:
-            $ref: "#/components/schemas/BranchOption"
+            $ref: "#/components/schemas/Id"
         options:
           $ref: "#/components/schemas/CoverageOptions"
         updatedOn:
@@ -751,8 +751,8 @@ components:
         - id
         - planCode
         - planName
-        - product
-        - region
+        - productId
+        - regionId
         - options
         - activeFrom
         - activeThrough
@@ -765,10 +765,10 @@ components:
           $ref: "#/components/schemas/PricingPlanCode"
         planName:
           $ref: "#/components/schemas/PricingPlanName"
-        product:
-          $ref: "#/components/schemas/ProductOption"
-        region:
-          $ref: "#/components/schemas/RegionOption"
+        productId:
+          $ref: "#/components/schemas/Id"
+        regionId:
+          $ref: "#/components/schemas/Id"
         options:
           $ref: "#/components/schemas/ProductRegionOptions"
         activeFrom:
