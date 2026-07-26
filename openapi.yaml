@@ -15,6 +15,7 @@ tags:
   - name: Regions
   - name: Products
   - name: Pricing Plans
+  - name: Account Attributes
 
 paths:
   /branches:
@@ -407,6 +408,95 @@ paths:
         "503":
           $ref: "#/components/responses/Error"
 
+  /account-attributes:
+    get:
+      tags: [Account Attributes]
+      operationId: listAccountAttributes
+      summary: List all account attributes
+      responses:
+        "200":
+          description: Account attributes sorted by attribute code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AccountAttributeListItem"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+    post:
+      tags: [Account Attributes]
+      operationId: createAccountAttribute
+      summary: Create an account attribute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountAttributeRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/AccountAttributeDetail"
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
+  /account-attributes/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Account Attributes]
+      operationId: getAccountAttribute
+      summary: Get an account attribute by ID
+      responses:
+        "200":
+          $ref: "#/components/responses/AccountAttributeDetail"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+    put:
+      tags: [Account Attributes]
+      operationId: updateAccountAttribute
+      summary: Replace an account attribute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountAttributeRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AccountAttributeDetail"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+    delete:
+      tags: [Account Attributes]
+      operationId: deleteAccountAttribute
+      summary: Delete an account attribute
+      responses:
+        "204":
+          description: Account attribute deleted
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
 components:
   parameters:
     ResourceId:
@@ -444,6 +534,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/PricingPlanDetail"
+    AccountAttributeDetail:
+      description: Account attribute response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AccountAttributeDetail"
     Error:
       description: Error response
       content:
@@ -821,6 +917,56 @@ components:
           items:
             $ref: "#/components/schemas/RegionOption"
 
+    AccountAttributeListItem:
+      type: object
+      required:
+        - id
+        - attribute
+        - type
+        - updatedOn
+        - updatedBy
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        attribute:
+          $ref: "#/components/schemas/AccountAttributeCodeAndName"
+        type:
+          $ref: "#/components/schemas/AttributeType"
+        updatedOn:
+          $ref: "#/components/schemas/DateTime"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    AccountAttributeDetail:
+      allOf:
+        - $ref: "#/components/schemas/AccountAttributeRequest"
+        - type: object
+          required:
+            - id
+            - updatedOn
+          properties:
+            id:
+              $ref: "#/components/schemas/Id"
+            updatedOn:
+              $ref: "#/components/schemas/DateTime"
+
+    AccountAttributeRequest:
+      type: object
+      required:
+        - attributeCode
+        - attributeName
+        - attributeType
+        - updatedBy
+      properties:
+        attributeCode:
+          $ref: "#/components/schemas/AccountAttributeCode"
+        attributeName:
+          $ref: "#/components/schemas/AccountAttributeName"
+        attributeType:
+          $ref: "#/components/schemas/AttributeType"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
     ProductOption:
       type: object
       required:
@@ -893,6 +1039,17 @@ components:
       maxLength: 100
       example: Free Checking Midwest
 
+    AccountAttributeCode:
+      type: string
+      pattern: "^[A-Z0-9]{8}$"
+      example: ATTR0001
+
+    AccountAttributeName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Account Open Date
+
     UpdatedBy:
       type: string
       minLength: 1
@@ -919,6 +1076,11 @@ components:
       pattern: "^[0-9]{8} - .{1,100}$"
       example: "10000001 - Free Checking Midwest"
 
+    AccountAttributeCodeAndName:
+      type: string
+      pattern: "^[A-Z0-9]{8} - .{1,100}$"
+      example: "ATTR0001 - Account Open Date"
+
     State:
       type: string
       pattern: "^[A-Z]{2}$"
@@ -935,6 +1097,16 @@ components:
         - DEPOSIT
         - CREDIT
       example: DEPOSIT
+
+    AttributeType:
+      type: string
+      enum:
+        - TEXT
+        - DECIMAL
+        - INTEGER
+        - DATE
+        - BOOLEAN
+      example: TEXT
 
     Date:
       type: string
