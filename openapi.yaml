@@ -574,6 +574,7 @@ components:
         - states
         - zipCodes
         - branches
+        - options
         - updatedOn
         - updatedBy
       properties:
@@ -595,6 +596,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BranchOption"
+        options:
+          $ref: "#/components/schemas/CoverageOptions"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
         updatedBy:
@@ -750,6 +753,7 @@ components:
         - planName
         - product
         - region
+        - options
         - activeFrom
         - activeThrough
         - updatedOn
@@ -765,6 +769,8 @@ components:
           $ref: "#/components/schemas/ProductOption"
         region:
           $ref: "#/components/schemas/RegionOption"
+        options:
+          $ref: "#/components/schemas/ProductRegionOptions"
         activeFrom:
           $ref: "#/components/schemas/Date"
         activeThrough:

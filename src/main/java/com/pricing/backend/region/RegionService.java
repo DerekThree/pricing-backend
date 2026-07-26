@@ -115,17 +115,21 @@ public class RegionService {
 	private RegionDetail toDetail(RegionEntity entity) {
 		Map<Long, BranchEntity> branchesById = branchRepository.findAllById(entity.getBranches()).stream()
 				.collect(Collectors.toMap(BranchEntity::getId, Function.identity()));
+		List<String> states = List.copyOf(entity.getStates());
+		List<String> zipCodes = List.copyOf(entity.getZipCodes());
+		List<BranchOption> branches = entity.getBranches().stream()
+				.map(branchesById::get)
+				.filter(branch -> branch != null)
+				.map(branch -> new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName()))
+				.toList();
 		return new RegionDetail(
 				entity.getId(),
 				entity.getRegionCode(),
 				entity.getRegionName(),
-				List.copyOf(entity.getStates()),
-				List.copyOf(entity.getZipCodes()),
-				entity.getBranches().stream()
-						.map(branchesById::get)
-						.filter(branch -> branch != null)
-						.map(branch -> new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName()))
-						.toList(),
+				states,
+				zipCodes,
+				branches,
+				new CoverageOptions(states, zipCodes, branches),
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
 		);
@@ -145,10 +149,14 @@ public class RegionService {
 
 	private CoverageOptions buildCoverageOptions() {
 		List<RegionEntity> regions = regionRepository.findAllByOrderByRegionCodeAsc();
+		List<BranchEntity> branches = branchRepository.findAllByOrderByBranchCodeAsc();
+		Set<String> usedStates = regions.stream().flatMap(region -> region.getStates().stream()).collect(Collectors.toSet());
+		Set<String> usedZipCodes = regions.stream().flatMap(region -> region.getZipCodes().stream()).collect(Collectors.toSet());
+		Set<Long> usedBranchIds = regions.stream().flatMap(region -> region.getBranches().stream()).collect(Collectors.toSet());
 		return new CoverageOptions(
-				regions.stream().flatMap(region -> region.getStates().stream()).distinct().sorted().toList(),
-				regions.stream().flatMap(region -> region.getZipCodes().stream()).distinct().sorted().toList(),
-				branchRepository.findAllByOrderByBranchCodeAsc().stream()
+				branches.stream().map(BranchEntity::getState).filter(state -> !usedStates.contains(state)).distinct().sorted().toList(),
+				branches.stream().map(BranchEntity::getZipCode).filter(zipCode -> !usedZipCodes.contains(zipCode)).distinct().sorted().toList(),
+				branches.stream().filter(branch -> !usedBranchIds.contains(branch.getId()))
 						.map(branch -> new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName()))
 						.toList()
 		);

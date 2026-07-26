@@ -86,8 +86,49 @@ class RegionApiTests {
 				.andExpect(jsonPath("$.branches[0].id").value(firstBranch.getId()))
 				.andExpect(jsonPath("$.branches[0].code").value("10000001"))
 				.andExpect(jsonPath("$.branches[0].name").value("Chicago 104th"))
-				.andExpect(jsonPath("$.options").doesNotExist())
 				.andExpect(jsonPath("$.states", contains("IL", "IN", "MI", "OH", "WI")))
-				.andExpect(jsonPath("$.zipCodes", containsInAnyOrder("60459", "60601", "46204", "48201", "53202")));
+				.andExpect(jsonPath("$.zipCodes", containsInAnyOrder("60459", "60601", "46204", "48201", "53202")))
+				.andExpect(jsonPath("$.options.states", contains("IL", "IN", "MI", "OH", "WI")))
+				.andExpect(jsonPath("$.options.zipCodes", containsInAnyOrder("60459", "60601", "46204", "48201", "53202")))
+				.andExpect(jsonPath("$.options.branches[0].id").value(firstBranch.getId()))
+				.andExpect(jsonPath("$.options.branches[0].code").value("10000001"))
+				.andExpect(jsonPath("$.options.branches[0].name").value("Chicago 104th"));
+	}
+
+	@Test
+	void returnsOnlyUnusedCoverageOptions() throws Exception {
+		BranchEntity firstBranch = branchRepository.save(BranchEntity.builder()
+				.branchCode("10000001")
+				.branchName("Chicago 104th")
+				.state("IL")
+				.zipCode("60459")
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		BranchEntity secondBranch = branchRepository.save(BranchEntity.builder()
+				.branchCode("10000002")
+				.branchName("Austin Mopec")
+				.state("TX")
+				.zipCode("78759")
+				.updatedBy("John Smith")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		regionRepository.save(RegionEntity.builder()
+				.regionCode("MIDWEST1")
+				.regionName("Midwest")
+				.states(new LinkedHashSet<>(List.of("IL")))
+				.zipCodes(new LinkedHashSet<>(List.of("60459")))
+				.branches(new LinkedHashSet<>(Set.of(firstBranch.getId())))
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:30:00+08:00"))
+				.build());
+
+		mockMvc.perform(get("/regions/options"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.states", contains("TX")))
+				.andExpect(jsonPath("$.zipCodes", contains("78759")))
+				.andExpect(jsonPath("$.branches[0].id").value(secondBranch.getId()))
+				.andExpect(jsonPath("$.branches[0].code").value("10000002"))
+				.andExpect(jsonPath("$.branches[0].name").value("Austin Mopec"));
 	}
 }

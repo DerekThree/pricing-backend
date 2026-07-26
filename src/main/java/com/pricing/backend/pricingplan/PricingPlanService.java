@@ -112,6 +112,7 @@ public class PricingPlanService {
 				entity.getPlanName(),
 				new ProductOption(entity.getProduct().getId(), entity.getProduct().getProductCode(), entity.getProduct().getProductName()),
 				new RegionOption(entity.getRegion().getId(), entity.getRegion().getRegionCode(), entity.getRegion().getRegionName()),
+				buildProductRegionOptions(),
 				entity.getActiveFrom(),
 				entity.getActiveThrough(),
 				entity.getUpdatedOn(),
