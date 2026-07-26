@@ -4,9 +4,11 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.pricing.backend.config.RecordInUseException;
 import com.pricing.backend.generated.model.ProductDetail;
 import com.pricing.backend.generated.model.ProductListItem;
 import com.pricing.backend.generated.model.ProductRequest;
+import com.pricing.backend.pricingplan.PricingPlanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,9 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductService {
 
 	private final ProductRepository productRepository;
+	private final PricingPlanRepository pricingPlanRepository;
 
-	public ProductService(ProductRepository productRepository) {
+	public ProductService(ProductRepository productRepository, PricingPlanRepository pricingPlanRepository) {
 		this.productRepository = productRepository;
+		this.pricingPlanRepository = pricingPlanRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -52,6 +56,11 @@ public class ProductService {
 		if (!productRepository.existsById(id)) {
 			return false;
 		}
+
+		pricingPlanRepository.findFirstByProductIdOrderByPlanCodeAsc(id)
+				.ifPresent(pricingPlan -> {
+					throw new RecordInUseException("product", "pricing plan", pricingPlan.getPlanCode());
+				});
 
 		productRepository.deleteById(id);
 		return true;

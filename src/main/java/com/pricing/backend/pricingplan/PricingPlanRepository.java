@@ -14,4 +14,8 @@ public interface PricingPlanRepository extends JpaRepository<PricingPlanEntity, 
 	@Override
 	@EntityGraph(attributePaths = {"product", "region"})
 	Optional<PricingPlanEntity> findById(Long id);
+
+	Optional<PricingPlanEntity> findFirstByProductIdOrderByPlanCodeAsc(Long productId);
+
+	Optional<PricingPlanEntity> findFirstByRegionIdOrderByPlanCodeAsc(Long regionId);
 }

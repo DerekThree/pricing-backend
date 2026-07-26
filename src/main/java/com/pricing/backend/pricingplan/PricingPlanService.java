@@ -79,12 +79,15 @@ public class PricingPlanService {
 				.orElseThrow(() -> new IllegalArgumentException("Product with id " + request.getProductId() + " was not found"));
 		RegionEntity region = regionRepository.findById(request.getRegionId())
 				.orElseThrow(() -> new IllegalArgumentException("Region with id " + request.getRegionId() + " was not found"));
+		if (request.getActiveFrom().isAfter(request.getActiveThrough())) {
+			throw new IllegalArgumentException("activeFrom must be on or before activeThrough");
+		}
 		entity.setPlanCode(request.getPlanCode());
 		entity.setPlanName(request.getPlanName());
 		entity.setProduct(product);
 		entity.setRegion(region);
 		entity.setActiveFrom(request.getActiveFrom());
-		entity.setActiveTo(request.getActiveTo());
+		entity.setActiveThrough(request.getActiveThrough());
 		entity.setUpdatedBy(request.getUpdatedBy());
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
@@ -96,7 +99,7 @@ public class PricingPlanService {
 				formatCodeAndName(entity.getProduct().getProductCode(), entity.getProduct().getProductName()),
 				formatCodeAndName(entity.getRegion().getRegionCode(), entity.getRegion().getRegionName()),
 				entity.getActiveFrom(),
-				entity.getActiveTo(),
+				entity.getActiveThrough(),
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
 		);
@@ -110,7 +113,7 @@ public class PricingPlanService {
 				new ProductOption(entity.getProduct().getId(), entity.getProduct().getProductCode(), entity.getProduct().getProductName()),
 				new RegionOption(entity.getRegion().getId(), entity.getRegion().getRegionCode(), entity.getRegion().getRegionName()),
 				entity.getActiveFrom(),
-				entity.getActiveTo(),
+				entity.getActiveThrough(),
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
 		);

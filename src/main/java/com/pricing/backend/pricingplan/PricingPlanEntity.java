@@ -1,5 +1,6 @@
 package com.pricing.backend.pricingplan;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 import com.pricing.backend.product.ProductEntity;
@@ -47,10 +48,10 @@ public class PricingPlanEntity {
 	private RegionEntity region;
 
 	@Column(name = "active_from", nullable = false)
-	private OffsetDateTime activeFrom;
+	private LocalDate activeFrom;
 
-	@Column(name = "active_to", nullable = false)
-	private OffsetDateTime activeTo;
+	@Column(name = "active_through", nullable = false)
+	private LocalDate activeThrough;
 
 	@Column(name = "updated_on", nullable = false)
 	private OffsetDateTime updatedOn;

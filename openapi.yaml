@@ -721,7 +721,7 @@ components:
         - product
         - region
         - activeFrom
-        - activeTo
+        - activeThrough
         - updatedOn
         - updatedBy
       properties:
@@ -734,9 +734,9 @@ components:
         region:
           $ref: "#/components/schemas/RegionCodeAndName"
         activeFrom:
-          $ref: "#/components/schemas/DateTime"
-        activeTo:
-          $ref: "#/components/schemas/DateTime"
+          $ref: "#/components/schemas/Date"
+        activeThrough:
+          $ref: "#/components/schemas/Date"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
         updatedBy:
@@ -751,7 +751,7 @@ components:
         - product
         - region
         - activeFrom
-        - activeTo
+        - activeThrough
         - updatedOn
         - updatedBy
       properties:
@@ -766,9 +766,9 @@ components:
         region:
           $ref: "#/components/schemas/RegionOption"
         activeFrom:
-          $ref: "#/components/schemas/DateTime"
-        activeTo:
-          $ref: "#/components/schemas/DateTime"
+          $ref: "#/components/schemas/Date"
+        activeThrough:
+          $ref: "#/components/schemas/Date"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
         updatedBy:
@@ -782,7 +782,7 @@ components:
         - productId
         - regionId
         - activeFrom
-        - activeTo
+        - activeThrough
         - updatedBy
       properties:
         planCode:
@@ -794,9 +794,9 @@ components:
         regionId:
           $ref: "#/components/schemas/Id"
         activeFrom:
-          $ref: "#/components/schemas/DateTime"
-        activeTo:
-          $ref: "#/components/schemas/DateTime"
+          $ref: "#/components/schemas/Date"
+        activeThrough:
+          $ref: "#/components/schemas/Date"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
@@ -929,6 +929,11 @@ components:
         - DEPOSIT
         - CREDIT
       example: DEPOSIT
+
+    Date:
+      type: string
+      format: date
+      example: "2026-12-31"
 
     DateTime:
       type: string

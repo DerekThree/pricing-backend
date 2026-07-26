@@ -4,6 +4,7 @@ import java.util.stream.Collectors;
 
 import com.pricing.backend.generated.model.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -53,6 +54,18 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleRecordNotFound(RecordNotFoundException ex) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(new ErrorResponse(ex.getMessage()));
+	}
+
+	@ExceptionHandler(RecordInUseException.class)
+	public ResponseEntity<ErrorResponse> handleRecordInUse(RecordInUseException ex) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ErrorResponse(ex.getMessage()));
+	}
+
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<ErrorResponse> handleDataIntegrityViolation() {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ErrorResponse("A record with the same code already exists"));
 	}
 
 	@ExceptionHandler(NoResourceFoundException.class)

@@ -11,11 +11,13 @@ import java.util.stream.Collectors;
 
 import com.pricing.backend.branch.BranchEntity;
 import com.pricing.backend.branch.BranchRepository;
+import com.pricing.backend.config.RecordInUseException;
 import com.pricing.backend.generated.model.BranchOption;
 import com.pricing.backend.generated.model.CoverageOptions;
 import com.pricing.backend.generated.model.RegionDetail;
 import com.pricing.backend.generated.model.RegionListItem;
 import com.pricing.backend.generated.model.RegionRequest;
+import com.pricing.backend.pricingplan.PricingPlanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,10 +26,13 @@ public class RegionService {
 
 	private final RegionRepository regionRepository;
 	private final BranchRepository branchRepository;
+	private final PricingPlanRepository pricingPlanRepository;
 
-	public RegionService(RegionRepository regionRepository, BranchRepository branchRepository) {
+	public RegionService(RegionRepository regionRepository, BranchRepository branchRepository,
+			PricingPlanRepository pricingPlanRepository) {
 		this.regionRepository = regionRepository;
 		this.branchRepository = branchRepository;
+		this.pricingPlanRepository = pricingPlanRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -68,6 +73,11 @@ public class RegionService {
 		if (!regionRepository.existsById(id)) {
 			return false;
 		}
+
+		pricingPlanRepository.findFirstByRegionIdOrderByPlanCodeAsc(id)
+				.ifPresent(pricingPlan -> {
+					throw new RecordInUseException("region", "pricing plan", pricingPlan.getPlanCode());
+				});
 
 		regionRepository.deleteById(id);
 		return true;

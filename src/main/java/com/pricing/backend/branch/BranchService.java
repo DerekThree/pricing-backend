@@ -4,9 +4,11 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.pricing.backend.config.RecordInUseException;
 import com.pricing.backend.generated.model.BranchDetail;
 import com.pricing.backend.generated.model.BranchListItem;
 import com.pricing.backend.generated.model.BranchRequest;
+import com.pricing.backend.region.RegionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,9 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class BranchService {
 
 	private final BranchRepository branchRepository;
+	private final RegionRepository regionRepository;
 
-	public BranchService(BranchRepository branchRepository) {
+	public BranchService(BranchRepository branchRepository, RegionRepository regionRepository) {
 		this.branchRepository = branchRepository;
+		this.regionRepository = regionRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -52,6 +56,11 @@ public class BranchService {
 		if (!branchRepository.existsById(id)) {
 			return false;
 		}
+
+		regionRepository.findFirstByBranchesContainsOrderByRegionCodeAsc(id)
+				.ifPresent(region -> {
+					throw new RecordInUseException("branch", "region", region.getRegionCode());
+				});
 
 		branchRepository.deleteById(id);
 		return true;
