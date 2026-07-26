@@ -767,7 +767,7 @@ components:
       required:
         - id
         - product
-        - accountType
+        - productType
         - updatedOn
         - updatedBy
       properties:
@@ -775,8 +775,8 @@ components:
           $ref: "#/components/schemas/Id"
         product:
           $ref: "#/components/schemas/ProductCodeAndName"
-        accountType:
-          $ref: "#/components/schemas/AccountType"
+        productType:
+          $ref: "#/components/schemas/ProductType"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
         updatedBy:
@@ -800,15 +800,15 @@ components:
       required:
         - productCode
         - productName
-        - accountType
+        - productType
         - updatedBy
       properties:
         productCode:
           $ref: "#/components/schemas/ProductCode"
         productName:
           $ref: "#/components/schemas/ProductName"
-        accountType:
-          $ref: "#/components/schemas/AccountType"
+        productType:
+          $ref: "#/components/schemas/ProductType"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
@@ -1091,7 +1091,7 @@ components:
       pattern: "^[0-9]{5}$"
       example: "60459"
 
-    AccountType:
+    ProductType:
       type: string
       enum:
         - DEPOSIT

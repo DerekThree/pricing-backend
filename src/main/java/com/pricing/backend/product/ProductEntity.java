@@ -2,7 +2,7 @@ package com.pricing.backend.product;
 
 import java.time.OffsetDateTime;
 
-import com.pricing.backend.generated.model.AccountType;
+import com.pricing.backend.generated.model.ProductType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -37,8 +37,8 @@ public class ProductEntity {
 	private String productName;
 
 	@Enumerated(EnumType.STRING)
-	@Column(name = "account_type", nullable = false, length = 20)
-	private AccountType accountType;
+	@Column(name = "product_type", nullable = false, length = 20)
+	private ProductType productType;
 
 	@Column(name = "updated_on", nullable = false)
 	private OffsetDateTime updatedOn;

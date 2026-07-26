@@ -69,7 +69,7 @@ public class ProductService {
 	private void apply(ProductEntity entity, ProductRequest request) {
 		entity.setProductCode(request.getProductCode());
 		entity.setProductName(request.getProductName());
-		entity.setAccountType(request.getAccountType());
+		entity.setProductType(request.getProductType());
 		entity.setUpdatedBy(request.getUpdatedBy());
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
@@ -78,7 +78,7 @@ public class ProductService {
 		return new ProductListItem(
 				entity.getId(),
 				formatCodeAndName(entity.getProductCode(), entity.getProductName()),
-				entity.getAccountType(),
+				entity.getProductType(),
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
 		);
@@ -88,7 +88,7 @@ public class ProductService {
 		return new ProductDetail(
 				entity.getProductCode(),
 				entity.getProductName(),
-				entity.getAccountType(),
+				entity.getProductType(),
 				entity.getUpdatedBy(),
 				entity.getId(),
 				entity.getUpdatedOn()

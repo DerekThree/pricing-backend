@@ -77,12 +77,12 @@ public class AccountAttributeService {
 
 	private AccountAttributeDetail toDetail(AccountAttributeEntity entity) {
 		return new AccountAttributeDetail(
-				entity.getId(),
 				entity.getAttributeCode(),
 				entity.getAttributeName(),
 				entity.getAttributeType(),
-				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
+				entity.getUpdatedBy(),
+				entity.getId(),
+				entity.getUpdatedOn()
 		);
 	}
 
