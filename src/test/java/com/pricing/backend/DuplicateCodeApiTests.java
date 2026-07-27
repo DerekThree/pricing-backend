@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 
 import com.pricing.backend.branch.BranchEntity;
 import com.pricing.backend.branch.BranchRepository;
+import com.pricing.backend.pricingplan.PricingPlanRepository;
 import com.pricing.backend.region.RegionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,8 +33,12 @@ class DuplicateCodeApiTests {
 	@Autowired
 	private RegionRepository regionRepository;
 
+	@Autowired
+	private PricingPlanRepository pricingPlanRepository;
+
 	@BeforeEach
 	void setUp() {
+		pricingPlanRepository.deleteAll();
 		regionRepository.deleteAll();
 		branchRepository.deleteAll();
 	}

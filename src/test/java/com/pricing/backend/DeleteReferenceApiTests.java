@@ -7,7 +7,7 @@ import java.util.Set;
 
 import com.pricing.backend.branch.BranchEntity;
 import com.pricing.backend.branch.BranchRepository;
-import com.pricing.backend.generated.model.AccountType;
+import com.pricing.backend.generated.model.ProductType;
 import com.pricing.backend.pricingplan.PricingPlanEntity;
 import com.pricing.backend.pricingplan.PricingPlanRepository;
 import com.pricing.backend.product.ProductEntity;
@@ -57,7 +57,7 @@ class DeleteReferenceApiTests {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
 				.productName("Premier Checking")
-				.accountType(AccountType.DEPOSIT)
+				.productType(ProductType.DEPOSIT)
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
@@ -92,7 +92,7 @@ class DeleteReferenceApiTests {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
 				.productName("Premier Checking")
-				.accountType(AccountType.DEPOSIT)
+				.productType(ProductType.DEPOSIT)
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
