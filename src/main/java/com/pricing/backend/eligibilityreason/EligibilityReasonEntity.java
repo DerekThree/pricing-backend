@@ -1,15 +1,16 @@
-package com.pricing.backend.accountattribute;
+package com.pricing.backend.eligibilityreason;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-import com.pricing.backend.generated.model.AccountAttributeType;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,24 +22,24 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Getter
-@Setter
 @NoArgsConstructor
-@Table(name = "account_attributes")
-public class AccountAttributeEntity {
+@Setter
+@Table(name = "eligibility_reasons")
+public class EligibilityReasonEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "attribute_code", nullable = false, unique = true, length = 8)
-	private String attributeCode;
+	@Column(name = "reason_code", nullable = false, unique = true, length = 8)
+	private String reasonCode;
 
-	@Column(name = "attribute_name", nullable = false, length = 100)
-	private String attributeName;
+	@Column(name = "reason_name", nullable = false, length = 100)
+	private String reasonName;
 
-	@Enumerated(EnumType.STRING)
-	@Column(name = "attribute_type", nullable = false, length = 20)
-	private AccountAttributeType attributeType;
+	@Builder.Default
+	@OneToMany(mappedBy = "reason", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<EligibilityReasonConditionEntity> conditions = new ArrayList<>();
 
 	@Column(name = "updated_on", nullable = false)
 	private OffsetDateTime updatedOn;

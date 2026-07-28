@@ -497,6 +497,112 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
+  /eligibility-reasons:
+    get:
+      tags: [Eligibility Reasons]
+      operationId: listEligibilityReasons
+      summary: List all eligibility reasons
+      responses:
+        "200":
+          description: Eligibility reasons sorted by reason code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EligibilityReasonListItem"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+    post:
+      tags: [Eligibility Reasons]
+      operationId: createEligibilityReason
+      summary: Create an eligibility reason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EligibilityReasonRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/EligibilityReasonDetail"
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
+  /eligibility-reasons/options:
+    get:
+      tags: [Eligibility Reasons]
+      operationId: getEligibilityReasonOptions
+      summary: Get available eligibility reason options
+      responses:
+        "200":
+          description: Available account attributes for eligibility reason forms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EligibilityReasonOptions"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
+  /eligibility-reasons/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Eligibility Reasons]
+      operationId: getEligibilityReason
+      summary: Get an eligibility reason by ID
+      responses:
+        "200":
+          $ref: "#/components/responses/EligibilityReasonDetail"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+    put:
+      tags: [Eligibility Reasons]
+      operationId: updateEligibilityReason
+      summary: Replace an eligibility reason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EligibilityReasonRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/EligibilityReasonDetail"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+    delete:
+      tags: [Eligibility Reasons]
+      operationId: deleteEligibilityReason
+      summary: Delete an eligibility reason
+      responses:
+        "204":
+          description: Eligibility reason deleted
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
 components:
   parameters:
     ResourceId:
@@ -540,6 +646,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/AccountAttributeDetail"
+    EligibilityReasonDetail:
+      description: Eligibility reason response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EligibilityReasonDetail"
     Error:
       description: Error response
       content:
@@ -670,7 +782,7 @@ components:
         - states
         - zipCodes
         - branches
-        - options
+        - formOptions
         - updatedOn
         - updatedBy
       properties:
@@ -692,7 +804,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Id"
-        options:
+        formOptions:
           $ref: "#/components/schemas/CoverageOptions"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
@@ -849,7 +961,7 @@ components:
         - planName
         - productId
         - regionId
-        - options
+        - formOptions
         - activeFrom
         - activeThrough
         - updatedOn
@@ -865,7 +977,7 @@ components:
           $ref: "#/components/schemas/Id"
         regionId:
           $ref: "#/components/schemas/Id"
-        options:
+        formOptions:
           $ref: "#/components/schemas/ProductRegionOptions"
         activeFrom:
           $ref: "#/components/schemas/Date"
@@ -931,7 +1043,7 @@ components:
         attribute:
           $ref: "#/components/schemas/AccountAttributeCodeAndName"
         type:
-          $ref: "#/components/schemas/AttributeType"
+          $ref: "#/components/schemas/AccountAttributeType"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
         updatedBy:
@@ -963,9 +1075,113 @@ components:
         attributeName:
           $ref: "#/components/schemas/AccountAttributeName"
         attributeType:
-          $ref: "#/components/schemas/AttributeType"
+          $ref: "#/components/schemas/AccountAttributeType"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
+
+    EligibilityReasonListItem:
+      type: object
+      required:
+        - id
+        - eligibilityReason
+        - conditions
+        - updatedOn
+        - updatedBy
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        eligibilityReason:
+          $ref: "#/components/schemas/EligibilityReasonCodeAndName"
+        conditions:
+          type: array
+          items:
+            type: string
+        updatedOn:
+          $ref: "#/components/schemas/DateTime"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    EligibilityReasonDetail:
+      allOf:
+        - $ref: "#/components/schemas/EligibilityReasonRequest"
+        - type: object
+          required:
+            - id
+            - formOptions
+            - updatedOn
+          properties:
+            id:
+              $ref: "#/components/schemas/Id"
+            formOptions:
+              $ref: "#/components/schemas/EligibilityReasonOptions"
+            updatedOn:
+              $ref: "#/components/schemas/DateTime"
+
+    EligibilityReasonRequest:
+      type: object
+      required:
+        - reasonCode
+        - reasonName
+        - conditions
+        - updatedBy
+      properties:
+        reasonCode:
+          $ref: "#/components/schemas/EligibilityReasonCode"
+        reasonName:
+          $ref: "#/components/schemas/EligibilityReasonName"
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/EligibilityReasonCondition"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    EligibilityReasonOptions:
+      type: object
+      required:
+        - attributes
+      properties:
+        attributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountAttributeOption"
+
+    EligibilityReasonCondition:
+      type: object
+      required:
+        - attribute
+        - operator
+        - value
+      properties:
+        attribute:
+          $ref: "#/components/schemas/Id"
+        operator:
+          $ref: "#/components/schemas/EligibilityReasonOperator"
+        value:
+          $ref: "#/components/schemas/EligibilityReasonConditionValue"
+
+    EligibilityReasonConditionValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+
+    AccountAttributeOption:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - type
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        code:
+          $ref: "#/components/schemas/AccountAttributeCode"
+        name:
+          $ref: "#/components/schemas/AccountAttributeName"
+        type:
+          $ref: "#/components/schemas/AccountAttributeType"
 
     ProductOption:
       type: object
@@ -1050,6 +1266,17 @@ components:
       maxLength: 100
       example: Account Open Date
 
+    EligibilityReasonCode:
+      type: string
+      pattern: "^[A-Z0-9]{8}$"
+      example: ELIG0001
+
+    EligibilityReasonName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Min. Balance
+
     UpdatedBy:
       type: string
       minLength: 1
@@ -1081,6 +1308,11 @@ components:
       pattern: "^[A-Z0-9]{8} - .{1,100}$"
       example: "ATTR0001 - Account Open Date"
 
+    EligibilityReasonCodeAndName:
+      type: string
+      pattern: "^[A-Z0-9]{8} - .{1,100}$"
+      example: "ELIG0001 - Min. Balance"
+
     State:
       type: string
       pattern: "^[A-Z]{2}$"
@@ -1098,7 +1330,7 @@ components:
         - CREDIT
       example: DEPOSIT
 
-    AttributeType:
+    AccountAttributeType:
       type: string
       enum:
         - TEXT
@@ -1107,6 +1339,17 @@ components:
         - DATE
         - BOOLEAN
       example: TEXT
+
+    EligibilityReasonOperator:
+      type: string
+      enum:
+        - "="
+        - ">"
+        - "<"
+        - ">="
+        - "<="
+        - "<>"
+      example: "="
 
     Date:
       type: string

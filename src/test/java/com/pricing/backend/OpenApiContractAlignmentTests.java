@@ -230,6 +230,12 @@ class OpenApiContractAlignmentTests {
 			return comparableAllOfSchema(resolvedSchema.get("allOf"), root);
 		}
 
+		if (resolvedSchema.has("oneOf")) {
+			ObjectNode comparable = JSON_MAPPER.createObjectNode();
+			comparable.put("type", "object");
+			return comparable;
+		}
+
 		ObjectNode comparable = JSON_MAPPER.createObjectNode();
 		copyIfPresent(resolvedSchema, comparable, "type");
 		copyIfPresent(resolvedSchema, comparable, "format");

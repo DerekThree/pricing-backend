@@ -91,11 +91,11 @@ class RegionApiTests {
 				.andExpect(jsonPath("$.branches[0]").value(firstBranch.getId()))
 				.andExpect(jsonPath("$.states", contains("IL", "IN", "MI", "OH", "WI")))
 				.andExpect(jsonPath("$.zipCodes", containsInAnyOrder("60459", "60601", "46204", "48201", "53202")))
-				.andExpect(jsonPath("$.options.states", contains("IL", "IN", "MI", "OH", "WI")))
-				.andExpect(jsonPath("$.options.zipCodes", containsInAnyOrder("60459", "60601", "46204", "48201", "53202")))
-				.andExpect(jsonPath("$.options.branches[0].id").value(firstBranch.getId()))
-				.andExpect(jsonPath("$.options.branches[0].code").value("10000001"))
-				.andExpect(jsonPath("$.options.branches[0].name").value("Chicago 104th"));
+				.andExpect(jsonPath("$.formOptions.states", contains("IL", "IN", "MI", "OH", "WI")))
+				.andExpect(jsonPath("$.formOptions.zipCodes", containsInAnyOrder("60459", "60601", "46204", "48201", "53202")))
+				.andExpect(jsonPath("$.formOptions.branches[0].id").value(firstBranch.getId()))
+				.andExpect(jsonPath("$.formOptions.branches[0].code").value("10000001"))
+				.andExpect(jsonPath("$.formOptions.branches[0].name").value("Chicago 104th"));
 	}
 
 	@Test
