@@ -7,10 +7,10 @@ import java.util.List;
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.generated.model.AccountAttributeType;
-import com.pricing.backend.generated.model.EligibilityReasonCondition;
-import com.pricing.backend.generated.model.EligibilityReasonDetail;
-import com.pricing.backend.generated.model.EligibilityReasonOperator;
-import com.pricing.backend.generated.model.EligibilityReasonRequest;
+import com.pricing.backend.generated.model.ReasonCondition;
+import com.pricing.backend.generated.model.ReasonDetail;
+import com.pricing.backend.generated.model.ReasonOperator;
+import com.pricing.backend.generated.model.ReasonRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,22 +40,22 @@ class EligibilityReasonServiceTests {
 	void createsEligibilityReason() {
 		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AccountAttributeType.DECIMAL);
 		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AccountAttributeType.BOOLEAN);
-		EligibilityReasonRequest request = new EligibilityReasonRequest(
+		ReasonRequest request = new ReasonRequest(
 				"ELIG0001",
 				"Min. Balance",
 				List.of(
-						new EligibilityReasonCondition(
+						new ReasonCondition(
 								amount.getId(),
-								EligibilityReasonOperator.GREATER_THAN_OR_EQUAL_TO,
+								ReasonOperator.GREATER_THAN_OR_EQUAL_TO,
 								new EligibilityReasonConditionScalarValue(new BigDecimal("100.50"))),
-						new EligibilityReasonCondition(
+						new ReasonCondition(
 								active.getId(),
-								EligibilityReasonOperator.EQUAL,
+								ReasonOperator.EQUAL,
 								new EligibilityReasonConditionScalarValue(Boolean.TRUE))),
 				"Derek Ochal"
 		);
 
-		EligibilityReasonDetail createdEligibilityReason = eligibilityReasonService.create(request);
+		ReasonDetail createdEligibilityReason = eligibilityReasonService.create(request);
 
 		assertThat(createdEligibilityReason.getId()).isNotNull();
 		assertThat(createdEligibilityReason.getReasonCode()).isEqualTo(request.getReasonCode());
@@ -73,46 +73,46 @@ class EligibilityReasonServiceTests {
 	void updatesEligibilityReasonAndReplacesConditions() {
 		AccountAttributeEntity openDate = saveAttribute("ATTR0001", "Open Date", AccountAttributeType.DATE);
 		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AccountAttributeType.BOOLEAN);
-		EligibilityReasonDetail createdEligibilityReason = eligibilityReasonService.create(
-				new EligibilityReasonRequest(
+		ReasonDetail createdEligibilityReason = eligibilityReasonService.create(
+				new ReasonRequest(
 						"ELIG0001",
 						"Initial",
-						List.of(new EligibilityReasonCondition(
+						List.of(new ReasonCondition(
 								openDate.getId(),
-								EligibilityReasonOperator.EQUAL,
+								ReasonOperator.EQUAL,
 								new EligibilityReasonConditionScalarValue("2026-01-01"))),
 						"Derek Ochal"
 				));
-		EligibilityReasonRequest updateRequest = new EligibilityReasonRequest(
+		ReasonRequest updateRequest = new ReasonRequest(
 				"ELIG0001",
 				"Updated",
-				List.of(new EligibilityReasonCondition(
+				List.of(new ReasonCondition(
 						active.getId(),
-						EligibilityReasonOperator.EQUAL,
+						ReasonOperator.EQUAL,
 						new EligibilityReasonConditionScalarValue(Boolean.FALSE))),
 				"Jane Smith"
 		);
 
-		EligibilityReasonDetail updatedEligibilityReason = eligibilityReasonService
+		ReasonDetail updatedEligibilityReason = eligibilityReasonService
 				.update(createdEligibilityReason.getId(), updateRequest)
 				.orElseThrow();
 
 		assertThat(updatedEligibilityReason.getReasonName()).isEqualTo("Updated");
 		assertThat(updatedEligibilityReason.getConditions()).hasSize(1);
-		assertThat(updatedEligibilityReason.getConditions().getFirst().getAttribute()).isEqualTo(active.getId());
+		assertThat(updatedEligibilityReason.getConditions().getFirst().getAttributeId()).isEqualTo(active.getId());
 		assertThat(updatedEligibilityReason.getUpdatedBy()).isEqualTo("Jane Smith");
 	}
 
 	@Test
 	void deletesStoredEligibilityReason() {
 		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AccountAttributeType.INTEGER);
-		EligibilityReasonDetail createdEligibilityReason = eligibilityReasonService.create(
-				new EligibilityReasonRequest(
+		ReasonDetail createdEligibilityReason = eligibilityReasonService.create(
+				new ReasonRequest(
 						"ELIG0001",
 						"Min. Balance",
-						List.of(new EligibilityReasonCondition(
+						List.of(new ReasonCondition(
 								amount.getId(),
-								EligibilityReasonOperator.GREATER_THAN,
+								ReasonOperator.GREATER_THAN,
 								new EligibilityReasonConditionScalarValue(new BigDecimal("10")))),
 						"Derek Ochal"
 				));

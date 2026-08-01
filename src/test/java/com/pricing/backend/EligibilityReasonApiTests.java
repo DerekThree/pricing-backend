@@ -52,8 +52,8 @@ class EligibilityReasonApiTests {
 								  "reasonCode": "ELIG0001",
 								  "reasonName": "Min. Balance",
 								  "conditions": [
-								    {"attribute": %d, "operator": ">=", "value": 100.5},
-								    {"attribute": %d, "operator": "=", "value": true}
+								    {"attributeId": %d, "operator": ">=", "value": 100.5},
+								    {"attributeId": %d, "operator": "=", "value": true}
 								  ],
 								  "updatedBy": "Derek Ochal"
 								}
@@ -62,10 +62,10 @@ class EligibilityReasonApiTests {
 				.andExpect(jsonPath("$.reasonCode").value("ELIG0001"))
 				.andExpect(jsonPath("$.reasonName").value("Min. Balance"))
 				.andExpect(jsonPath("$.conditions", hasSize(2)))
-				.andExpect(jsonPath("$.conditions[0].attribute").value(amount.getId()))
+				.andExpect(jsonPath("$.conditions[0].attributeId").value(amount.getId()))
 				.andExpect(jsonPath("$.conditions[0].operator").value(">="))
 				.andExpect(jsonPath("$.conditions[0].value").value(100.5))
-				.andExpect(jsonPath("$.conditions[1].attribute").value(active.getId()))
+				.andExpect(jsonPath("$.conditions[1].attributeId").value(active.getId()))
 				.andExpect(jsonPath("$.conditions[1].operator").value("="))
 				.andExpect(jsonPath("$.conditions[1].value").value(true))
 				.andExpect(jsonPath("$.formOptions.attributes", hasSize(2)))

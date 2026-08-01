@@ -3,18 +3,17 @@ package com.pricing.backend.config;
 import java.math.BigDecimal;
 
 import com.pricing.backend.eligibilityreason.EligibilityReasonConditionScalarValue;
-import com.pricing.backend.generated.model.EligibilityReasonConditionValue;
+import com.pricing.backend.generated.model.ReasonConditionValue;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.exc.InvalidFormatException;
 
-public class EligibilityReasonConditionValueDeserializer extends ValueDeserializer<EligibilityReasonConditionValue> {
+public class EligibilityReasonConditionValueDeserializer extends ValueDeserializer<ReasonConditionValue> {
 
 	@Override
-	public EligibilityReasonConditionValue deserialize(JsonParser parser,
-			DeserializationContext context) {
+	public ReasonConditionValue deserialize(JsonParser parser, DeserializationContext context) {
 		JsonToken token = parser.currentToken();
 		if (token == JsonToken.VALUE_STRING) {
 			return new EligibilityReasonConditionScalarValue(parser.getText());

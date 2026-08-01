@@ -14,6 +14,7 @@ tags:
   - name: Branches
   - name: Regions
   - name: Products
+  - name: Fees
   - name: Pricing Plans
   - name: Account Attributes
 
@@ -302,6 +303,95 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
+  /fees:
+    get:
+      tags: [Fees]
+      operationId: listFees
+      summary: List all fees
+      responses:
+        "200":
+          description: Fees sorted by fee code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeeListItem"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+    post:
+      tags: [Fees]
+      operationId: createFee
+      summary: Create a fee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeeRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/FeeDetail"
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
+  /fees/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      tags: [Fees]
+      operationId: getFee
+      summary: Get a fee by ID
+      responses:
+        "200":
+          $ref: "#/components/responses/FeeDetail"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+    put:
+      tags: [Fees]
+      operationId: updateFee
+      summary: Replace a fee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeeRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/FeeDetail"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+    delete:
+      tags: [Fees]
+      operationId: deleteFee
+      summary: Delete a fee
+      responses:
+        "204":
+          description: Fee deleted
+        "404":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
   /pricing-plans:
     get:
       tags: [Pricing Plans]
@@ -500,7 +590,7 @@ paths:
   /eligibility-reasons:
     get:
       tags: [Eligibility Reasons]
-      operationId: listEligibilityReasons
+      operationId: listReasons
       summary: List all eligibility reasons
       responses:
         "200":
@@ -510,24 +600,24 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/EligibilityReasonListItem"
+                  $ref: "#/components/schemas/ReasonListItem"
         "500":
           $ref: "#/components/responses/Error"
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
     post:
       tags: [Eligibility Reasons]
-      operationId: createEligibilityReason
+      operationId: createReason
       summary: Create an eligibility reason
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EligibilityReasonRequest"
+              $ref: "#/components/schemas/ReasonRequest"
       responses:
         "201":
-          $ref: "#/components/responses/EligibilityReasonDetail"
+          $ref: "#/components/responses/ReasonDetail"
         "400":
           $ref: "#/components/responses/Error"
         "500":
@@ -538,7 +628,7 @@ paths:
   /eligibility-reasons/options:
     get:
       tags: [Eligibility Reasons]
-      operationId: getEligibilityReasonOptions
+      operationId: getReasonOptions
       summary: Get available eligibility reason options
       responses:
         "200":
@@ -546,7 +636,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EligibilityReasonOptions"
+                $ref: "#/components/schemas/ReasonOptions"
         "500":
           $ref: "#/components/responses/Error"
         "503":
@@ -557,11 +647,11 @@ paths:
       - $ref: "#/components/parameters/ResourceId"
     get:
       tags: [Eligibility Reasons]
-      operationId: getEligibilityReason
+      operationId: getReason
       summary: Get an eligibility reason by ID
       responses:
         "200":
-          $ref: "#/components/responses/EligibilityReasonDetail"
+          $ref: "#/components/responses/ReasonDetail"
         "404":
           $ref: "#/components/responses/Error"
         "500":
@@ -570,17 +660,17 @@ paths:
           $ref: "#/components/responses/SyntheticServiceUnavailable"
     put:
       tags: [Eligibility Reasons]
-      operationId: updateEligibilityReason
+      operationId: updateReason
       summary: Replace an eligibility reason
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EligibilityReasonRequest"
+              $ref: "#/components/schemas/ReasonRequest"
       responses:
         "200":
-          $ref: "#/components/responses/EligibilityReasonDetail"
+          $ref: "#/components/responses/ReasonDetail"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -591,7 +681,7 @@ paths:
           $ref: "#/components/responses/SyntheticServiceUnavailable"
     delete:
       tags: [Eligibility Reasons]
-      operationId: deleteEligibilityReason
+      operationId: deleteReason
       summary: Delete an eligibility reason
       responses:
         "204":
@@ -634,6 +724,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ProductDetail"
+    FeeDetail:
+      description: Fee response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/FeeDetail"
     PricingPlanDetail:
       description: Pricing plan response
       content:
@@ -646,12 +742,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/AccountAttributeDetail"
-    EligibilityReasonDetail:
+    ReasonDetail:
       description: Eligibility reason response
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/EligibilityReasonDetail"
+            $ref: "#/components/schemas/ReasonDetail"
     Error:
       description: Error response
       content:
@@ -924,6 +1020,56 @@ components:
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
+    FeeListItem:
+      type: object
+      required:
+        - id
+        - fee
+        - productType
+        - updatedOn
+        - updatedBy
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        fee:
+          $ref: "#/components/schemas/FeeCodeAndName"
+        productType:
+          $ref: "#/components/schemas/ProductType"
+        updatedOn:
+          $ref: "#/components/schemas/DateTime"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
+    FeeDetail:
+      allOf:
+        - $ref: "#/components/schemas/FeeRequest"
+        - type: object
+          required:
+            - id
+            - updatedOn
+          properties:
+            id:
+              $ref: "#/components/schemas/Id"
+            updatedOn:
+              $ref: "#/components/schemas/DateTime"
+
+    FeeRequest:
+      type: object
+      required:
+        - feeCode
+        - feeName
+        - productType
+        - updatedBy
+      properties:
+        feeCode:
+          $ref: "#/components/schemas/FeeCode"
+        feeName:
+          $ref: "#/components/schemas/FeeName"
+        productType:
+          $ref: "#/components/schemas/ProductType"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
+
     PricingPlanListItem:
       type: object
       required:
@@ -1079,7 +1225,7 @@ components:
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    EligibilityReasonListItem:
+    ReasonListItem:
       type: object
       required:
         - id
@@ -1091,7 +1237,7 @@ components:
         id:
           $ref: "#/components/schemas/Id"
         eligibilityReason:
-          $ref: "#/components/schemas/EligibilityReasonCodeAndName"
+          $ref: "#/components/schemas/ReasonCodeAndName"
         conditions:
           type: array
           items:
@@ -1101,9 +1247,9 @@ components:
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    EligibilityReasonDetail:
+    ReasonDetail:
       allOf:
-        - $ref: "#/components/schemas/EligibilityReasonRequest"
+        - $ref: "#/components/schemas/ReasonRequest"
         - type: object
           required:
             - id
@@ -1113,11 +1259,11 @@ components:
             id:
               $ref: "#/components/schemas/Id"
             formOptions:
-              $ref: "#/components/schemas/EligibilityReasonOptions"
+              $ref: "#/components/schemas/ReasonOptions"
             updatedOn:
               $ref: "#/components/schemas/DateTime"
 
-    EligibilityReasonRequest:
+    ReasonRequest:
       type: object
       required:
         - reasonCode
@@ -1126,17 +1272,17 @@ components:
         - updatedBy
       properties:
         reasonCode:
-          $ref: "#/components/schemas/EligibilityReasonCode"
+          $ref: "#/components/schemas/ReasonCode"
         reasonName:
-          $ref: "#/components/schemas/EligibilityReasonName"
+          $ref: "#/components/schemas/ReasonName"
         conditions:
           type: array
           items:
-            $ref: "#/components/schemas/EligibilityReasonCondition"
+            $ref: "#/components/schemas/ReasonCondition"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    EligibilityReasonOptions:
+    ReasonOptions:
       type: object
       required:
         - attributes
@@ -1146,21 +1292,21 @@ components:
           items:
             $ref: "#/components/schemas/AccountAttributeOption"
 
-    EligibilityReasonCondition:
+    ReasonCondition:
       type: object
       required:
-        - attribute
+        - attributeId
         - operator
         - value
       properties:
-        attribute:
+        attributeId:
           $ref: "#/components/schemas/Id"
         operator:
-          $ref: "#/components/schemas/EligibilityReasonOperator"
+          $ref: "#/components/schemas/ReasonOperator"
         value:
-          $ref: "#/components/schemas/EligibilityReasonConditionValue"
+          $ref: "#/components/schemas/ReasonConditionValue"
 
-    EligibilityReasonConditionValue:
+    ReasonConditionValue:
       oneOf:
         - type: string
         - type: number
@@ -1189,6 +1335,7 @@ components:
         - id
         - code
         - name
+        - type
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -1196,6 +1343,8 @@ components:
           $ref: "#/components/schemas/ProductCode"
         name:
           $ref: "#/components/schemas/ProductName"
+        type:
+          $ref: "#/components/schemas/ProductType"
 
     RegionOption:
       type: object
@@ -1226,6 +1375,11 @@ components:
       pattern: "^[A-Z0-9]{8}$"
       example: 1FC00012
 
+    FeeCode:
+      type: string
+      pattern: "^[A-Z0-9]{8}$"
+      example: FEE00001
+
     PricingPlanCode:
       type: string
       pattern: "^[A-Z0-9]{8}$"
@@ -1249,6 +1403,12 @@ components:
       maxLength: 100
       example: Free Checking
 
+    FeeName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: Monthly Maintenance Fee
+
     PricingPlanName:
       type: string
       minLength: 1
@@ -1266,12 +1426,12 @@ components:
       maxLength: 100
       example: Account Open Date
 
-    EligibilityReasonCode:
+    ReasonCode:
       type: string
       pattern: "^[A-Z0-9]{8}$"
       example: ELIG0001
 
-    EligibilityReasonName:
+    ReasonName:
       type: string
       minLength: 1
       maxLength: 100
@@ -1298,6 +1458,11 @@ components:
       pattern: "^[0-9]{8} - .{1,100}$"
       example: "10000001 - Free Checking"
 
+    FeeCodeAndName:
+      type: string
+      pattern: "^[A-Z0-9]{8} - .{1,100}$"
+      example: "FEE00001 - Monthly Maintenance Fee"
+
     PricingPlanCodeAndName:
       type: string
       pattern: "^[0-9]{8} - .{1,100}$"
@@ -1308,7 +1473,7 @@ components:
       pattern: "^[A-Z0-9]{8} - .{1,100}$"
       example: "ATTR0001 - Account Open Date"
 
-    EligibilityReasonCodeAndName:
+    ReasonCodeAndName:
       type: string
       pattern: "^[A-Z0-9]{8} - .{1,100}$"
       example: "ELIG0001 - Min. Balance"
@@ -1340,7 +1505,7 @@ components:
         - BOOLEAN
       example: TEXT
 
-    EligibilityReasonOperator:
+    ReasonOperator:
       type: string
       enum:
         - "="

@@ -106,7 +106,11 @@ public class PricingPlanService {
 	}
 
 	private PricingPlanDetail toDetail(PricingPlanEntity entity) {
-		ProductOption product = new ProductOption(entity.getProduct().getId(), entity.getProduct().getProductCode(), entity.getProduct().getProductName());
+		ProductOption product = new ProductOption(
+				entity.getProduct().getId(),
+				entity.getProduct().getProductCode(),
+				entity.getProduct().getProductName(),
+				entity.getProduct().getProductType());
 		RegionOption region = new RegionOption(entity.getRegion().getId(), entity.getRegion().getRegionCode(), entity.getRegion().getRegionName());
 		return new PricingPlanDetail(
 				entity.getId(),
@@ -129,7 +133,11 @@ public class PricingPlanService {
 	private ProductRegionOptions buildProductRegionOptions() {
 		return new ProductRegionOptions(
 				productRepository.findAllByOrderByProductCodeAsc().stream()
-						.map(product -> new ProductOption(product.getId(), product.getProductCode(), product.getProductName()))
+						.map(product -> new ProductOption(
+								product.getId(),
+								product.getProductCode(),
+								product.getProductName(),
+								product.getProductType()))
 						.toList(),
 				regionRepository.findAllByOrderByRegionCodeAsc().stream()
 						.map(region -> new RegionOption(region.getId(), region.getRegionCode(), region.getRegionName()))

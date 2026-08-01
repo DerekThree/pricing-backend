@@ -17,13 +17,13 @@ import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.generated.model.AccountAttributeType;
 import com.pricing.backend.generated.model.AccountAttributeOption;
-import com.pricing.backend.generated.model.EligibilityReasonCondition;
-import com.pricing.backend.generated.model.EligibilityReasonConditionValue;
-import com.pricing.backend.generated.model.EligibilityReasonDetail;
-import com.pricing.backend.generated.model.EligibilityReasonListItem;
-import com.pricing.backend.generated.model.EligibilityReasonOperator;
-import com.pricing.backend.generated.model.EligibilityReasonOptions;
-import com.pricing.backend.generated.model.EligibilityReasonRequest;
+import com.pricing.backend.generated.model.ReasonCondition;
+import com.pricing.backend.generated.model.ReasonConditionValue;
+import com.pricing.backend.generated.model.ReasonDetail;
+import com.pricing.backend.generated.model.ReasonListItem;
+import com.pricing.backend.generated.model.ReasonOperator;
+import com.pricing.backend.generated.model.ReasonOptions;
+import com.pricing.backend.generated.model.ReasonRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,31 +40,31 @@ public class EligibilityReasonService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<EligibilityReasonListItem> list() {
+	public List<ReasonListItem> list() {
 		return eligibilityReasonRepository.findAllByOrderByReasonCodeAsc().stream()
 				.map(this::toListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
-	public Optional<EligibilityReasonDetail> get(Long id) {
+	public Optional<ReasonDetail> get(Long id) {
 		return eligibilityReasonRepository.findById(id).map(this::toDetail);
 	}
 
 	@Transactional(readOnly = true)
-	public EligibilityReasonOptions getOptions() {
+	public ReasonOptions getOptions() {
 		return buildOptions();
 	}
 
 	@Transactional
-	public EligibilityReasonDetail create(EligibilityReasonRequest request) {
+	public ReasonDetail create(ReasonRequest request) {
 		EligibilityReasonEntity entity = new EligibilityReasonEntity();
 		apply(entity, request);
 		return toDetail(eligibilityReasonRepository.save(entity));
 	}
 
 	@Transactional
-	public Optional<EligibilityReasonDetail> update(Long id, EligibilityReasonRequest request) {
+	public Optional<ReasonDetail> update(Long id, ReasonRequest request) {
 		return eligibilityReasonRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
@@ -82,9 +82,9 @@ public class EligibilityReasonService {
 		return true;
 	}
 
-	private void apply(EligibilityReasonEntity entity, EligibilityReasonRequest request) {
+	private void apply(EligibilityReasonEntity entity, ReasonRequest request) {
 		Map<Long, AccountAttributeEntity> attributesById = accountAttributeRepository
-				.findAllById(request.getConditions().stream().map(EligibilityReasonCondition::getAttribute).toList())
+				.findAllById(request.getConditions().stream().map(ReasonCondition::getAttributeId).toList())
 				.stream()
 				.collect(Collectors.toMap(AccountAttributeEntity::getId, Function.identity()));
 		Set<String> uniqueConditions = new HashSet<>();
@@ -93,10 +93,10 @@ public class EligibilityReasonService {
 		entity.setUpdatedBy(request.getUpdatedBy());
 		entity.setUpdatedOn(OffsetDateTime.now());
 		entity.getConditions().clear();
-		for (EligibilityReasonCondition condition : request.getConditions()) {
-			AccountAttributeEntity attribute = attributesById.get(condition.getAttribute());
+		for (ReasonCondition condition : request.getConditions()) {
+			AccountAttributeEntity attribute = attributesById.get(condition.getAttributeId());
 			if (attribute == null) {
-				throw new IllegalArgumentException("Account attribute with id " + condition.getAttribute() + " was not found");
+				throw new IllegalArgumentException("Account attribute with id " + condition.getAttributeId() + " was not found");
 			}
 
 			String operator = condition.getOperator().getValue();
@@ -115,8 +115,8 @@ public class EligibilityReasonService {
 		}
 	}
 
-	private EligibilityReasonListItem toListItem(EligibilityReasonEntity entity) {
-		return new EligibilityReasonListItem(
+	private ReasonListItem toListItem(EligibilityReasonEntity entity) {
+		return new ReasonListItem(
 				entity.getId(),
 				formatCodeAndName(entity.getReasonCode(), entity.getReasonName()),
 				entity.getConditions().stream()
@@ -128,8 +128,8 @@ public class EligibilityReasonService {
 		);
 	}
 
-	private EligibilityReasonDetail toDetail(EligibilityReasonEntity entity) {
-		return new EligibilityReasonDetail(
+	private ReasonDetail toDetail(EligibilityReasonEntity entity) {
+		return new ReasonDetail(
 				entity.getReasonCode(),
 				entity.getReasonName(),
 				entity.getConditions().stream()
@@ -143,16 +143,16 @@ public class EligibilityReasonService {
 		);
 	}
 
-	private EligibilityReasonCondition toCondition(EligibilityReasonConditionEntity entity) {
-		return new EligibilityReasonCondition(
+	private ReasonCondition toCondition(EligibilityReasonConditionEntity entity) {
+		return new ReasonCondition(
 				entity.getAttribute().getId(),
-				EligibilityReasonOperator.fromValue(entity.getId().getOperator()),
+				ReasonOperator.fromValue(entity.getId().getOperator()),
 				toApiValue(entity.getAttribute().getAttributeType(), entity.getAttributeValue())
 		);
 	}
 
-	private EligibilityReasonOptions buildOptions() {
-		return new EligibilityReasonOptions(
+	private ReasonOptions buildOptions() {
+		return new ReasonOptions(
 				accountAttributeRepository.findAllByOrderByAttributeCodeAsc().stream()
 						.map(attribute -> new AccountAttributeOption(
 								attribute.getId(),
@@ -163,7 +163,7 @@ public class EligibilityReasonService {
 		);
 	}
 
-	private String normalizeAttributeValue(AccountAttributeEntity attribute, EligibilityReasonConditionValue value) {
+	private String normalizeAttributeValue(AccountAttributeEntity attribute, ReasonConditionValue value) {
 		Object scalar = extractScalarValue(value);
 		return switch (attribute.getAttributeType()) {
 			case BOOLEAN -> normalizeBooleanValue(attribute, scalar);
@@ -229,7 +229,7 @@ public class EligibilityReasonService {
 				+ attribute.getAttributeCode() + " must be a string");
 	}
 
-	private EligibilityReasonConditionValue toApiValue(AccountAttributeType type, String value) {
+	private ReasonConditionValue toApiValue(AccountAttributeType type, String value) {
 		return switch (type) {
 			case BOOLEAN -> new EligibilityReasonConditionScalarValue(Boolean.valueOf(value));
 			case DATE, TEXT -> new EligibilityReasonConditionScalarValue(value);
@@ -237,7 +237,7 @@ public class EligibilityReasonService {
 		};
 	}
 
-	private Object extractScalarValue(EligibilityReasonConditionValue value) {
+	private Object extractScalarValue(ReasonConditionValue value) {
 		if (value instanceof EligibilityReasonConditionScalarValue scalarValue) {
 			return scalarValue.getValue();
 		}

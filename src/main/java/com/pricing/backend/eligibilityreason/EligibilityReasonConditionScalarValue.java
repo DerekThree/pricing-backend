@@ -3,9 +3,9 @@ package com.pricing.backend.eligibilityreason;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-import com.pricing.backend.generated.model.EligibilityReasonConditionValue;
+import com.pricing.backend.generated.model.ReasonConditionValue;
 
-public final class EligibilityReasonConditionScalarValue implements EligibilityReasonConditionValue {
+public final class EligibilityReasonConditionScalarValue implements ReasonConditionValue {
 
 	private final Object value;
 
