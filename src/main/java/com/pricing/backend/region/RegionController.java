@@ -4,9 +4,9 @@ import java.util.List;
 
 import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.api.RegionsApi;
-import com.pricing.backend.generated.model.CoverageOptions;
 import com.pricing.backend.generated.model.RegionDetail;
 import com.pricing.backend.generated.model.RegionListItem;
+import com.pricing.backend.generated.model.RegionOptions;
 import com.pricing.backend.generated.model.RegionRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +35,7 @@ public class RegionController implements RegionsApi {
 	}
 
 	@Override
-	public ResponseEntity<CoverageOptions> getCoverageOptions() {
+	public ResponseEntity<RegionOptions> getRegionOptions() {
 		return ResponseEntity.ok(regionService.getOptions());
 	}
 

@@ -149,7 +149,7 @@ paths:
   /regions/options:
     get:
       tags: [Regions]
-      operationId: getCoverageOptions
+      operationId: getRegionOptions
       summary: Get available region options
       responses:
         "200":
@@ -157,7 +157,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CoverageOptions"
+                $ref: "#/components/schemas/RegionOptions"
         "500":
           $ref: "#/components/responses/Error"
         "503":
@@ -433,7 +433,7 @@ paths:
   /pricing-plans/options:
     get:
       tags: [Pricing Plans]
-      operationId: getProductRegionOptions
+      operationId: getPricingPlanOptions
       summary: Get available pricing plan options
       responses:
         "200":
@@ -441,7 +441,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProductRegionOptions"
+                $ref: "#/components/schemas/PricingPlanOptions"
         "500":
           $ref: "#/components/responses/Error"
         "503":
@@ -901,7 +901,7 @@ components:
           items:
             $ref: "#/components/schemas/Id"
         formOptions:
-          $ref: "#/components/schemas/CoverageOptions"
+          $ref: "#/components/schemas/RegionOptions"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
         updatedBy:
@@ -936,7 +936,7 @@ components:
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    CoverageOptions:
+    RegionOptions:
       type: object
       required:
         - states
@@ -1128,7 +1128,7 @@ components:
         regionId:
           $ref: "#/components/schemas/Id"
         formOptions:
-          $ref: "#/components/schemas/ProductRegionOptions"
+          $ref: "#/components/schemas/PricingPlanOptions"
         activeFrom:
           $ref: "#/components/schemas/Date"
         activeThrough:
@@ -1164,11 +1164,12 @@ components:
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    ProductRegionOptions:
+    PricingPlanOptions:
       type: object
       required:
         - products
         - regions
+        - fees
       properties:
         products:
           type: array
@@ -1178,6 +1179,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RegionOption"
+        fees:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeOption"
 
     AccountAttributeListItem:
       type: object
@@ -1363,6 +1368,25 @@ components:
           $ref: "#/components/schemas/RegionCode"
         name:
           $ref: "#/components/schemas/RegionName"
+
+    FeeOption:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - productTypes
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        code:
+          $ref: "#/components/schemas/FeeCode"
+        name:
+          $ref: "#/components/schemas/FeeName"
+        productTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductType"
 
     BranchCode:
       type: string

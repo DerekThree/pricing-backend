@@ -6,8 +6,8 @@ import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.api.PricingPlansApi;
 import com.pricing.backend.generated.model.PricingPlanDetail;
 import com.pricing.backend.generated.model.PricingPlanListItem;
+import com.pricing.backend.generated.model.PricingPlanOptions;
 import com.pricing.backend.generated.model.PricingPlanRequest;
-import com.pricing.backend.generated.model.ProductRegionOptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,7 +35,7 @@ public class PricingPlanController implements PricingPlansApi {
 	}
 
 	@Override
-	public ResponseEntity<ProductRegionOptions> getProductRegionOptions() {
+	public ResponseEntity<PricingPlanOptions> getPricingPlanOptions() {
 		return ResponseEntity.ok(pricingPlanService.getOptions());
 	}
 

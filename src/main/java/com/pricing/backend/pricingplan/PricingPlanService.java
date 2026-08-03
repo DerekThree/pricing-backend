@@ -4,10 +4,13 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.pricing.backend.fee.FeeEntity;
+import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.generated.model.FeeOption;
 import com.pricing.backend.generated.model.PricingPlanDetail;
 import com.pricing.backend.generated.model.PricingPlanListItem;
+import com.pricing.backend.generated.model.PricingPlanOptions;
 import com.pricing.backend.generated.model.PricingPlanRequest;
-import com.pricing.backend.generated.model.ProductRegionOptions;
 import com.pricing.backend.generated.model.ProductOption;
 import com.pricing.backend.generated.model.RegionOption;
 import com.pricing.backend.product.ProductEntity;
@@ -23,12 +26,14 @@ public class PricingPlanService {
 	private final PricingPlanRepository pricingPlanRepository;
 	private final ProductRepository productRepository;
 	private final RegionRepository regionRepository;
+	private final FeeRepository feeRepository;
 
 	public PricingPlanService(PricingPlanRepository pricingPlanRepository, ProductRepository productRepository,
-			RegionRepository regionRepository) {
+			RegionRepository regionRepository, FeeRepository feeRepository) {
 		this.pricingPlanRepository = pricingPlanRepository;
 		this.productRepository = productRepository;
 		this.regionRepository = regionRepository;
+		this.feeRepository = feeRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -44,8 +49,8 @@ public class PricingPlanService {
 	}
 
 	@Transactional(readOnly = true)
-	public ProductRegionOptions getOptions() {
-		return buildProductRegionOptions();
+	public PricingPlanOptions getOptions() {
+		return buildPricingPlanOptions();
 	}
 
 	@Transactional
@@ -75,9 +80,9 @@ public class PricingPlanService {
 	}
 
 	private void apply(PricingPlanEntity entity, PricingPlanRequest request) {
-		ProductEntity product = productRepository.findById(request.getProductId())
+		var product = productRepository.findById(request.getProductId())
 				.orElseThrow(() -> new IllegalArgumentException("Product with id " + request.getProductId() + " was not found"));
-		RegionEntity region = regionRepository.findById(request.getRegionId())
+		var region = regionRepository.findById(request.getRegionId())
 				.orElseThrow(() -> new IllegalArgumentException("Region with id " + request.getRegionId() + " was not found"));
 		if (request.getActiveFrom().isAfter(request.getActiveThrough())) {
 			throw new IllegalArgumentException("activeFrom must be on or before activeThrough");
@@ -106,19 +111,13 @@ public class PricingPlanService {
 	}
 
 	private PricingPlanDetail toDetail(PricingPlanEntity entity) {
-		ProductOption product = new ProductOption(
-				entity.getProduct().getId(),
-				entity.getProduct().getProductCode(),
-				entity.getProduct().getProductName(),
-				entity.getProduct().getProductType());
-		RegionOption region = new RegionOption(entity.getRegion().getId(), entity.getRegion().getRegionCode(), entity.getRegion().getRegionName());
 		return new PricingPlanDetail(
 				entity.getId(),
 				entity.getPlanCode(),
 				entity.getPlanName(),
-				product.getId(),
-				region.getId(),
-				new ProductRegionOptions(List.of(product), List.of(region)),
+				entity.getProduct().getId(),
+				entity.getRegion().getId(),
+				buildPricingPlanOptions(),
 				entity.getActiveFrom(),
 				entity.getActiveThrough(),
 				entity.getUpdatedOn(),
@@ -130,18 +129,43 @@ public class PricingPlanService {
 		return code + " - " + name;
 	}
 
-	private ProductRegionOptions buildProductRegionOptions() {
-		return new ProductRegionOptions(
+	private PricingPlanOptions buildPricingPlanOptions() {
+		return new PricingPlanOptions(
 				productRepository.findAllByOrderByProductCodeAsc().stream()
-						.map(product -> new ProductOption(
-								product.getId(),
-								product.getProductCode(),
-								product.getProductName(),
-								product.getProductType()))
+						.map(this::toProductOption)
 						.toList(),
 				regionRepository.findAllByOrderByRegionCodeAsc().stream()
-						.map(region -> new RegionOption(region.getId(), region.getRegionCode(), region.getRegionName()))
+						.map(this::toRegionOption)
+						.toList(),
+				feeRepository.findAllByOrderByFeeCodeAsc().stream()
+						.map(this::toFeeOption)
 						.toList()
+		);
+	}
+
+	private ProductOption toProductOption(ProductEntity product) {
+		return new ProductOption(
+				product.getId(),
+				product.getProductCode(),
+				product.getProductName(),
+				product.getProductType()
+		);
+	}
+
+	private RegionOption toRegionOption(RegionEntity region) {
+		return new RegionOption(
+				region.getId(), 
+				region.getRegionCode(), 
+				region.getRegionName()
+		);
+	}
+
+	private FeeOption toFeeOption(FeeEntity fee) {
+		return new FeeOption(
+				fee.getId(),
+				fee.getFeeCode(),
+				fee.getFeeName(),
+				fee.getProductTypes()
 		);
 	}
 }

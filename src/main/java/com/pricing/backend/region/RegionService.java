@@ -13,9 +13,9 @@ import com.pricing.backend.branch.BranchEntity;
 import com.pricing.backend.branch.BranchRepository;
 import com.pricing.backend.config.RecordInUseException;
 import com.pricing.backend.generated.model.BranchOption;
-import com.pricing.backend.generated.model.CoverageOptions;
 import com.pricing.backend.generated.model.RegionDetail;
 import com.pricing.backend.generated.model.RegionListItem;
+import com.pricing.backend.generated.model.RegionOptions;
 import com.pricing.backend.generated.model.RegionRequest;
 import com.pricing.backend.pricingplan.PricingPlanRepository;
 import org.springframework.stereotype.Service;
@@ -48,8 +48,8 @@ public class RegionService {
 	}
 
 	@Transactional(readOnly = true)
-	public CoverageOptions getOptions() {
-		return buildCoverageOptions();
+	public RegionOptions getOptions() {
+		return buildRegionOptions();
 	}
 
 	@Transactional
@@ -130,7 +130,7 @@ public class RegionService {
 				states,
 				zipCodes,
 				branches,
-				new CoverageOptions(states, zipCodes, branchOptions),
+				new RegionOptions(states, zipCodes, branchOptions),
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
 		);
@@ -148,13 +148,13 @@ public class RegionService {
 		return code + " - " + name;
 	}
 
-	private CoverageOptions buildCoverageOptions() {
+	private RegionOptions buildRegionOptions() {
 		List<RegionEntity> regions = regionRepository.findAllByOrderByRegionCodeAsc();
 		List<BranchEntity> branches = branchRepository.findAllByOrderByBranchCodeAsc();
 		Set<String> usedStates = regions.stream().flatMap(region -> region.getStates().stream()).collect(Collectors.toSet());
 		Set<String> usedZipCodes = regions.stream().flatMap(region -> region.getZipCodes().stream()).collect(Collectors.toSet());
 		Set<Long> usedBranchIds = regions.stream().flatMap(region -> region.getBranches().stream()).collect(Collectors.toSet());
-		return new CoverageOptions(
+		return new RegionOptions(
 				branches.stream().map(BranchEntity::getState).filter(state -> !usedStates.contains(state)).distinct().sorted().toList(),
 				branches.stream().map(BranchEntity::getZipCode).filter(zipCode -> !usedZipCodes.contains(zipCode)).distinct().sorted().toList(),
 				branches.stream().filter(branch -> !usedBranchIds.contains(branch.getId()))
