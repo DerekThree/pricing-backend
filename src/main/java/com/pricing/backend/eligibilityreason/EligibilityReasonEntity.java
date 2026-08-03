@@ -31,7 +31,7 @@ public class EligibilityReasonEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "reason_code", nullable = false, unique = true, length = 8)
+	@Column(name = "reason_code", nullable = false, unique = true, length = 25)
 	private String reasonCode;
 
 	@Column(name = "reason_name", nullable = false, length = 100)

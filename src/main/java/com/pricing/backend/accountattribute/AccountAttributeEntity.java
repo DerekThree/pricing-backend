@@ -30,7 +30,7 @@ public class AccountAttributeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "attribute_code", nullable = false, unique = true, length = 8)
+	@Column(name = "attribute_code", nullable = false, unique = true, length = 25)
 	private String attributeCode;
 
 	@Column(name = "attribute_name", nullable = false, length = 100)

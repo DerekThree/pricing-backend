@@ -38,7 +38,7 @@ public class FeeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "fee_code", nullable = false, unique = true, length = 8)
+	@Column(name = "fee_code", nullable = false, unique = true, length = 25)
 	private String feeCode;
 
 	@Column(name = "fee_name", nullable = false, length = 100)

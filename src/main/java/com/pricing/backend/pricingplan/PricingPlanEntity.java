@@ -33,7 +33,7 @@ public class PricingPlanEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "plan_code", nullable = false, unique = true, length = 8)
+	@Column(name = "plan_code", nullable = false, unique = true, length = 25)
 	private String planCode;
 
 	@Column(name = "plan_name", nullable = false, length = 100)

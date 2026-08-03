@@ -1366,27 +1366,27 @@ components:
 
     BranchCode:
       type: string
-      pattern: "^[A-Z0-9]{8}$"
+      pattern: "^[A-Z0-9]{1,25}$"
       example: "10000001"
 
     RegionCode:
       type: string
-      pattern: "^[A-Z0-9]{8}$"
+      pattern: "^[A-Z0-9]{1,25}$"
       example: MIDWEST1
 
     ProductCode:
       type: string
-      pattern: "^[A-Z0-9]{8}$"
+      pattern: "^[A-Z0-9]{1,25}$"
       example: 1FC00012
 
     FeeCode:
       type: string
-      pattern: "^[A-Z0-9]{8}$"
+      pattern: "^[A-Z0-9]{1,25}$"
       example: FEE00001
 
     PricingPlanCode:
       type: string
-      pattern: "^[A-Z0-9]{8}$"
+      pattern: "^[A-Z0-9]{1,25}$"
       example: DC11R112
 
     BranchName:
@@ -1421,7 +1421,7 @@ components:
 
     AccountAttributeCode:
       type: string
-      pattern: "^[A-Z0-9]{8}$"
+      pattern: "^[A-Z0-9]{1,25}$"
       example: ATTR0001
 
     AccountAttributeName:
@@ -1432,7 +1432,7 @@ components:
 
     ReasonCode:
       type: string
-      pattern: "^[A-Z0-9]{8}$"
+      pattern: "^[A-Z0-9]{1,25}$"
       example: ELIG0001
 
     ReasonName:
@@ -1449,37 +1449,37 @@ components:
 
     BranchCodeAndName:
       type: string
-      pattern: "^[0-9]{8} - .{1,100}$"
+      pattern: "^[A-Z0-9]{1,25} - .{1,100}$"
       example: "10000001 - Chicago 104th St."
 
     RegionCodeAndName:
       type: string
-      pattern: "^[0-9]{8} - .{1,100}$"
+      pattern: "^[A-Z0-9]{1,25} - .{1,100}$"
       example: "10000001 - Midwest"
 
     ProductCodeAndName:
       type: string
-      pattern: "^[0-9]{8} - .{1,100}$"
+      pattern: "^[A-Z0-9]{1,25} - .{1,100}$"
       example: "10000001 - Free Checking"
 
     FeeCodeAndName:
       type: string
-      pattern: "^[A-Z0-9]{8} - .{1,100}$"
+      pattern: "^[A-Z0-9]{1,25} - .{1,100}$"
       example: "FEE00001 - Monthly Maintenance Fee"
 
     PricingPlanCodeAndName:
       type: string
-      pattern: "^[0-9]{8} - .{1,100}$"
+      pattern: "^[A-Z0-9]{1,25} - .{1,100}$"
       example: "10000001 - Free Checking Midwest"
 
     AccountAttributeCodeAndName:
       type: string
-      pattern: "^[A-Z0-9]{8} - .{1,100}$"
+      pattern: "^[A-Z0-9]{1,25} - .{1,100}$"
       example: "ATTR0001 - Account Open Date"
 
     ReasonCodeAndName:
       type: string
-      pattern: "^[A-Z0-9]{8} - .{1,100}$"
+      pattern: "^[A-Z0-9]{1,25} - .{1,100}$"
       example: "ELIG0001 - Min. Balance"
 
     State:
@@ -1496,6 +1496,7 @@ components:
       type: string
       enum:
         - DEPOSIT
+        - CD
         - CREDIT
       example: DEPOSIT
 

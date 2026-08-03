@@ -30,7 +30,7 @@ public class ProductEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "product_code", nullable = false, unique = true, length = 8)
+	@Column(name = "product_code", nullable = false, unique = true, length = 25)
 	private String productCode;
 
 	@Column(name = "product_name", nullable = false, length = 100)
