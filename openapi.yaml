@@ -1025,7 +1025,7 @@ components:
       required:
         - id
         - fee
-        - productType
+        - productTypes
         - updatedOn
         - updatedBy
       properties:
@@ -1033,8 +1033,10 @@ components:
           $ref: "#/components/schemas/Id"
         fee:
           $ref: "#/components/schemas/FeeCodeAndName"
-        productType:
-          $ref: "#/components/schemas/ProductType"
+        productTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductType"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
         updatedBy:
@@ -1058,15 +1060,17 @@ components:
       required:
         - feeCode
         - feeName
-        - productType
+        - productTypes
         - updatedBy
       properties:
         feeCode:
           $ref: "#/components/schemas/FeeCode"
         feeName:
           $ref: "#/components/schemas/FeeName"
-        productType:
-          $ref: "#/components/schemas/ProductType"
+        productTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductType"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 

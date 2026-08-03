@@ -52,7 +52,7 @@ class FeeControllerTests {
 		FeeListItem secondFee = new FeeListItem(
 				2L,
 				"FEE00002 - Overdraft Fee",
-				ProductType.DEPOSIT,
+				List.of(ProductType.DEPOSIT),
 				OffsetDateTime.parse("2026-07-31T09:00:00+08:00"),
 				"John Smith"
 		);
@@ -138,7 +138,7 @@ class FeeControllerTests {
 		return new FeeDetail(
 				"FEE00001",
 				"Monthly Maintenance Fee",
-				ProductType.DEPOSIT,
+				List.of(ProductType.DEPOSIT),
 				"Jane Smith",
 				1L,
 				OffsetDateTime.parse("2026-07-31T09:00:00+08:00")
@@ -149,7 +149,7 @@ class FeeControllerTests {
 		return new FeeListItem(
 				1L,
 				"FEE00001 - Monthly Maintenance Fee",
-				ProductType.DEPOSIT,
+				List.of(ProductType.DEPOSIT),
 				OffsetDateTime.parse("2026-07-31T09:00:00+08:00"),
 				"Jane Smith"
 		);
@@ -159,7 +159,7 @@ class FeeControllerTests {
 		return new FeeRequest(
 				fee.getFeeCode(),
 				fee.getFeeName(),
-				fee.getProductType(),
+				fee.getProductTypes(),
 				fee.getUpdatedBy()
 		);
 	}

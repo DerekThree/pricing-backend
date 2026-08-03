@@ -1,6 +1,7 @@
 package com.pricing.backend.fee;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,7 +61,7 @@ public class FeeService {
 	private void apply(FeeEntity entity, FeeRequest request) {
 		entity.setFeeCode(request.getFeeCode());
 		entity.setFeeName(request.getFeeName());
-		entity.setProductType(request.getProductType());
+		entity.setProductTypes(new ArrayList<>(request.getProductTypes()));
 		entity.setUpdatedBy(request.getUpdatedBy());
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
@@ -69,7 +70,7 @@ public class FeeService {
 		return new FeeListItem(
 				entity.getId(),
 				formatCodeAndName(entity.getFeeCode(), entity.getFeeName()),
-				entity.getProductType(),
+				new ArrayList<>(entity.getProductTypes()),
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
 		);
@@ -79,7 +80,7 @@ public class FeeService {
 		return new FeeDetail(
 				entity.getFeeCode(),
 				entity.getFeeName(),
-				entity.getProductType(),
+				new ArrayList<>(entity.getProductTypes()),
 				entity.getUpdatedBy(),
 				entity.getId(),
 				entity.getUpdatedOn()

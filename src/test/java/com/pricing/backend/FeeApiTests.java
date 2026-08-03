@@ -41,19 +41,19 @@ class FeeApiTests {
 								{
 								  "feeCode": "FEE00001",
 								  "feeName": "Monthly Maintenance Fee",
-								  "productType": "DEPOSIT",
+								  "productTypes": ["DEPOSIT"],
 								  "updatedBy": "Derek Ochal"
 								}
 								"""))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.feeCode").value("FEE00001"))
 				.andExpect(jsonPath("$.feeName").value("Monthly Maintenance Fee"))
-				.andExpect(jsonPath("$.productType").value("DEPOSIT"));
+				.andExpect(jsonPath("$.productTypes[0]").value("DEPOSIT"));
 
 		mockMvc.perform(get("/fees"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$", hasSize(1)))
 				.andExpect(jsonPath("$[0].fee").value("FEE00001 - Monthly Maintenance Fee"))
-				.andExpect(jsonPath("$[0].productType").value("DEPOSIT"));
+				.andExpect(jsonPath("$[0].productTypes[0]").value("DEPOSIT"));
 	}
 }
