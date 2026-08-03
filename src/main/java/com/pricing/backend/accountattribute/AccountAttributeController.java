@@ -4,9 +4,9 @@ import java.util.List;
 
 import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.api.AccountAttributesApi;
-import com.pricing.backend.generated.model.AccountAttributeDetail;
-import com.pricing.backend.generated.model.AccountAttributeListItem;
-import com.pricing.backend.generated.model.AccountAttributeRequest;
+import com.pricing.backend.generated.model.AttributeDetail;
+import com.pricing.backend.generated.model.AttributeListItem;
+import com.pricing.backend.generated.model.AttributeRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,33 +21,33 @@ public class AccountAttributeController implements AccountAttributesApi {
 	}
 
 	@Override
-	public ResponseEntity<List<AccountAttributeListItem>> listAccountAttributes() {
+	public ResponseEntity<List<AttributeListItem>> listAttributes() {
 		return ResponseEntity.ok(accountAttributeService.list());
 	}
 
 	@Override
-	public ResponseEntity<AccountAttributeDetail> getAccountAttribute(Long id) {
-		AccountAttributeDetail accountAttribute = accountAttributeService.get(id)
+	public ResponseEntity<AttributeDetail> getAttribute(Long id) {
+		AttributeDetail accountAttribute = accountAttributeService.get(id)
 				.orElseThrow(() -> new RecordNotFoundException("Account attribute", id));
 
 		return ResponseEntity.ok(accountAttribute);
 	}
 
 	@Override
-	public ResponseEntity<AccountAttributeDetail> createAccountAttribute(AccountAttributeRequest accountAttributeRequest) {
-		return ResponseEntity.status(HttpStatus.CREATED).body(accountAttributeService.create(accountAttributeRequest));
+	public ResponseEntity<AttributeDetail> createAttribute(AttributeRequest attributeRequest) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(accountAttributeService.create(attributeRequest));
 	}
 
 	@Override
-	public ResponseEntity<AccountAttributeDetail> updateAccountAttribute(Long id, AccountAttributeRequest accountAttributeRequest) {
-		AccountAttributeDetail accountAttribute = accountAttributeService.update(id, accountAttributeRequest)
+	public ResponseEntity<AttributeDetail> updateAttribute(Long id, AttributeRequest attributeRequest) {
+		AttributeDetail accountAttribute = accountAttributeService.update(id, attributeRequest)
 				.orElseThrow(() -> new RecordNotFoundException("Account attribute", id));
 
 		return ResponseEntity.ok(accountAttribute);
 	}
 
 	@Override
-	public ResponseEntity<Void> deleteAccountAttribute(Long id) {
+	public ResponseEntity<Void> deleteAttribute(Long id) {
 		if (accountAttributeService.delete(id)) {
 			return ResponseEntity.noContent().build();
 		}

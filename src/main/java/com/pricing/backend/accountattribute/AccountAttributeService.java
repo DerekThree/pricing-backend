@@ -4,9 +4,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.pricing.backend.generated.model.AccountAttributeDetail;
-import com.pricing.backend.generated.model.AccountAttributeListItem;
-import com.pricing.backend.generated.model.AccountAttributeRequest;
+import com.pricing.backend.generated.model.AttributeDetail;
+import com.pricing.backend.generated.model.AttributeListItem;
+import com.pricing.backend.generated.model.AttributeRequest;
+import com.pricing.backend.generated.model.AttributeType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,26 +21,26 @@ public class AccountAttributeService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<AccountAttributeListItem> list() {
+	public List<AttributeListItem> list() {
 		return accountAttributeRepository.findAllByOrderByAttributeCodeAsc().stream()
 				.map(this::toListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
-	public Optional<AccountAttributeDetail> get(Long id) {
+	public Optional<AttributeDetail> get(Long id) {
 		return accountAttributeRepository.findById(id).map(this::toDetail);
 	}
 
 	@Transactional
-	public AccountAttributeDetail create(AccountAttributeRequest request) {
+	public AttributeDetail create(AttributeRequest request) {
 		AccountAttributeEntity entity = new AccountAttributeEntity();
 		apply(entity, request);
 		return toDetail(accountAttributeRepository.save(entity));
 	}
 
 	@Transactional
-	public Optional<AccountAttributeDetail> update(Long id, AccountAttributeRequest request) {
+	public Optional<AttributeDetail> update(Long id, AttributeRequest request) {
 		return accountAttributeRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
@@ -57,7 +58,7 @@ public class AccountAttributeService {
 		return true;
 	}
 
-	private void apply(AccountAttributeEntity entity, AccountAttributeRequest request) {
+	private void apply(AccountAttributeEntity entity, AttributeRequest request) {
 		entity.setAttributeCode(request.getAttributeCode());
 		entity.setAttributeName(request.getAttributeName());
 		entity.setAttributeType(request.getAttributeType());
@@ -65,8 +66,8 @@ public class AccountAttributeService {
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
 
-	private AccountAttributeListItem toListItem(AccountAttributeEntity entity) {
-		return new AccountAttributeListItem(
+	private AttributeListItem toListItem(AccountAttributeEntity entity) {
+		return new AttributeListItem(
 				entity.getId(),
 				formatCodeAndName(entity.getAttributeCode(), entity.getAttributeName()),
 				entity.getAttributeType(),
@@ -75,8 +76,8 @@ public class AccountAttributeService {
 		);
 	}
 
-	private AccountAttributeDetail toDetail(AccountAttributeEntity entity) {
-		return new AccountAttributeDetail(
+	private AttributeDetail toDetail(AccountAttributeEntity entity) {
+		return new AttributeDetail(
 				entity.getAttributeCode(),
 				entity.getAttributeName(),
 				entity.getAttributeType(),

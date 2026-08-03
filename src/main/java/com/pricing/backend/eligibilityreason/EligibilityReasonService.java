@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
-import com.pricing.backend.generated.model.AccountAttributeType;
-import com.pricing.backend.generated.model.AccountAttributeOption;
+import com.pricing.backend.generated.model.AttributeOption;
+import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.ReasonCondition;
 import com.pricing.backend.generated.model.ReasonConditionValue;
 import com.pricing.backend.generated.model.ReasonDetail;
@@ -154,7 +154,7 @@ public class EligibilityReasonService {
 	private ReasonOptions buildOptions() {
 		return new ReasonOptions(
 				accountAttributeRepository.findAllByOrderByAttributeCodeAsc().stream()
-						.map(attribute -> new AccountAttributeOption(
+						.map(attribute -> new AttributeOption(
 								attribute.getId(),
 								attribute.getAttributeCode(),
 								attribute.getAttributeName(),
@@ -229,7 +229,7 @@ public class EligibilityReasonService {
 				+ attribute.getAttributeCode() + " must be a string");
 	}
 
-	private ReasonConditionValue toApiValue(AccountAttributeType type, String value) {
+	private ReasonConditionValue toApiValue(AttributeType type, String value) {
 		return switch (type) {
 			case BOOLEAN -> new EligibilityReasonConditionScalarValue(Boolean.valueOf(value));
 			case DATE, TEXT -> new EligibilityReasonConditionScalarValue(value);

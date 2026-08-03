@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
-import com.pricing.backend.generated.model.AccountAttributeType;
+import com.pricing.backend.generated.model.AttributeType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,8 +42,8 @@ class EligibilityReasonApiTests {
 
 	@Test
 	void createsEligibilityReasonFromJsonAndListsIt() throws Exception {
-		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AccountAttributeType.DECIMAL);
-		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AccountAttributeType.BOOLEAN);
+		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AttributeType.DECIMAL);
+		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AttributeType.BOOLEAN);
 
 		mockMvc.perform(post("/eligibility-reasons")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -82,8 +82,8 @@ class EligibilityReasonApiTests {
 
 	@Test
 	void returnsEligibilityReasonOptions() throws Exception {
-		saveAttribute("ATTR0001", "Min Amount", AccountAttributeType.INTEGER);
-		saveAttribute("ATTR0002", "Active", AccountAttributeType.BOOLEAN);
+		saveAttribute("ATTR0001", "Min Amount", AttributeType.INTEGER);
+		saveAttribute("ATTR0002", "Active", AttributeType.BOOLEAN);
 
 		mockMvc.perform(get("/eligibility-reasons/options"))
 				.andExpect(status().isOk())
@@ -94,7 +94,7 @@ class EligibilityReasonApiTests {
 				.andExpect(jsonPath("$.attributes[1].type").value("BOOLEAN"));
 	}
 
-	private AccountAttributeEntity saveAttribute(String code, String name, AccountAttributeType type) {
+	private AccountAttributeEntity saveAttribute(String code, String name, AttributeType type) {
 		return accountAttributeRepository.save(new AccountAttributeEntity(
 				null,
 				code,

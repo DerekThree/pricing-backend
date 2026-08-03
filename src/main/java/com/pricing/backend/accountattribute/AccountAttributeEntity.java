@@ -2,7 +2,7 @@ package com.pricing.backend.accountattribute;
 
 import java.time.OffsetDateTime;
 
-import com.pricing.backend.generated.model.AccountAttributeType;
+import com.pricing.backend.generated.model.AttributeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -38,7 +38,7 @@ public class AccountAttributeEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "attribute_type", nullable = false, length = 20)
-	private AccountAttributeType attributeType;
+	private AttributeType attributeType;
 
 	@Column(name = "updated_on", nullable = false)
 	private OffsetDateTime updatedOn;

@@ -501,7 +501,7 @@ paths:
   /account-attributes:
     get:
       tags: [Account Attributes]
-      operationId: listAccountAttributes
+      operationId: listAttributes
       summary: List all account attributes
       responses:
         "200":
@@ -511,24 +511,24 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AccountAttributeListItem"
+                  $ref: "#/components/schemas/AttributeListItem"
         "500":
           $ref: "#/components/responses/Error"
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
     post:
       tags: [Account Attributes]
-      operationId: createAccountAttribute
+      operationId: createAttribute
       summary: Create an account attribute
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AccountAttributeRequest"
+              $ref: "#/components/schemas/AttributeRequest"
       responses:
         "201":
-          $ref: "#/components/responses/AccountAttributeDetail"
+          $ref: "#/components/responses/AttributeDetail"
         "400":
           $ref: "#/components/responses/Error"
         "500":
@@ -541,11 +541,11 @@ paths:
       - $ref: "#/components/parameters/ResourceId"
     get:
       tags: [Account Attributes]
-      operationId: getAccountAttribute
+      operationId: getAttribute
       summary: Get an account attribute by ID
       responses:
         "200":
-          $ref: "#/components/responses/AccountAttributeDetail"
+          $ref: "#/components/responses/AttributeDetail"
         "404":
           $ref: "#/components/responses/Error"
         "500":
@@ -554,17 +554,17 @@ paths:
           $ref: "#/components/responses/SyntheticServiceUnavailable"
     put:
       tags: [Account Attributes]
-      operationId: updateAccountAttribute
+      operationId: updateAttribute
       summary: Replace an account attribute
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AccountAttributeRequest"
+              $ref: "#/components/schemas/AttributeRequest"
       responses:
         "200":
-          $ref: "#/components/responses/AccountAttributeDetail"
+          $ref: "#/components/responses/AttributeDetail"
         "400":
           $ref: "#/components/responses/Error"
         "404":
@@ -575,7 +575,7 @@ paths:
           $ref: "#/components/responses/SyntheticServiceUnavailable"
     delete:
       tags: [Account Attributes]
-      operationId: deleteAccountAttribute
+      operationId: deleteAttribute
       summary: Delete an account attribute
       responses:
         "204":
@@ -736,12 +736,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/PricingPlanDetail"
-    AccountAttributeDetail:
+    AttributeDetail:
       description: Account attribute response
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/AccountAttributeDetail"
+            $ref: "#/components/schemas/AttributeDetail"
     ReasonDetail:
       description: Eligibility reason response
       content:
@@ -1184,7 +1184,7 @@ components:
           items:
             $ref: "#/components/schemas/FeeOption"
 
-    AccountAttributeListItem:
+    AttributeListItem:
       type: object
       required:
         - id
@@ -1196,17 +1196,17 @@ components:
         id:
           $ref: "#/components/schemas/Id"
         attribute:
-          $ref: "#/components/schemas/AccountAttributeCodeAndName"
+          $ref: "#/components/schemas/AttributeCodeAndName"
         type:
-          $ref: "#/components/schemas/AccountAttributeType"
+          $ref: "#/components/schemas/AttributeType"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    AccountAttributeDetail:
+    AttributeDetail:
       allOf:
-        - $ref: "#/components/schemas/AccountAttributeRequest"
+        - $ref: "#/components/schemas/AttributeRequest"
         - type: object
           required:
             - id
@@ -1217,7 +1217,7 @@ components:
             updatedOn:
               $ref: "#/components/schemas/DateTime"
 
-    AccountAttributeRequest:
+    AttributeRequest:
       type: object
       required:
         - attributeCode
@@ -1226,11 +1226,11 @@ components:
         - updatedBy
       properties:
         attributeCode:
-          $ref: "#/components/schemas/AccountAttributeCode"
+          $ref: "#/components/schemas/AttributeCode"
         attributeName:
-          $ref: "#/components/schemas/AccountAttributeName"
+          $ref: "#/components/schemas/AttributeName"
         attributeType:
-          $ref: "#/components/schemas/AccountAttributeType"
+          $ref: "#/components/schemas/AttributeType"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
@@ -1299,7 +1299,7 @@ components:
         attributes:
           type: array
           items:
-            $ref: "#/components/schemas/AccountAttributeOption"
+            $ref: "#/components/schemas/AttributeOption"
 
     ReasonCondition:
       type: object
@@ -1321,7 +1321,7 @@ components:
         - type: number
         - type: boolean
 
-    AccountAttributeOption:
+    AttributeOption:
       type: object
       required:
         - id
@@ -1332,11 +1332,11 @@ components:
         id:
           $ref: "#/components/schemas/Id"
         code:
-          $ref: "#/components/schemas/AccountAttributeCode"
+          $ref: "#/components/schemas/AttributeCode"
         name:
-          $ref: "#/components/schemas/AccountAttributeName"
+          $ref: "#/components/schemas/AttributeName"
         type:
-          $ref: "#/components/schemas/AccountAttributeType"
+          $ref: "#/components/schemas/AttributeType"
 
     ProductOption:
       type: object
@@ -1443,12 +1443,12 @@ components:
       maxLength: 100
       example: Free Checking Midwest
 
-    AccountAttributeCode:
+    AttributeCode:
       type: string
       pattern: "^[A-Z0-9]{1,25}$"
       example: ATTR0001
 
-    AccountAttributeName:
+    AttributeName:
       type: string
       minLength: 1
       maxLength: 100
@@ -1496,7 +1496,7 @@ components:
       pattern: "^[A-Z0-9]{1,25} - .{1,100}$"
       example: "10000001 - Free Checking Midwest"
 
-    AccountAttributeCodeAndName:
+    AttributeCodeAndName:
       type: string
       pattern: "^[A-Z0-9]{1,25} - .{1,100}$"
       example: "ATTR0001 - Account Open Date"
@@ -1524,7 +1524,7 @@ components:
         - CREDIT
       example: DEPOSIT
 
-    AccountAttributeType:
+    AttributeType:
       type: string
       enum:
         - TEXT

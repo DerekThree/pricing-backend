@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
-import com.pricing.backend.generated.model.AccountAttributeType;
+import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.ReasonCondition;
 import com.pricing.backend.generated.model.ReasonDetail;
 import com.pricing.backend.generated.model.ReasonOperator;
@@ -38,8 +38,8 @@ class EligibilityReasonServiceTests {
 
 	@Test
 	void createsEligibilityReason() {
-		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AccountAttributeType.DECIMAL);
-		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AccountAttributeType.BOOLEAN);
+		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AttributeType.DECIMAL);
+		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AttributeType.BOOLEAN);
 		ReasonRequest request = new ReasonRequest(
 				"ELIG0001",
 				"Min. Balance",
@@ -63,16 +63,16 @@ class EligibilityReasonServiceTests {
 		assertThat(createdEligibilityReason.getConditions()).hasSize(2);
 		assertThat(createdEligibilityReason.getFormOptions().getAttributes()).hasSize(2);
 		assertThat(createdEligibilityReason.getFormOptions().getAttributes().getFirst().getType())
-				.isEqualTo(AccountAttributeType.DECIMAL);
+				.isEqualTo(AttributeType.DECIMAL);
 		assertThat(createdEligibilityReason.getFormOptions().getAttributes().get(1).getType())
-				.isEqualTo(AccountAttributeType.BOOLEAN);
+				.isEqualTo(AttributeType.BOOLEAN);
 		assertThat(eligibilityReasonRepository.findById(createdEligibilityReason.getId())).isPresent();
 	}
 
 	@Test
 	void updatesEligibilityReasonAndReplacesConditions() {
-		AccountAttributeEntity openDate = saveAttribute("ATTR0001", "Open Date", AccountAttributeType.DATE);
-		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AccountAttributeType.BOOLEAN);
+		AccountAttributeEntity openDate = saveAttribute("ATTR0001", "Open Date", AttributeType.DATE);
+		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AttributeType.BOOLEAN);
 		ReasonDetail createdEligibilityReason = eligibilityReasonService.create(
 				new ReasonRequest(
 						"ELIG0001",
@@ -105,7 +105,7 @@ class EligibilityReasonServiceTests {
 
 	@Test
 	void deletesStoredEligibilityReason() {
-		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AccountAttributeType.INTEGER);
+		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AttributeType.INTEGER);
 		ReasonDetail createdEligibilityReason = eligibilityReasonService.create(
 				new ReasonRequest(
 						"ELIG0001",
@@ -123,7 +123,7 @@ class EligibilityReasonServiceTests {
 		assertThat(eligibilityReasonRepository.findById(createdEligibilityReason.getId())).isEmpty();
 	}
 
-	private AccountAttributeEntity saveAttribute(String code, String name, AccountAttributeType type) {
+	private AccountAttributeEntity saveAttribute(String code, String name, AttributeType type) {
 		return accountAttributeRepository.save(new AccountAttributeEntity(
 				null,
 				code,
