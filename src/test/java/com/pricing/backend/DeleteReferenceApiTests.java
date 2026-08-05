@@ -2,8 +2,7 @@ package com.pricing.backend;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.List;
 
 import com.pricing.backend.branch.BranchEntity;
 import com.pricing.backend.branch.BranchRepository;
@@ -64,9 +63,9 @@ class DeleteReferenceApiTests {
 		RegionEntity region = regionRepository.save(RegionEntity.builder()
 				.regionCode("REG00001")
 				.regionName("Midwest")
-				.states(new LinkedHashSet<>())
-				.zipCodes(new LinkedHashSet<>())
-				.branches(new LinkedHashSet<>())
+				.states(List.of())
+				.zipCodes(List.of())
+				.branches(List.of())
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
@@ -99,9 +98,9 @@ class DeleteReferenceApiTests {
 		RegionEntity region = regionRepository.save(RegionEntity.builder()
 				.regionCode("REG00001")
 				.regionName("Midwest")
-				.states(new LinkedHashSet<>())
-				.zipCodes(new LinkedHashSet<>())
-				.branches(new LinkedHashSet<>())
+				.states(List.of())
+				.zipCodes(List.of())
+				.branches(List.of())
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
@@ -135,9 +134,9 @@ class DeleteReferenceApiTests {
 		regionRepository.save(RegionEntity.builder()
 				.regionCode("REG00001")
 				.regionName("Midwest")
-				.states(new LinkedHashSet<>())
-				.zipCodes(new LinkedHashSet<>())
-				.branches(new LinkedHashSet<>(Set.of(branch.getId())))
+				.states(List.of())
+				.zipCodes(List.of())
+				.branches(List.of(branch.getId()))
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());

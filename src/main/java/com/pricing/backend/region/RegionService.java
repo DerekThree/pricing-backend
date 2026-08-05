@@ -87,9 +87,9 @@ public class RegionService {
 		validateBranchesExist(request.getBranches());
 		entity.setRegionCode(request.getRegionCode());
 		entity.setRegionName(request.getRegionName());
-		entity.setStates(new LinkedHashSet<>(request.getStates()));
-		entity.setZipCodes(new LinkedHashSet<>(request.getZipCodes()));
-		entity.setBranches(new LinkedHashSet<>(request.getBranches()));
+		entity.setStates(request.getStates());
+		entity.setZipCodes(request.getZipCodes());
+		entity.setBranches(request.getBranches());
 		entity.setUpdatedBy(request.getUpdatedBy());
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
@@ -100,11 +100,10 @@ public class RegionService {
 		return new RegionListItem(
 				entity.getId(),
 				formatCodeAndName(entity.getRegionCode(), entity.getRegionName()),
-				List.copyOf(entity.getStates()),
-				List.copyOf(entity.getZipCodes()),
+				entity.getStates(),
+				entity.getZipCodes(),
 				entity.getBranches().stream()
 						.map(branchesById::get)
-						.filter(branch -> branch != null)
 						.map(BranchEntity::getBranchCode)
 						.toList(),
 				entity.getUpdatedOn(),
@@ -115,19 +114,16 @@ public class RegionService {
 	private RegionDetail toDetail(RegionEntity entity) {
 		Map<Long, BranchEntity> branchesById = branchRepository.findAllById(entity.getBranches()).stream()
 				.collect(Collectors.toMap(BranchEntity::getId, Function.identity()));
-		List<String> states = List.copyOf(entity.getStates());
-		List<String> zipCodes = List.copyOf(entity.getZipCodes());
 		List<BranchOption> branchOptions = entity.getBranches().stream()
 				.map(branchesById::get)
-				.filter(branch -> branch != null)
 				.map(branch -> new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName()))
 				.toList();
 		return new RegionDetail(
 				entity.getId(),
 				entity.getRegionCode(),
 				entity.getRegionName(),
-				states,
-				zipCodes,
+				entity.getStates(),
+				entity.getZipCodes(),
 				branchOptions,
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()

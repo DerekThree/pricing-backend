@@ -1,7 +1,7 @@
 package com.pricing.backend;
 
 import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
+import java.util.List;
 
 import com.pricing.backend.generated.model.ProductType;
 import com.pricing.backend.pricingplan.PricingPlanRepository;
@@ -56,9 +56,9 @@ class PricingPlanApiTests {
 		RegionEntity region = regionRepository.save(RegionEntity.builder()
 				.regionCode("REG00001")
 				.regionName("Midwest")
-				.states(new LinkedHashSet<>())
-				.zipCodes(new LinkedHashSet<>())
-				.branches(new LinkedHashSet<>())
+				.states(List.of())
+				.zipCodes(List.of())
+				.branches(List.of())
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());

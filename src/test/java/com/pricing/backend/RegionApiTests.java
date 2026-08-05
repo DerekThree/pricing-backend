@@ -2,8 +2,6 @@ package com.pricing.backend;
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 import com.pricing.backend.branch.BranchEntity;
 import com.pricing.backend.branch.BranchRepository;
@@ -67,18 +65,18 @@ class RegionApiTests {
 		RegionEntity midwest = regionRepository.save(RegionEntity.builder()
 				.regionCode("MIDWEST1")
 				.regionName("Midwest")
-				.states(new LinkedHashSet<>(List.of("IL", "IN", "MI", "OH", "WI")))
-				.zipCodes(new LinkedHashSet<>(List.of("60459", "60601", "46204", "48201", "53202")))
-				.branches(new LinkedHashSet<>(Set.of(firstBranch.getId())))
+				.states(List.of("IL", "IN", "MI", "OH", "WI"))
+				.zipCodes(List.of("60459", "60601", "46204", "48201", "53202"))
+				.branches(List.of(firstBranch.getId()))
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:30:00+08:00"))
 				.build());
 		regionRepository.save(RegionEntity.builder()
 				.regionCode("SOUTH001")
 				.regionName("South")
-				.states(new LinkedHashSet<>(List.of("TX", "FL", "GA")))
-				.zipCodes(new LinkedHashSet<>(List.of("78759", "33101", "30301")))
-				.branches(new LinkedHashSet<>(Set.of(secondBranch.getId())))
+				.states(List.of("TX", "FL", "GA"))
+				.zipCodes(List.of("78759", "33101", "30301"))
+				.branches(List.of(secondBranch.getId()))
 				.updatedBy("John Smith")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:30:00+08:00"))
 				.build());
@@ -117,9 +115,9 @@ class RegionApiTests {
 		regionRepository.save(RegionEntity.builder()
 				.regionCode("MIDWEST1")
 				.regionName("Midwest")
-				.states(new LinkedHashSet<>(List.of("IL")))
-				.zipCodes(new LinkedHashSet<>(List.of("60459")))
-				.branches(new LinkedHashSet<>(Set.of(firstBranch.getId())))
+				.states(List.of("IL"))
+				.zipCodes(List.of("60459"))
+				.branches(List.of(firstBranch.getId()))
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:30:00+08:00"))
 				.build());

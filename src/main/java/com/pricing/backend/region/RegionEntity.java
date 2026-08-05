@@ -1,8 +1,8 @@
 package com.pricing.backend.region;
 
 import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -46,21 +46,21 @@ public class RegionEntity {
 	@Column(name = "state_code", nullable = false, length = 2)
 	@OrderBy("value asc")
 	@Default
-	private Set<String> states = new LinkedHashSet<>();
+	private List<String> states = new ArrayList<>();
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "region_zip_codes", joinColumns = @JoinColumn(name = "region_id"))
 	@Column(name = "zip_code", nullable = false, length = 5)
 	@OrderBy("value asc")
 	@Default
-	private Set<String> zipCodes = new LinkedHashSet<>();
+	private List<String> zipCodes = new ArrayList<>();
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "region_branches", joinColumns = @JoinColumn(name = "region_id"))
 	@Column(name = "branch_id", nullable = false)
 	@OrderBy("value asc")
 	@Default
-	private Set<Long> branches = new LinkedHashSet<>();
+	private List<Long> branches = new ArrayList<>();
 
 	@Column(name = "updated_on", nullable = false)
 	private OffsetDateTime updatedOn;
