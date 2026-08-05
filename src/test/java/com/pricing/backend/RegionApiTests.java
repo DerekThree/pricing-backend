@@ -47,7 +47,7 @@ class RegionApiTests {
 	}
 
 	@Test
-	void returnsRegionWithEmbeddedCoverageOptions() throws Exception {
+	void returnsRegionWithEmbeddedBranches() throws Exception {
 		BranchEntity firstBranch = branchRepository.save(BranchEntity.builder()
 				.branchCode("10000001")
 				.branchName("Chicago 104th")
@@ -88,14 +88,12 @@ class RegionApiTests {
 				.andExpect(jsonPath("$.id").value(midwest.getId()))
 				.andExpect(jsonPath("$.regionCode").value("MIDWEST1"))
 				.andExpect(jsonPath("$.regionName").value("Midwest"))
-				.andExpect(jsonPath("$.branches[0]").value(firstBranch.getId()))
+				.andExpect(jsonPath("$.branches[0].id").value(firstBranch.getId()))
+				.andExpect(jsonPath("$.branches[0].code").value("10000001"))
+				.andExpect(jsonPath("$.branches[0].name").value("Chicago 104th"))
 				.andExpect(jsonPath("$.states", contains("IL", "IN", "MI", "OH", "WI")))
 				.andExpect(jsonPath("$.zipCodes", containsInAnyOrder("60459", "60601", "46204", "48201", "53202")))
-				.andExpect(jsonPath("$.formOptions.states", contains("IL", "IN", "MI", "OH", "WI")))
-				.andExpect(jsonPath("$.formOptions.zipCodes", containsInAnyOrder("60459", "60601", "46204", "48201", "53202")))
-				.andExpect(jsonPath("$.formOptions.branches[0].id").value(firstBranch.getId()))
-				.andExpect(jsonPath("$.formOptions.branches[0].code").value("10000001"))
-				.andExpect(jsonPath("$.formOptions.branches[0].name").value("Chicago 104th"));
+				.andExpect(jsonPath("$.formOptions").doesNotExist());
 	}
 
 	@Test

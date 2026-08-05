@@ -117,7 +117,6 @@ public class RegionService {
 				.collect(Collectors.toMap(BranchEntity::getId, Function.identity()));
 		List<String> states = List.copyOf(entity.getStates());
 		List<String> zipCodes = List.copyOf(entity.getZipCodes());
-		List<Long> branches = List.copyOf(entity.getBranches());
 		List<BranchOption> branchOptions = entity.getBranches().stream()
 				.map(branchesById::get)
 				.filter(branch -> branch != null)
@@ -129,8 +128,7 @@ public class RegionService {
 				entity.getRegionName(),
 				states,
 				zipCodes,
-				branches,
-				new RegionOptions(states, zipCodes, branchOptions),
+				branchOptions,
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
 		);

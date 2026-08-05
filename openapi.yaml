@@ -15,8 +15,9 @@ tags:
   - name: Regions
   - name: Products
   - name: Fees
-  - name: Pricing Plans
   - name: Account Attributes
+  - name: Eligibility Reasons  
+  - name: Pricing Plans
 
 paths:
   /branches:
@@ -878,7 +879,6 @@ components:
         - states
         - zipCodes
         - branches
-        - formOptions
         - updatedOn
         - updatedBy
       properties:
@@ -899,9 +899,7 @@ components:
         branches:
           type: array
           items:
-            $ref: "#/components/schemas/Id"
-        formOptions:
-          $ref: "#/components/schemas/RegionOptions"
+            $ref: "#/components/schemas/BranchOption"
         updatedOn:
           $ref: "#/components/schemas/DateTime"
         updatedBy:
@@ -1109,9 +1107,8 @@ components:
         - id
         - planCode
         - planName
-        - productId
-        - regionId
-        - formOptions
+        - product
+        - region
         - activeFrom
         - activeThrough
         - updatedOn
@@ -1123,12 +1120,10 @@ components:
           $ref: "#/components/schemas/PricingPlanCode"
         planName:
           $ref: "#/components/schemas/PricingPlanName"
-        productId:
-          $ref: "#/components/schemas/Id"
-        regionId:
-          $ref: "#/components/schemas/Id"
-        formOptions:
-          $ref: "#/components/schemas/PricingPlanOptions"
+        product:
+          $ref: "#/components/schemas/ProductOption"
+        region:
+          $ref: "#/components/schemas/RegionOption"
         activeFrom:
           $ref: "#/components/schemas/Date"
         activeThrough:
@@ -1257,20 +1252,29 @@ components:
           $ref: "#/components/schemas/UpdatedBy"
 
     ReasonDetail:
-      allOf:
-        - $ref: "#/components/schemas/ReasonRequest"
-        - type: object
-          required:
-            - id
-            - formOptions
-            - updatedOn
-          properties:
-            id:
-              $ref: "#/components/schemas/Id"
-            formOptions:
-              $ref: "#/components/schemas/ReasonOptions"
-            updatedOn:
-              $ref: "#/components/schemas/DateTime"
+      type: object
+      required:
+        - id
+        - reasonCode
+        - reasonName
+        - conditions
+        - updatedOn
+        - updatedBy
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        reasonCode:
+          $ref: "#/components/schemas/ReasonCode"
+        reasonName:
+          $ref: "#/components/schemas/ReasonName"
+        conditions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReasonConditionDetail"
+        updatedOn:
+          $ref: "#/components/schemas/DateTime"
+        updatedBy:
+          $ref: "#/components/schemas/UpdatedBy"
 
     ReasonRequest:
       type: object
@@ -1310,6 +1314,20 @@ components:
       properties:
         attributeId:
           $ref: "#/components/schemas/Id"
+        operator:
+          $ref: "#/components/schemas/ReasonOperator"
+        value:
+          $ref: "#/components/schemas/ReasonConditionValue"
+
+    ReasonConditionDetail:
+      type: object
+      required:
+        - attribute
+        - operator
+        - value
+      properties:
+        attribute:
+          $ref: "#/components/schemas/AttributeOption"
         operator:
           $ref: "#/components/schemas/ReasonOperator"
         value:
