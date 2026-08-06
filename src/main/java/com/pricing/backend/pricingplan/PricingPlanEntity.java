@@ -2,9 +2,12 @@ package com.pricing.backend.pricingplan;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.pricing.backend.product.ProductEntity;
 import com.pricing.backend.region.RegionEntity;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,9 +16,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,11 +32,13 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "pricing_plans")
 public class PricingPlanEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@EqualsAndHashCode.Include
 	private Long id;
 
 	@Column(name = "plan_code", nullable = false, unique = true, length = 25)
@@ -52,6 +60,10 @@ public class PricingPlanEntity {
 
 	@Column(name = "active_through", nullable = false)
 	private LocalDate activeThrough;
+
+	@Default
+	@OneToMany(mappedBy = "pricingPlan", cascade = CascadeType.ALL, orphanRemoval = true)
+	private Set<PricingPlanFeeEntity> fees = new HashSet<>();
 
 	@Column(name = "updated_on", nullable = false)
 	private OffsetDateTime updatedOn;

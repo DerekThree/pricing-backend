@@ -12,7 +12,7 @@ public interface PricingPlanRepository extends JpaRepository<PricingPlanEntity, 
 	List<PricingPlanEntity> findAllByOrderByPlanCodeAsc();
 
 	@Override
-	@EntityGraph(attributePaths = {"product", "region"})
+	@EntityGraph(attributePaths = {"product", "region", "fees", "fees.fee", "fees.fee.productTypes", "fees.reasons"})
 	Optional<PricingPlanEntity> findById(Long id);
 
 	Optional<PricingPlanEntity> findFirstByProductIdOrderByPlanCodeAsc(Long productId);

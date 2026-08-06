@@ -11,6 +11,7 @@ import com.pricing.backend.generated.model.ReasonCondition;
 import com.pricing.backend.generated.model.ReasonDetail;
 import com.pricing.backend.generated.model.ReasonOperator;
 import com.pricing.backend.generated.model.ReasonRequest;
+import com.pricing.backend.pricingplan.PricingPlanRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +31,12 @@ class EligibilityReasonServiceTests {
 	@Autowired
 	private AccountAttributeRepository accountAttributeRepository;
 
+	@Autowired
+	private PricingPlanRepository pricingPlanRepository;
+
 	@BeforeEach
 	void setUp() {
+		pricingPlanRepository.deleteAll();
 		eligibilityReasonRepository.deleteAll();
 		accountAttributeRepository.deleteAll();
 	}

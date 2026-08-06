@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 
 import com.pricing.backend.fee.FeeRepository;
 import com.pricing.backend.generated.model.ProductType;
+import com.pricing.backend.pricingplan.PricingPlanRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +29,12 @@ class FeeApiTests {
 	@Autowired
 	private FeeRepository feeRepository;
 
+	@Autowired
+	private PricingPlanRepository pricingPlanRepository;
+
 	@BeforeEach
 	void setUp() {
+		pricingPlanRepository.deleteAll();
 		feeRepository.deleteAll();
 	}
 
@@ -41,6 +46,7 @@ class FeeApiTests {
 								{
 								  "feeCode": "FEE00001",
 								  "feeName": "Monthly Maintenance Fee",
+								  "feeType": "FLAT",
 								  "productTypes": ["DEPOSIT"],
 								  "updatedBy": "Derek Ochal"
 								}
@@ -48,12 +54,14 @@ class FeeApiTests {
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.feeCode").value("FEE00001"))
 				.andExpect(jsonPath("$.feeName").value("Monthly Maintenance Fee"))
+				.andExpect(jsonPath("$.feeType").value("FLAT"))
 				.andExpect(jsonPath("$.productTypes[0]").value("DEPOSIT"));
 
 		mockMvc.perform(get("/fees"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$", hasSize(1)))
 				.andExpect(jsonPath("$[0].fee").value("FEE00001 - Monthly Maintenance Fee"))
+				.andExpect(jsonPath("$[0].feeType").value("FLAT"))
 				.andExpect(jsonPath("$[0].productTypes[0]").value("DEPOSIT"));
 	}
 }

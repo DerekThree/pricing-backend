@@ -75,9 +75,9 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ErrorResponse> handleUnexpected() {
+	public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
 		return ResponseEntity.internalServerError()
-				.body(new ErrorResponse("Unexpected server error"));
+				.body(new ErrorResponse(ex.getMessage() == null ? "An unexpected error occurred" : ex.getMessage()));
 	}
 
 	private ResponseEntity<ErrorResponse> badRequest(String message) {

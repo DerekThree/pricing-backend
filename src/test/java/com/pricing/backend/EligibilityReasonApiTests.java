@@ -6,6 +6,7 @@ import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.generated.model.AttributeType;
+import com.pricing.backend.pricingplan.PricingPlanRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +35,12 @@ class EligibilityReasonApiTests {
 	@Autowired
 	private AccountAttributeRepository accountAttributeRepository;
 
+	@Autowired
+	private PricingPlanRepository pricingPlanRepository;
+
 	@BeforeEach
 	void setUp() {
+		pricingPlanRepository.deleteAll();
 		eligibilityReasonRepository.deleteAll();
 		accountAttributeRepository.deleteAll();
 	}

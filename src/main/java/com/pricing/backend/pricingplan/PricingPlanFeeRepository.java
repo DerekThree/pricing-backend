@@ -1,0 +1,10 @@
+package com.pricing.backend.pricingplan;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PricingPlanFeeRepository extends JpaRepository<PricingPlanFeeEntity, PricingPlanFeeId> {
+
+	Optional<PricingPlanFeeEntity> findFirstByFee_IdOrderByPricingPlan_PlanCodeAsc(Long feeId);
+}

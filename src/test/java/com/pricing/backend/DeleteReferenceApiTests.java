@@ -83,7 +83,7 @@ class DeleteReferenceApiTests {
 		mockMvc.perform(delete("/products/{id}", product.getId()))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
-						"This product is used by pricing plan with code 11111111. Please update the pricing plan before deleting."));
+						"This product is used by pricing plan with code 11111111. Please update the pricing plan first."));
 	}
 
 	@Test
@@ -118,7 +118,7 @@ class DeleteReferenceApiTests {
 		mockMvc.perform(delete("/regions/{id}", region.getId()))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
-						"This region is used by pricing plan with code 11111111. Please update the pricing plan before deleting."));
+						"This region is used by pricing plan with code 11111111. Please update the pricing plan first."));
 	}
 
 	@Test
@@ -144,6 +144,6 @@ class DeleteReferenceApiTests {
 		mockMvc.perform(delete("/branches/{id}", branch.getId()))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
-						"This branch is used by region with code REG00001. Please update the region before deleting."));
+						"This branch is used by region with code REG00001. Please update the region first."));
 	}
 }

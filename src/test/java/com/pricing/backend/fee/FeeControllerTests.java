@@ -8,6 +8,7 @@ import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.model.FeeDetail;
 import com.pricing.backend.generated.model.FeeListItem;
 import com.pricing.backend.generated.model.FeeRequest;
+import com.pricing.backend.generated.model.FeeType;
 import com.pricing.backend.generated.model.ProductType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ class FeeControllerTests {
 		FeeListItem secondFee = new FeeListItem(
 				2L,
 				"FEE00002 - Overdraft Fee",
+				FeeType.PERCENT,
 				List.of(ProductType.DEPOSIT),
 				OffsetDateTime.parse("2026-07-31T09:00:00+08:00"),
 				"John Smith"
@@ -138,6 +140,7 @@ class FeeControllerTests {
 		return new FeeDetail(
 				"FEE00001",
 				"Monthly Maintenance Fee",
+				FeeType.FLAT,
 				List.of(ProductType.DEPOSIT),
 				"Jane Smith",
 				1L,
@@ -149,6 +152,7 @@ class FeeControllerTests {
 		return new FeeListItem(
 				1L,
 				"FEE00001 - Monthly Maintenance Fee",
+				FeeType.FLAT,
 				List.of(ProductType.DEPOSIT),
 				OffsetDateTime.parse("2026-07-31T09:00:00+08:00"),
 				"Jane Smith"
@@ -159,6 +163,7 @@ class FeeControllerTests {
 		return new FeeRequest(
 				fee.getFeeCode(),
 				fee.getFeeName(),
+				fee.getFeeType(),
 				fee.getProductTypes(),
 				fee.getUpdatedBy()
 		);

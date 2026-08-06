@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.pricing.backend.generated.model.FeeType;
 import com.pricing.backend.generated.model.ProductType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -43,6 +44,10 @@ public class FeeEntity {
 
 	@Column(name = "fee_name", nullable = false, length = 100)
 	private String feeName;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "fee_type", nullable = false, length = 20)
+	private FeeType feeType;
 
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "fee_product_types", joinColumns = @JoinColumn(name = "fee_id"))
