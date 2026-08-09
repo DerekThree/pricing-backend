@@ -16,7 +16,6 @@ import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
 import com.pricing.backend.generated.model.FeeOption;
 import com.pricing.backend.generated.model.PricingPlanDetail;
-import com.pricing.backend.generated.model.PricingPlanFeeDetail;
 import com.pricing.backend.generated.model.PricingPlanFeeRequest;
 import com.pricing.backend.generated.model.PricingPlanListItem;
 import com.pricing.backend.generated.model.PricingPlanOptions;
@@ -106,7 +105,7 @@ public class PricingPlanService {
 				.stream()
 				.collect(Collectors.toMap(FeeEntity::getId, Function.identity()));
 		Map<Long, EligibilityReasonEntity> reasonsById = eligibilityReasonRepository
-				.findAllById(request.getFees().stream().flatMap(fee -> fee.getReasons().stream()).toList())
+				.findAllById(request.getFees().stream().flatMap(fee -> fee.getReasonIds().stream()).toList())
 				.stream()
 				.collect(Collectors.toMap(EligibilityReasonEntity::getId, Function.identity()));
 		Set<Long> uniqueFeeIds = new HashSet<>();
@@ -137,7 +136,7 @@ public class PricingPlanService {
 			pricingPlanFee.setFee(fee);
 			pricingPlanFee.setAmount(feeRequest.getAmount());
 			Set<Long> uniqueReasonIds = new HashSet<>();
-			for (Long reasonId : feeRequest.getReasons()) {
+			for (Long reasonId : feeRequest.getReasonIds()) {
 				EligibilityReasonEntity reason = reasonsById.get(reasonId);
 				if (reason == null) {
 					throw new IllegalArgumentException("Eligibility reason with id " + reasonId + " was not found");
@@ -166,31 +165,43 @@ public class PricingPlanService {
 
 	private PricingPlanDetail toDetail(PricingPlanEntity entity) {
 		return new PricingPlanDetail(
-				entity.getId(),
 				entity.getPlanCode(),
 				entity.getPlanName(),
-				toProductOption(entity.getProduct()),
-				toRegionOption(entity.getRegion()),
+				entity.getProduct().getId(),
+				entity.getRegion().getId(),
 				entity.getActiveFrom(),
 				entity.getActiveThrough(),
 				entity.getFees().stream()
 						.sorted(pricingPlanFeeComparator())
 						.map(this::toPricingPlanFeeDetail)
 						.toList(),
+				entity.getUpdatedBy(),
+				entity.getId(),
 				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
+				new PricingPlanOptions(
+						List.of(toProductOption(entity.getProduct())),
+						List.of(toRegionOption(entity.getRegion())),
+						entity.getFees().stream()
+								.sorted(pricingPlanFeeComparator())
+								.map(PricingPlanFeeEntity::getFee)
+								.map(this::toFeeOption)
+								.toList(),
+						entity.getFees().stream()
+								.flatMap(fee -> fee.getReasons().stream())
+								.distinct()
+								.sorted(reasonComparator())
+								.map(this::toReasonOption)
+								.toList()
+				)
 		);
 	}
 
-	private PricingPlanFeeDetail toPricingPlanFeeDetail(PricingPlanFeeEntity entity) {
-		return new PricingPlanFeeDetail(
-				toFeeOption(entity.getFee()),
-				entity.getAmount(),
-				entity.getReasons().stream()
+	private PricingPlanFeeRequest toPricingPlanFeeDetail(PricingPlanFeeEntity entity) {
+		return new PricingPlanFeeRequest(entity.getFee().getId(), entity.getAmount())
+				.reasonIds(entity.getReasons().stream()
 						.sorted(reasonComparator())
-						.map(this::toReasonOption)
-						.toList()
-		);
+						.map(reason -> reason.getId())
+						.toList());
 	}
 
 	private String formatCodeAndName(String code, String name) {

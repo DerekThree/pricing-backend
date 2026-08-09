@@ -18,7 +18,6 @@ import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.generated.model.AttributeOption;
 import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.ReasonCondition;
-import com.pricing.backend.generated.model.ReasonConditionDetail;
 import com.pricing.backend.generated.model.ReasonConditionValue;
 import com.pricing.backend.generated.model.ReasonDetail;
 import com.pricing.backend.generated.model.ReasonListItem;
@@ -131,21 +130,29 @@ public class EligibilityReasonService {
 
 	private ReasonDetail toDetail(EligibilityReasonEntity entity) {
 		return new ReasonDetail(
-				entity.getId(),
 				entity.getReasonCode(),
 				entity.getReasonName(),
 				entity.getConditions().stream()
 						.sorted(conditionComparator())
 						.map(this::toConditionDetail)
 						.toList(),
+				entity.getUpdatedBy(),
+				entity.getId(),
 				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
+				new ReasonOptions(
+						entity.getConditions().stream()
+								.map(EligibilityReasonConditionEntity::getAttribute)
+								.distinct()
+								.sorted(Comparator.comparing(AccountAttributeEntity::getAttributeCode))
+								.map(this::toAttributeOption)
+								.toList()
+				)
 		);
 	}
 
-	private ReasonConditionDetail toConditionDetail(EligibilityReasonConditionEntity entity) {
-		return new ReasonConditionDetail(
-				toAttributeOption(entity.getAttribute()),
+	private ReasonCondition toConditionDetail(EligibilityReasonConditionEntity entity) {
+		return new ReasonCondition(
+				entity.getAttribute().getId(),
 				ReasonOperator.fromValue(entity.getId().getOperator()),
 				toApiValue(entity.getAttribute().getAttributeType(), entity.getAttributeValue())
 		);

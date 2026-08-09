@@ -114,19 +114,23 @@ public class RegionService {
 	private RegionDetail toDetail(RegionEntity entity) {
 		Map<Long, BranchEntity> branchesById = branchRepository.findAllById(entity.getBranches()).stream()
 				.collect(Collectors.toMap(BranchEntity::getId, Function.identity()));
-		List<BranchOption> branchOptions = entity.getBranches().stream()
-				.map(branchesById::get)
-				.map(branch -> new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName()))
-				.toList();
 		return new RegionDetail(
-				entity.getId(),
 				entity.getRegionCode(),
 				entity.getRegionName(),
 				entity.getStates(),
 				entity.getZipCodes(),
-				branchOptions,
+				entity.getBranches(),
+				entity.getUpdatedBy(),
+				entity.getId(),
 				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
+				new RegionOptions(
+						entity.getStates(),
+						entity.getZipCodes(),
+						entity.getBranches().stream()
+								.map(branchesById::get)
+								.map(branch -> new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName()))
+								.toList()
+				)
 		);
 	}
 

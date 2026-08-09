@@ -871,39 +871,20 @@ components:
           $ref: "#/components/schemas/UpdatedBy"
 
     RegionDetail:
-      type: object
-      required:
-        - id
-        - regionCode
-        - regionName
-        - states
-        - zipCodes
-        - branches
-        - updatedOn
-        - updatedBy
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        regionCode:
-          $ref: "#/components/schemas/RegionCode"
-        regionName:
-          $ref: "#/components/schemas/RegionName"
-        states:
-          type: array
-          items:
-            $ref: "#/components/schemas/State"
-        zipCodes:
-          type: array
-          items:
-            $ref: "#/components/schemas/ZipCode"
-        branches:
-          type: array
-          items:
-            $ref: "#/components/schemas/BranchOption"
-        updatedOn:
-          $ref: "#/components/schemas/DateTime"
-        updatedBy:
-          $ref: "#/components/schemas/UpdatedBy"
+      allOf:
+        - $ref: "#/components/schemas/RegionRequest"
+        - type: object
+          required:
+            - id
+            - updatedOn
+            - recordOptions
+          properties:
+            id:
+              $ref: "#/components/schemas/Id"
+            updatedOn:
+              $ref: "#/components/schemas/DateTime"
+            recordOptions:
+              $ref: "#/components/schemas/RegionOptions"
 
     RegionRequest:
       type: object
@@ -1108,41 +1089,20 @@ components:
           $ref: "#/components/schemas/UpdatedBy"
 
     PricingPlanDetail:
-      type: object
-      required:
-        - id
-        - planCode
-        - planName
-        - product
-        - region
-        - activeFrom
-        - activeThrough
-        - fees
-        - updatedOn
-        - updatedBy
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        planCode:
-          $ref: "#/components/schemas/PricingPlanCode"
-        planName:
-          $ref: "#/components/schemas/PricingPlanName"
-        product:
-          $ref: "#/components/schemas/ProductOption"
-        region:
-          $ref: "#/components/schemas/RegionOption"
-        activeFrom:
-          $ref: "#/components/schemas/Date"
-        activeThrough:
-          $ref: "#/components/schemas/Date"
-        fees:
-          type: array
-          items:
-            $ref: "#/components/schemas/PricingPlanFeeDetail"
-        updatedOn:
-          $ref: "#/components/schemas/DateTime"
-        updatedBy:
-          $ref: "#/components/schemas/UpdatedBy"
+      allOf:
+        - $ref: "#/components/schemas/PricingPlanRequest"
+        - type: object
+          required:
+            - id
+            - updatedOn
+            - recordOptions
+          properties:
+            id:
+              $ref: "#/components/schemas/Id"
+            updatedOn:
+              $ref: "#/components/schemas/DateTime"
+            recordOptions:
+              $ref: "#/components/schemas/PricingPlanOptions"
 
     PricingPlanRequest:
       type: object
@@ -1180,14 +1140,14 @@ components:
       required:
         - feeId
         - amount
-        - reasons
+        - reasonids
       properties:
         feeId:
           $ref: "#/components/schemas/Id"
         amount:
           type: number
           example: 10.00
-        reasons:
+        reasonIds:
           type: array
           items:
             $ref: "#/components/schemas/Id"
@@ -1307,29 +1267,20 @@ components:
           $ref: "#/components/schemas/UpdatedBy"
 
     ReasonDetail:
-      type: object
-      required:
-        - id
-        - reasonCode
-        - reasonName
-        - conditions
-        - updatedOn
-        - updatedBy
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        reasonCode:
-          $ref: "#/components/schemas/ReasonCode"
-        reasonName:
-          $ref: "#/components/schemas/ReasonName"
-        conditions:
-          type: array
-          items:
-            $ref: "#/components/schemas/ReasonConditionDetail"
-        updatedOn:
-          $ref: "#/components/schemas/DateTime"
-        updatedBy:
-          $ref: "#/components/schemas/UpdatedBy"
+      allOf:
+        - $ref: "#/components/schemas/ReasonRequest"
+        - type: object
+          required:
+            - id
+            - updatedOn
+            - recordOptions
+          properties:
+            id:
+              $ref: "#/components/schemas/Id"
+            updatedOn:
+              $ref: "#/components/schemas/DateTime"
+            recordOptions:
+              $ref: "#/components/schemas/ReasonOptions"
 
     ReasonRequest:
       type: object
