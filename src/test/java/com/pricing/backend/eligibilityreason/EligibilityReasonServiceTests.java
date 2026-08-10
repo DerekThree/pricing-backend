@@ -66,10 +66,10 @@ class EligibilityReasonServiceTests {
 		assertThat(createdEligibilityReason.getReasonCode()).isEqualTo(request.getReasonCode());
 		assertThat(createdEligibilityReason.getReasonName()).isEqualTo(request.getReasonName());
 		assertThat(createdEligibilityReason.getConditions()).hasSize(2);
-		assertThat(createdEligibilityReason.getConditions().getFirst().getAttribute().getType())
-				.isEqualTo(AttributeType.DECIMAL);
-		assertThat(createdEligibilityReason.getConditions().get(1).getAttribute().getType())
-				.isEqualTo(AttributeType.BOOLEAN);
+		assertThat(createdEligibilityReason.getConditions().getFirst().getAttributeId())
+				.isEqualTo(amount.getId());
+		assertThat(createdEligibilityReason.getConditions().get(1).getAttributeId())
+				.isEqualTo(active.getId());
 		assertThat(eligibilityReasonRepository.findById(createdEligibilityReason.getId())).isPresent();
 	}
 
@@ -103,7 +103,7 @@ class EligibilityReasonServiceTests {
 
 		assertThat(updatedEligibilityReason.getReasonName()).isEqualTo("Updated");
 		assertThat(updatedEligibilityReason.getConditions()).hasSize(1);
-		assertThat(updatedEligibilityReason.getConditions().getFirst().getAttribute().getId())
+		assertThat(updatedEligibilityReason.getConditions().getFirst().getAttributeId())
 				.isEqualTo(active.getId());
 		assertThat(updatedEligibilityReason.getUpdatedBy()).isEqualTo("Jane Smith");
 	}

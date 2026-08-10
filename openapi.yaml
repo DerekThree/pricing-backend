@@ -1146,6 +1146,8 @@ components:
           $ref: "#/components/schemas/Id"
         amount:
           type: number
+          minimum: 0
+          exclusiveMinimum: true
           example: 10.00
         reasonIds:
           type: array
@@ -1163,6 +1165,8 @@ components:
           $ref: "#/components/schemas/FeeOption"
         amount:
           type: number
+          minimum: 0
+          exclusiveMinimum: true
           example: 10.00
         reasons:
           type: array
