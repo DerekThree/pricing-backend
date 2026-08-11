@@ -152,6 +152,13 @@ paths:
       tags: [Regions]
       operationId: getRegionOptions
       summary: Get available region options
+      parameters:
+        - name: recordId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
           description: Available states, zip codes, and branches for region forms

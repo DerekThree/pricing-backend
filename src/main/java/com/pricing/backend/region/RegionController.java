@@ -35,8 +35,8 @@ public class RegionController implements RegionsApi {
 	}
 
 	@Override
-	public ResponseEntity<RegionOptions> getRegionOptions() {
-		return ResponseEntity.ok(regionService.getOptions());
+	public ResponseEntity<RegionOptions> getRegionOptions(Long recordId) {
+		return ResponseEntity.ok(regionService.getOptions(recordId));
 	}
 
 	@Override

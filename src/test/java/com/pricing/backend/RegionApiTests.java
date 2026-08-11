@@ -112,7 +112,7 @@ class RegionApiTests {
 				.updatedBy("John Smith")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
-		regionRepository.save(RegionEntity.builder()
+		RegionEntity midwest = regionRepository.save(RegionEntity.builder()
 				.regionCode("MIDWEST1")
 				.regionName("Midwest")
 				.states(List.of("IL"))
@@ -129,5 +129,12 @@ class RegionApiTests {
 				.andExpect(jsonPath("$.branches[0].id").value(secondBranch.getId()))
 				.andExpect(jsonPath("$.branches[0].code").value("10000002"))
 				.andExpect(jsonPath("$.branches[0].name").value("Austin Mopec"));
+
+		mockMvc.perform(get("/regions/options").param("recordId", String.valueOf(midwest.getId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.states", containsInAnyOrder("IL", "TX")))
+				.andExpect(jsonPath("$.zipCodes", containsInAnyOrder("60459", "78759")))
+				.andExpect(jsonPath("$.branches[*].id",
+						containsInAnyOrder(firstBranch.getId().intValue(), secondBranch.getId().intValue())));
 	}
 }

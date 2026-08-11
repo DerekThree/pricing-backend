@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import com.pricing.backend.branch.BranchEntity;
 import com.pricing.backend.branch.BranchRepository;
 import com.pricing.backend.config.RecordInUseException;
+import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.model.BranchOption;
 import com.pricing.backend.generated.model.RegionDetail;
 import com.pricing.backend.generated.model.RegionListItem;
@@ -48,8 +49,10 @@ public class RegionService {
 	}
 
 	@Transactional(readOnly = true)
-	public RegionOptions getOptions() {
-		return buildRegionOptions();
+	public RegionOptions getOptions(Long recordId) {
+		RegionEntity record = recordId == null ? null : regionRepository.findById(recordId)
+				.orElseThrow(() -> new RecordNotFoundException("Region", recordId));
+		return buildRegionOptions(record);
 	}
 
 	@Transactional
@@ -146,18 +149,36 @@ public class RegionService {
 		return code + " - " + name;
 	}
 
-	private RegionOptions buildRegionOptions() {
-		List<RegionEntity> regions = regionRepository.findAllByOrderByRegionCodeAsc();
+	private RegionOptions buildRegionOptions(RegionEntity record) {
 		List<BranchEntity> branches = branchRepository.findAllByOrderByBranchCodeAsc();
+		List<RegionEntity> regions = regionRepository.findAllByOrderByRegionCodeAsc().stream()
+				.filter(region -> record == null || !region.getId().equals(record.getId()))
+				.toList();
+
 		Set<String> usedStates = regions.stream().flatMap(region -> region.getStates().stream()).collect(Collectors.toSet());
 		Set<String> usedZipCodes = regions.stream().flatMap(region -> region.getZipCodes().stream()).collect(Collectors.toSet());
 		Set<Long> usedBranchIds = regions.stream().flatMap(region -> region.getBranches().stream()).collect(Collectors.toSet());
-		return new RegionOptions(
-				branches.stream().map(BranchEntity::getState).filter(state -> !usedStates.contains(state)).distinct().sorted().toList(),
-				branches.stream().map(BranchEntity::getZipCode).filter(zipCode -> !usedZipCodes.contains(zipCode)).distinct().sorted().toList(),
-				branches.stream().filter(branch -> !usedBranchIds.contains(branch.getId()))
-						.map(branch -> new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName()))
-						.toList()
-		);
+		
+		List<String> availableStates = branches.stream().map(BranchEntity::getState)
+				.filter(state -> !usedStates.contains(state))
+				.distinct()
+				.sorted()
+				.toList();
+		List<String> availableZipCodes = branches.stream().map(BranchEntity::getZipCode)
+				.filter(zipCode -> !usedZipCodes.contains(zipCode))
+				.distinct()
+				.sorted()
+				.toList();
+		List<BranchOption> availableBranches = branches.stream()
+				.filter(branch -> !usedBranchIds.contains(branch.getId()))
+				.map(this::toBranchOption)
+				.toList();
+		
+				return new RegionOptions(availableStates, availableZipCodes, availableBranches);
 	}
+
+	private BranchOption toBranchOption(BranchEntity branch) {
+		return new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName());
+	}
+
 }
