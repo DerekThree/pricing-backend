@@ -588,6 +588,38 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
+  /simulator/date:
+    get:
+      tags: [Simulator]
+      operationId: getSimulatorDate
+      summary: Get the current application date
+      responses:
+        "200":
+          description: Current application date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulatorDate"
+    put:
+      tags: [Simulator]
+      operationId: setSimulatorDate
+      summary: Set the current application date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulatorDate"
+      responses:
+        "200":
+          description: Updated application date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulatorDate"
+        "400":
+          $ref: "#/components/responses/Error"
+
   /eligibility-reasons:
     get:
       tags: [Eligibility Reasons]
@@ -1487,6 +1519,15 @@ components:
       minLength: 1
       maxLength: 100
       example: Free Checking Midwest
+
+    SimulatorDate:
+      type: object
+      required:
+        - currentDate
+      properties:
+        currentDate:
+          type: string
+          format: date
 
     AttributeCode:
       type: string
