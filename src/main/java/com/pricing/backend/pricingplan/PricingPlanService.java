@@ -76,7 +76,7 @@ public class PricingPlanService {
 
 		PricingPlanEntity record = pricingPlanRepository.findById(recordId)
 				.orElseThrow(() -> new RecordNotFoundException("Pricing plan", recordId));
-		return addSecondaryOptions(options, record.getProduct(), record.getRegion());
+		return addSecondaryOptions(options, record.getProduct(), record.getRegion(), record.getId());
 	}
 
 	@Transactional(readOnly = true)
@@ -85,7 +85,7 @@ public class PricingPlanService {
 				.orElseThrow(() -> new RecordNotFoundException("Product", productId));
 		RegionEntity region = regionRepository.findById(regionId)
 				.orElseThrow(() -> new RecordNotFoundException("Region", regionId));
-		return addSecondaryOptions(buildPricingPlanOptions(), product, region);
+		return addSecondaryOptions(buildPricingPlanOptions(), product, region, null);
 	}
 
 	@Transactional
@@ -119,9 +119,7 @@ public class PricingPlanService {
 				.orElseThrow(() -> new IllegalArgumentException("Product with id " + request.getProductId() + " was not found"));
 		var region = regionRepository.findById(request.getRegionId())
 				.orElseThrow(() -> new IllegalArgumentException("Region with id " + request.getRegionId() + " was not found"));
-		if (request.getActiveFrom().isAfter(request.getActiveThrough())) {
-			throw new IllegalArgumentException("activeFrom must be on or before activeThrough");
-		}
+		validateActivePeriod(entity, request);
 		Map<Long, FeeEntity> feesById = feeRepository
 				.findAllById(request.getFees().stream().map(PricingPlanFeeRequest::getFeeId).toList())
 				.stream()
@@ -172,6 +170,29 @@ public class PricingPlanService {
 		}
 	}
 
+	private void validateActivePeriod(PricingPlanEntity entity, PricingPlanRequest request) {
+		if (entity.getId() == null &&
+				request.getActiveFrom().isBefore(simulatorDateService.getCurrentDate())) {
+			throw new IllegalArgumentException("activeFrom must be on or after the application current date");
+		}
+		if (request.getActiveFrom().isAfter(request.getActiveThrough())) {
+			throw new IllegalArgumentException("activeFrom must be on or before activeThrough");
+		}
+
+		boolean overlaps = entity.getId() == null
+				? pricingPlanRepository
+						.existsByProductIdAndRegionIdAndActiveFromLessThanEqualAndActiveThroughGreaterThanEqual(
+								request.getProductId(), request.getRegionId(), request.getActiveThrough(),
+								request.getActiveFrom())
+				: pricingPlanRepository
+						.existsByProductIdAndRegionIdAndIdNotAndActiveFromLessThanEqualAndActiveThroughGreaterThanEqual(
+								request.getProductId(), request.getRegionId(), entity.getId(), request.getActiveThrough(),
+								request.getActiveFrom());
+		if (overlaps) {
+			throw new IllegalArgumentException("Pricing plan active period overlaps an existing pricing plan");
+		}
+	}
+
 	private PricingPlanListItem toListItem(PricingPlanEntity entity) {
 		return new PricingPlanListItem(
 				entity.getId(),
@@ -218,8 +239,8 @@ public class PricingPlanService {
 	}
 
 	private PricingPlanFeeRequest toPricingPlanFeeDetail(PricingPlanFeeEntity entity) {
-		return new PricingPlanFeeRequest(entity.getFee().getId(), entity.getAmount())
-				.reasonIds(entity.getReasons().stream()
+		return new PricingPlanFeeRequest(
+				entity.getFee().getId(), entity.getAmount(), entity.getReasons().stream()
 						.sorted(reasonComparator())
 						.map(reason -> reason.getId())
 						.toList());
@@ -244,7 +265,7 @@ public class PricingPlanService {
 	}
 
 	private PricingPlanOptions addSecondaryOptions(PricingPlanOptions options, ProductEntity product,
-			RegionEntity region) {
+			RegionEntity region, Long excludedPricingPlanId) {
 		LocalDate currentDate = options.getCurrentDate();
 		return options
 				.productId(product.getId())
@@ -259,6 +280,7 @@ public class PricingPlanService {
 				.intervals(pricingPlanRepository
 						.findAllByProductIdAndRegionIdAndActiveThroughGreaterThanEqual(product.getId(), region.getId(), currentDate)
 						.stream()
+						.filter(plan -> excludedPricingPlanId == null || !plan.getId().equals(excludedPricingPlanId))
 						.map(plan -> new PricingPlanInterval(plan.getActiveFrom(), plan.getActiveThrough()))
 						.toList());
 	}

@@ -22,4 +22,10 @@ public interface PricingPlanRepository extends JpaRepository<PricingPlanEntity, 
 
 	List<PricingPlanEntity> findAllByProductIdAndRegionIdAndActiveThroughGreaterThanEqual(
 			Long productId, Long regionId, LocalDate activeThrough);
+
+	boolean existsByProductIdAndRegionIdAndActiveFromLessThanEqualAndActiveThroughGreaterThanEqual(
+			Long productId, Long regionId, LocalDate activeThrough, LocalDate activeFrom);
+
+	boolean existsByProductIdAndRegionIdAndIdNotAndActiveFromLessThanEqualAndActiveThroughGreaterThanEqual(
+			Long productId, Long regionId, Long id, LocalDate activeThrough, LocalDate activeFrom);
 }

@@ -1220,7 +1220,7 @@ components:
       required:
         - feeId
         - amount
-        - reasonids
+        - reasonIds
       properties:
         feeId:
           $ref: "#/components/schemas/Id"
@@ -1233,25 +1233,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Id"
-
-    PricingPlanFeeDetail:
-      type: object
-      required:
-        - fee
-        - amount
-        - reasons
-      properties:
-        fee:
-          $ref: "#/components/schemas/FeeOption"
-        amount:
-          type: number
-          minimum: 0
-          exclusiveMinimum: true
-          example: 10.00
-        reasons:
-          type: array
-          items:
-            $ref: "#/components/schemas/ReasonOption"
 
     PricingPlanOptions:
       type: object
@@ -1424,20 +1405,6 @@ components:
       properties:
         attributeId:
           $ref: "#/components/schemas/Id"
-        operator:
-          $ref: "#/components/schemas/ReasonOperator"
-        value:
-          $ref: "#/components/schemas/ReasonConditionValue"
-
-    ReasonConditionDetail:
-      type: object
-      required:
-        - attribute
-        - operator
-        - value
-      properties:
-        attribute:
-          $ref: "#/components/schemas/AttributeOption"
         operator:
           $ref: "#/components/schemas/ReasonOperator"
         value:
