@@ -26,7 +26,19 @@ class GlobalExceptionHandlerTests {
 	}
 
 	@Test
-	void leavesUnrelatedIntegrityViolationsAsConflicts() {
+	void mapsTheActivePeriodOrderCheckConstraintToBadRequest() {
+		SQLException cause = new SQLException(
+				"ERROR: new row violates check constraint \"chk_pricing_plans_active_period_order\"", "23514");
+
+		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
+				.handleDataIntegrityViolation(new DataIntegrityViolationException("constraint failed", cause));
+
+		assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+		assertEquals("Active Through must be on or after Active From", response.getBody().getMessage());
+	}
+
+	@Test
+	void mapsUniqueConstraintViolationsToConflicts() {
 		SQLException cause = new SQLException("duplicate key value violates unique constraint", "23505");
 
 		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
@@ -34,6 +46,72 @@ class GlobalExceptionHandlerTests {
 
 		assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
 		assertEquals("A record with the same code already exists", response.getBody().getMessage());
+	}
+
+	@Test
+	void mapsForeignKeyConstraintViolationsToConflicts() {
+		SQLException cause = new SQLException("violates foreign key constraint", "23503");
+
+		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
+				.handleDataIntegrityViolation(new DataIntegrityViolationException("constraint failed", cause));
+
+		assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+		assertEquals("The request violates a record relationship", response.getBody().getMessage());
+	}
+
+	@Test
+	void mapsH2ForeignKeyConstraintViolationsToConflicts() {
+		SQLException cause = new SQLException("referenced row does not exist", "23506");
+
+		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
+				.handleDataIntegrityViolation(new DataIntegrityViolationException("constraint failed", cause));
+
+		assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+		assertEquals("The request violates a record relationship", response.getBody().getMessage());
+	}
+
+	@Test
+	void mapsCheckConstraintViolationsToBadRequests() {
+		SQLException cause = new SQLException("violates check constraint", "23514");
+
+		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
+				.handleDataIntegrityViolation(new DataIntegrityViolationException("constraint failed", cause));
+
+		assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+		assertEquals("The request violates a database constraint", response.getBody().getMessage());
+	}
+
+	@Test
+	void mapsH2CheckConstraintViolationsToBadRequests() {
+		SQLException cause = new SQLException("violates check constraint", "23513");
+
+		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
+				.handleDataIntegrityViolation(new DataIntegrityViolationException("constraint failed", cause));
+
+		assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+		assertEquals("The request violates a database constraint", response.getBody().getMessage());
+	}
+
+	@Test
+	void mapsNotNullConstraintViolationsToBadRequests() {
+		SQLException cause = new SQLException("null value violates not-null constraint", "23502");
+
+		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
+				.handleDataIntegrityViolation(new DataIntegrityViolationException("constraint failed", cause));
+
+		assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+		assertEquals("The request violates a database constraint", response.getBody().getMessage());
+	}
+
+	@Test
+	void mapsDataExceptionsToBadRequests() {
+		SQLException cause = new SQLException("value too long for type", "22001");
+
+		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
+				.handleDataIntegrityViolation(new DataIntegrityViolationException("constraint failed", cause));
+
+		assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+		assertEquals("The request data is invalid", response.getBody().getMessage());
 	}
 
 	@Test

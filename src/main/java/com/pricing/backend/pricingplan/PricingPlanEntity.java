@@ -2,8 +2,8 @@ package com.pricing.backend.pricingplan;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.pricing.backend.product.ProductEntity;
 import com.pricing.backend.region.RegionEntity;
@@ -63,7 +63,7 @@ public class PricingPlanEntity {
 
 	@Default
 	@OneToMany(mappedBy = "pricingPlan", cascade = CascadeType.ALL, orphanRemoval = true)
-	private Set<PricingPlanFeeEntity> fees = new HashSet<>();
+	private List<PricingPlanFeeEntity> fees = new ArrayList<>();
 
 	@Column(name = "updated_on", nullable = false)
 	private OffsetDateTime updatedOn;

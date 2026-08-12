@@ -147,6 +147,12 @@ class PricingPlanApiTests {
 				.andExpect(jsonPath("$.recordOptions.currentDate").doesNotExist())
 				.andExpect(jsonPath("$.recordOptions.intervals").doesNotExist())
 				.andExpect(jsonPath("$.formOptions").doesNotExist());
+
+		Long pricingPlanId = pricingPlanRepository.findAllByOrderByPlanCodeAsc().getFirst().getId();
+		mockMvc.perform(get("/pricing-plans/{id}", pricingPlanId))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.fees", hasSize(1)))
+				.andExpect(jsonPath("$.fees[0].reasonIds", contains(reason.getId().intValue())));
 	}
 
 	@Test
@@ -194,7 +200,74 @@ class PricingPlanApiTests {
 	}
 
 	@Test
-	void enforcesActivePeriodBoundariesAndPairIsolation() throws Exception {
+	void rejectsDuplicateFeesAndInvalidReferences() throws Exception {
+		ProductEntity product = productRepository.save(ProductEntity.builder()
+				.productCode("PROD0001")
+				.productName("Premier Checking")
+				.productType(ProductType.DEPOSIT)
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		RegionEntity region = regionRepository.save(region("REG00001", "Midwest"));
+		FeeEntity fee = feeRepository.save(fee("FEE00001", ProductType.DEPOSIT));
+		EligibilityReasonEntity reason = eligibilityReasonRepository.save(
+				EligibilityReasonEntity.builder()
+						.reasonCode("ELIG0001")
+						.reasonName("Min. Balance")
+						.updatedBy("Derek Ochal")
+						.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+						.build());
+
+		mockMvc.perform(post("/pricing-plans")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "planCode": "PLAN0001",
+								  "planName": "Test Plan",
+								  "productId": %d,
+								  "regionId": %d,
+								  "activeFrom": "2026-08-11",
+								  "activeThrough": "2026-12-31",
+								  "fees": [
+								    {"feeId": %d, "amount": 7.50, "reasonIds": []},
+								    {"feeId": %d, "amount": 7.50, "reasonIds": []}
+								  ],
+								  "updatedBy": "Derek Ochal"
+								}
+								""".formatted(product.getId(), region.getId(), fee.getId(), fee.getId())))
+				.andExpect(status().isConflict());
+		mockMvc.perform(post("/pricing-plans")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "planCode": "PLAN0002",
+								  "planName": "Test Plan",
+								  "productId": %d,
+								  "regionId": %d,
+								  "activeFrom": "2026-08-11",
+								  "activeThrough": "2026-12-31",
+								  "fees": [
+								    {"feeId": %d, "amount": 7.50, "reasonIds": [%d, %d]}
+								  ],
+								  "updatedBy": "Derek Ochal"
+								}
+				""".formatted(product.getId(), region.getId(), fee.getId(), reason.getId(),
+						reason.getId())))
+				.andExpect(status().isConflict());
+		mockMvc.perform(post("/pricing-plans")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(pricingPlanFeeRequestJson("PLAN0003", "Test Plan", product.getId(), region.getId(),
+								"2026-08-11", "2026-12-31", fee.getId(), "7.50", 999_999L)))
+				.andExpect(status().isConflict());
+		mockMvc.perform(post("/pricing-plans")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(pricingPlanFeeRequestJson("PLAN0004", "Test Plan", product.getId(), 999_999L,
+								"2026-08-11", "2026-12-31", fee.getId(), "7.50", reason.getId())))
+				.andExpect(status().isConflict());
+	}
+
+	@Test
+	void enforcesActivePeriodBoundariesAndAllowsDifferentPairs() throws Exception {
 		ProductEntity firstProduct = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
 				.productName("Premier Checking")
@@ -228,25 +301,21 @@ class PricingPlanApiTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0004", firstProduct.getId(), firstRegion.getId(),
 								"2026-09-02", "2026-09-01")))
-				.andExpect(status().isBadRequest());
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("Active Through must be on or after Active From"));
 		mockMvc.perform(post("/pricing-plans")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0005", firstProduct.getId(), firstRegion.getId(),
-								"2026-08-30", "2026-09-01")))
-				.andExpect(status().isBadRequest());
-		mockMvc.perform(post("/pricing-plans")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(pricingPlanPeriodRequestJson("PLAN0006", firstProduct.getId(), firstRegion.getId(),
 								"2026-08-31", "2026-09-01")))
 				.andExpect(status().isCreated());
 		mockMvc.perform(post("/pricing-plans")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(pricingPlanPeriodRequestJson("PLAN0007", secondProduct.getId(), firstRegion.getId(),
+						.content(pricingPlanPeriodRequestJson("PLAN0006", secondProduct.getId(), firstRegion.getId(),
 								"2026-08-20", "2026-08-30")))
 				.andExpect(status().isCreated());
 		mockMvc.perform(post("/pricing-plans")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(pricingPlanPeriodRequestJson("PLAN0008", firstProduct.getId(), secondRegion.getId(),
+						.content(pricingPlanPeriodRequestJson("PLAN0007", firstProduct.getId(), secondRegion.getId(),
 								"2026-08-20", "2026-08-30")))
 				.andExpect(status().isCreated());
 		mockMvc.perform(put("/pricing-plans/{id}", existing.getId())

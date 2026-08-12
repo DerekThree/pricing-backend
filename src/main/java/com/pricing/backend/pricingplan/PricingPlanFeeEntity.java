@@ -1,8 +1,8 @@
 package com.pricing.backend.pricingplan;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.fee.FeeEntity;
@@ -61,5 +61,5 @@ public class PricingPlanFeeEntity {
 			},
 			inverseJoinColumns = @JoinColumn(name = "reason_id", referencedColumnName = "id")
 	)
-	private Set<EligibilityReasonEntity> reasons = new HashSet<>();
+	private List<EligibilityReasonEntity> reasons = new ArrayList<>();
 }

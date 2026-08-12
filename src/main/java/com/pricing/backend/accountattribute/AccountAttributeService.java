@@ -4,6 +4,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.pricing.backend.config.RecordInUseException;
+import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.generated.model.AttributeDetail;
 import com.pricing.backend.generated.model.AttributeListItem;
 import com.pricing.backend.generated.model.AttributeRequest;
@@ -15,9 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountAttributeService {
 
 	private final AccountAttributeRepository accountAttributeRepository;
+	private final EligibilityReasonRepository eligibilityReasonRepository;
 
-	public AccountAttributeService(AccountAttributeRepository accountAttributeRepository) {
+	public AccountAttributeService(AccountAttributeRepository accountAttributeRepository,
+			EligibilityReasonRepository eligibilityReasonRepository) {
 		this.accountAttributeRepository = accountAttributeRepository;
+		this.eligibilityReasonRepository = eligibilityReasonRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -53,6 +58,12 @@ public class AccountAttributeService {
 		if (!accountAttributeRepository.existsById(id)) {
 			return false;
 		}
+
+		eligibilityReasonRepository.findFirstByConditions_Attribute_IdOrderByReasonCodeAsc(id)
+				.ifPresent(reason -> {
+					throw new RecordInUseException(
+							"account attribute", "eligibility reason", reason.getReasonCode());
+				});
 
 		accountAttributeRepository.deleteById(id);
 		return true;

@@ -92,7 +92,7 @@ public class PricingPlanService {
 	public PricingPlanDetail create(PricingPlanRequest request) {
 		PricingPlanEntity entity = new PricingPlanEntity();
 		apply(entity, request);
-		return toDetail(pricingPlanRepository.save(entity));
+		return toDetail(pricingPlanRepository.saveAndFlush(entity));
 	}
 
 	@Transactional
@@ -100,7 +100,7 @@ public class PricingPlanService {
 		return pricingPlanRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return toDetail(pricingPlanRepository.save(entity));
+					return toDetail(pricingPlanRepository.saveAndFlush(entity));
 				});
 	}
 
@@ -122,18 +122,12 @@ public class PricingPlanService {
 		validateLifecycle(entity, request);
 		var product = productRepository.findById(request.getProductId())
 				.orElseThrow(() -> new IllegalArgumentException("Product with id " + request.getProductId() + " was not found"));
-		var region = regionRepository.findById(request.getRegionId())
-				.orElseThrow(() -> new IllegalArgumentException("Region with id " + request.getRegionId() + " was not found"));
+		var region = regionRepository.getReferenceById(request.getRegionId());
 		validateActivePeriod(entity, request);
 		Map<Long, FeeEntity> feesById = feeRepository
 				.findAllById(request.getFees().stream().map(PricingPlanFeeRequest::getFeeId).toList())
 				.stream()
 				.collect(Collectors.toMap(FeeEntity::getId, Function.identity()));
-		Map<Long, EligibilityReasonEntity> reasonsById = eligibilityReasonRepository
-				.findAllById(request.getFees().stream().flatMap(fee -> fee.getReasonIds().stream()).toList())
-				.stream()
-				.collect(Collectors.toMap(EligibilityReasonEntity::getId, Function.identity()));
-		Set<Long> uniqueFeeIds = new HashSet<>();
 		entity.setPlanCode(request.getPlanCode());
 		entity.setPlanName(request.getPlanName());
 		entity.setProduct(product);
@@ -148,9 +142,6 @@ public class PricingPlanService {
 			if (fee == null) {
 				throw new IllegalArgumentException("Fee with id " + feeRequest.getFeeId() + " was not found");
 			}
-			if (!uniqueFeeIds.add(fee.getId())) {
-				throw new IllegalArgumentException("Duplicate fee with id " + fee.getId());
-			}
 			if (!fee.getProductTypes().contains(product.getProductType())) {
 				throw new IllegalArgumentException("Fee with id " + fee.getId() + " cannot be used for this product type");
 			}
@@ -160,16 +151,8 @@ public class PricingPlanService {
 			pricingPlanFee.setPricingPlan(entity);
 			pricingPlanFee.setFee(fee);
 			pricingPlanFee.setAmount(feeRequest.getAmount());
-			Set<Long> uniqueReasonIds = new HashSet<>();
 			for (Long reasonId : feeRequest.getReasonIds()) {
-				EligibilityReasonEntity reason = reasonsById.get(reasonId);
-				if (reason == null) {
-					throw new IllegalArgumentException("Eligibility reason with id " + reasonId + " was not found");
-				}
-				if (!uniqueReasonIds.add(reason.getId())) {
-					throw new IllegalArgumentException("Duplicate eligibility reason with id " + reason.getId());
-				}
-				pricingPlanFee.getReasons().add(reason);
+				pricingPlanFee.getReasons().add(eligibilityReasonRepository.getReferenceById(reasonId));
 			}
 			entity.getFees().add(pricingPlanFee);
 		}
@@ -231,22 +214,6 @@ public class PricingPlanService {
 		if (entity.getId() == null &&
 				request.getActiveFrom().isBefore(simulatorDateService.getCurrentDate())) {
 			throw new IllegalArgumentException("activeFrom must be on or after the application current date");
-		}
-		if (request.getActiveFrom().isAfter(request.getActiveThrough())) {
-			throw new IllegalArgumentException("activeFrom must be on or before activeThrough");
-		}
-
-		boolean overlaps = entity.getId() == null
-				? pricingPlanRepository
-						.existsByProductIdAndRegionIdAndActiveFromLessThanEqualAndActiveThroughGreaterThanEqual(
-								request.getProductId(), request.getRegionId(), request.getActiveThrough(),
-								request.getActiveFrom())
-				: pricingPlanRepository
-						.existsByProductIdAndRegionIdAndIdNotAndActiveFromLessThanEqualAndActiveThroughGreaterThanEqual(
-								request.getProductId(), request.getRegionId(), entity.getId(), request.getActiveThrough(),
-								request.getActiveFrom());
-		if (overlaps) {
-			throw new IllegalArgumentException("Pricing plan active period overlaps an existing pricing plan");
 		}
 	}
 

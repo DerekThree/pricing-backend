@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
+import com.pricing.backend.config.RecordInUseException;
 import com.pricing.backend.generated.model.AttributeOption;
 import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.ReasonCondition;
@@ -24,6 +25,7 @@ import com.pricing.backend.generated.model.ReasonListItem;
 import com.pricing.backend.generated.model.ReasonOperator;
 import com.pricing.backend.generated.model.ReasonOptions;
 import com.pricing.backend.generated.model.ReasonRequest;
+import com.pricing.backend.pricingplan.PricingPlanFeeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,11 +34,13 @@ public class EligibilityReasonService {
 
 	private final EligibilityReasonRepository eligibilityReasonRepository;
 	private final AccountAttributeRepository accountAttributeRepository;
+	private final PricingPlanFeeRepository pricingPlanFeeRepository;
 
 	public EligibilityReasonService(EligibilityReasonRepository eligibilityReasonRepository,
-			AccountAttributeRepository accountAttributeRepository) {
+			AccountAttributeRepository accountAttributeRepository, PricingPlanFeeRepository pricingPlanFeeRepository) {
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
 		this.accountAttributeRepository = accountAttributeRepository;
+		this.pricingPlanFeeRepository = pricingPlanFeeRepository;
 	}
 
 	@Transactional(readOnly = true)
@@ -77,6 +81,12 @@ public class EligibilityReasonService {
 		if (!eligibilityReasonRepository.existsById(id)) {
 			return false;
 		}
+
+		pricingPlanFeeRepository.findFirstByReasons_IdOrderByPricingPlan_PlanCodeAsc(id)
+				.ifPresent(pricingPlanFee -> {
+					throw new RecordInUseException(
+							"eligibility reason", "pricing plan", pricingPlanFee.getPricingPlan().getPlanCode());
+				});
 
 		eligibilityReasonRepository.deleteById(id);
 		return true;

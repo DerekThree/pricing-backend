@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PricingPlanPostgresMigrationTests {
 
 	private static final String ACTIVE_PERIOD_OVERLAP_CONSTRAINT = "excl_pricing_plans_active_period";
+	private static final String ACTIVE_PERIOD_ORDER_CONSTRAINT = "chk_pricing_plans_active_period_order";
 
 	@Container
 	private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
@@ -61,7 +62,7 @@ class PricingPlanPostgresMigrationTests {
 	}
 
 	@Test
-	void migrationPreventsConcurrentOverlapsAndAllowsValidPeriods() throws Exception {
+	void migrationEnforcesValidActivePeriodsAndPreventsConcurrentOverlaps() throws Exception {
 		Long productId = insertProduct("PROD0001");
 		Long regionId = insertRegion("REG00001");
 		CyclicBarrier barrier = new CyclicBarrier(2);
@@ -84,6 +85,9 @@ class PricingPlanPostgresMigrationTests {
 		DataIntegrityViolationException conflict = assertThrows(DataIntegrityViolationException.class,
 				() -> insertPricingPlan("PLAN0003", productId, regionId, "2026-08-30", "2026-09-01"));
 		assertTrue(hasSqlState(conflict, "23P01"));
+		DataIntegrityViolationException invalidPeriod = assertThrows(DataIntegrityViolationException.class,
+				() -> insertPricingPlan("PLAN0007", productId, regionId, "2026-09-02", "2026-09-01"));
+		assertTrue(hasSqlState(invalidPeriod, "23514"));
 		insertPricingPlan("PLAN0004", productId, regionId, "2026-08-31", "2026-09-01");
 		insertPricingPlan("PLAN0005", insertProduct("PROD0002"), regionId, "2026-08-20", "2026-08-30");
 		insertPricingPlan("PLAN0006", productId, insertRegion("REG00002"), "2026-08-20", "2026-08-30");
@@ -92,6 +96,9 @@ class PricingPlanPostgresMigrationTests {
 		assertEquals(1, jdbcTemplate.queryForObject(
 				"select count(*) from pg_constraint where conname = ? and contype = 'x'", Integer.class,
 				ACTIVE_PERIOD_OVERLAP_CONSTRAINT));
+		assertEquals(1, jdbcTemplate.queryForObject(
+				"select count(*) from pg_constraint where conname = ? and contype = 'c'", Integer.class,
+				ACTIVE_PERIOD_ORDER_CONSTRAINT));
 	}
 
 	private Void insertAfterBarrier(CyclicBarrier barrier, String code, Long productId, Long regionId,

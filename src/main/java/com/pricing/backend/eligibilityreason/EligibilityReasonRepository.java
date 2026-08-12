@@ -14,4 +14,6 @@ public interface EligibilityReasonRepository extends JpaRepository<EligibilityRe
 	@Override
 	@EntityGraph(attributePaths = {"conditions", "conditions.attribute"})
 	Optional<EligibilityReasonEntity> findById(Long id);
+
+	Optional<EligibilityReasonEntity> findFirstByConditions_Attribute_IdOrderByReasonCodeAsc(Long attributeId);
 }
