@@ -1,5 +1,6 @@
 package com.pricing.backend.config;
 
+import java.sql.SQLException;
 import java.util.stream.Collectors;
 
 import com.pricing.backend.generated.model.ErrorResponse;
@@ -17,6 +18,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	private static final String ACTIVE_PERIOD_OVERLAP_CONSTRAINT = "excl_pricing_plans_active_period";
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
@@ -70,7 +73,11 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
-	public ResponseEntity<ErrorResponse> handleDataIntegrityViolation() {
+	public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+		if (hasActivePeriodOverlap(ex)) {
+			return badRequest("Pricing plan active period overlaps an existing pricing plan");
+		}
+
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(new ErrorResponse("A record with the same code already exists"));
 	}
@@ -89,5 +96,18 @@ public class GlobalExceptionHandler {
 
 	private ResponseEntity<ErrorResponse> badRequest(String message) {
 		return ResponseEntity.badRequest().body(new ErrorResponse(message));
+	}
+
+	private boolean hasActivePeriodOverlap(Throwable exception) {
+		Throwable cause = exception;
+		while (cause != null) {
+			if (cause instanceof SQLException sqlException && "23P01".equals(sqlException.getSQLState())
+					&& sqlException.getMessage().contains(ACTIVE_PERIOD_OVERLAP_CONSTRAINT)) {
+				return true;
+			}
+			cause = cause.getCause();
+		}
+
+		return false;
 	}
 }
