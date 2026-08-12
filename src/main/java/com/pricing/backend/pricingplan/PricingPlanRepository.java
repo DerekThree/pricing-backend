@@ -1,5 +1,6 @@
 package com.pricing.backend.pricingplan;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,4 +19,7 @@ public interface PricingPlanRepository extends JpaRepository<PricingPlanEntity, 
 	Optional<PricingPlanEntity> findFirstByProductIdOrderByPlanCodeAsc(Long productId);
 
 	Optional<PricingPlanEntity> findFirstByRegionIdOrderByPlanCodeAsc(Long regionId);
+
+	List<PricingPlanEntity> findAllByProductIdAndRegionIdAndActiveThroughGreaterThanEqual(
+			Long productId, Long regionId, LocalDate activeThrough);
 }

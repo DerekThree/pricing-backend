@@ -1,5 +1,6 @@
 package com.pricing.backend.pricingplan;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -14,9 +15,11 @@ import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.model.FeeOption;
 import com.pricing.backend.generated.model.PricingPlanDetail;
 import com.pricing.backend.generated.model.PricingPlanFeeRequest;
+import com.pricing.backend.generated.model.PricingPlanInterval;
 import com.pricing.backend.generated.model.PricingPlanListItem;
 import com.pricing.backend.generated.model.PricingPlanOptions;
 import com.pricing.backend.generated.model.PricingPlanRequest;
@@ -27,6 +30,7 @@ import com.pricing.backend.product.ProductEntity;
 import com.pricing.backend.product.ProductRepository;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.backend.region.RegionRepository;
+import com.pricing.backend.simulator.SimulatorDateService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,15 +42,17 @@ public class PricingPlanService {
 	private final RegionRepository regionRepository;
 	private final FeeRepository feeRepository;
 	private final EligibilityReasonRepository eligibilityReasonRepository;
+	private final SimulatorDateService simulatorDateService;
 
 	public PricingPlanService(PricingPlanRepository pricingPlanRepository, ProductRepository productRepository,
 			RegionRepository regionRepository, FeeRepository feeRepository,
-			EligibilityReasonRepository eligibilityReasonRepository) {
+			EligibilityReasonRepository eligibilityReasonRepository, SimulatorDateService simulatorDateService) {
 		this.pricingPlanRepository = pricingPlanRepository;
 		this.productRepository = productRepository;
 		this.regionRepository = regionRepository;
 		this.feeRepository = feeRepository;
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
+		this.simulatorDateService = simulatorDateService;
 	}
 
 	@Transactional(readOnly = true)
@@ -62,8 +68,24 @@ public class PricingPlanService {
 	}
 
 	@Transactional(readOnly = true)
-	public PricingPlanOptions getOptions() {
-		return buildPricingPlanOptions();
+	public PricingPlanOptions getOptions(Long recordId) {
+		PricingPlanOptions options = buildPricingPlanOptions();
+		if (recordId == null) {
+			return options;
+		}
+
+		PricingPlanEntity record = pricingPlanRepository.findById(recordId)
+				.orElseThrow(() -> new RecordNotFoundException("Pricing plan", recordId));
+		return addSecondaryOptions(options, record.getProduct(), record.getRegion());
+	}
+
+	@Transactional(readOnly = true)
+	public PricingPlanOptions getSecondaryOptions(Long productId, Long regionId) {
+		ProductEntity product = productRepository.findById(productId)
+				.orElseThrow(() -> new RecordNotFoundException("Product", productId));
+		RegionEntity region = regionRepository.findById(regionId)
+				.orElseThrow(() -> new RecordNotFoundException("Region", regionId));
+		return addSecondaryOptions(buildPricingPlanOptions(), product, region);
 	}
 
 	@Transactional
@@ -178,21 +200,20 @@ public class PricingPlanService {
 				entity.getUpdatedBy(),
 				entity.getId(),
 				entity.getUpdatedOn(),
-				new PricingPlanOptions(
-						List.of(toProductOption(entity.getProduct())),
-						List.of(toRegionOption(entity.getRegion())),
-						entity.getFees().stream()
+				new PricingPlanOptions(List.of(toProductOption(entity.getProduct())),
+						List.of(toRegionOption(entity.getRegion())))
+						.fees(entity.getFees().stream()
 								.sorted(pricingPlanFeeComparator())
 								.map(PricingPlanFeeEntity::getFee)
 								.map(this::toFeeOption)
-								.toList(),
-						entity.getFees().stream()
+								.toList())
+						.reasons(entity.getFees().stream()
 								.flatMap(fee -> fee.getReasons().stream())
 								.distinct()
 								.sorted(reasonComparator())
 								.map(this::toReasonOption)
-								.toList()
-				)
+								.toList())
+						.intervals(null)
 		);
 	}
 
@@ -215,14 +236,31 @@ public class PricingPlanService {
 						.toList(),
 				regionRepository.findAllByOrderByRegionCodeAsc().stream()
 						.map(this::toRegionOption)
-						.toList(),
-				feeRepository.findAllByOrderByFeeCodeAsc().stream()
+						.toList())
+				.currentDate(simulatorDateService.getCurrentDate())
+				.fees(null)
+				.reasons(null)
+				.intervals(null);
+	}
+
+	private PricingPlanOptions addSecondaryOptions(PricingPlanOptions options, ProductEntity product,
+			RegionEntity region) {
+		LocalDate currentDate = options.getCurrentDate();
+		return options
+				.productId(product.getId())
+				.regionId(region.getId())
+				.fees(feeRepository.findAllByOrderByFeeCodeAsc().stream()
+						.filter(fee -> fee.getProductTypes().contains(product.getProductType()))
 						.map(this::toFeeOption)
-						.toList(),
-				eligibilityReasonRepository.findAllByOrderByReasonCodeAsc().stream()
+						.toList())
+				.reasons(eligibilityReasonRepository.findAllByOrderByReasonCodeAsc().stream()
 						.map(this::toReasonOption)
-						.toList()
-		);
+						.toList())
+				.intervals(pricingPlanRepository
+						.findAllByProductIdAndRegionIdAndActiveThroughGreaterThanEqual(product.getId(), region.getId(), currentDate)
+						.stream()
+						.map(plan -> new PricingPlanInterval(plan.getActiveFrom(), plan.getActiveThrough()))
+						.toList());
 	}
 
 	private ProductOption toProductOption(ProductEntity product) {

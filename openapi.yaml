@@ -443,13 +443,54 @@ paths:
       tags: [Pricing Plans]
       operationId: getPricingPlanOptions
       summary: Get available pricing plan options
+      parameters:
+        - name: recordId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
       responses:
         "200":
-          description: Available products and regions for pricing plan forms
+          description: Available options for pricing plan forms
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PricingPlanOptions"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
+  /pricing-plans/options/secondary:
+    get:
+      tags: [Pricing Plans]
+      operationId: getPricingPlanSecondaryOptions
+      summary: Get available pricing plan options for a product and region
+      parameters:
+        - name: productId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: regionId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Available secondary pricing plan options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PricingPlanOptions"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
         "500":
           $ref: "#/components/responses/Error"
         "503":
@@ -1214,12 +1255,13 @@ components:
 
     PricingPlanOptions:
       type: object
+      x-class-extra-annotation: "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)"
       required:
         - products
         - regions
-        - fees
-        - reasons
       properties:
+        currentDate:
+          $ref: "#/components/schemas/Date"
         products:
           type: array
           items:
@@ -1236,6 +1278,25 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ReasonOption"
+        productId:
+          $ref: "#/components/schemas/Id"
+        regionId:
+          $ref: "#/components/schemas/Id"
+        intervals:
+          type: array
+          items:
+            $ref: "#/components/schemas/PricingPlanInterval"
+
+    PricingPlanInterval:
+      type: object
+      required:
+        - activeFrom
+        - activeThrough
+      properties:
+        activeFrom:
+          $ref: "#/components/schemas/Date"
+        activeThrough:
+          $ref: "#/components/schemas/Date"
 
     AttributeListItem:
       type: object

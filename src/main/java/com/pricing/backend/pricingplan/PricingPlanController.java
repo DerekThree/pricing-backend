@@ -35,8 +35,13 @@ public class PricingPlanController implements PricingPlansApi {
 	}
 
 	@Override
-	public ResponseEntity<PricingPlanOptions> getPricingPlanOptions() {
-		return ResponseEntity.ok(pricingPlanService.getOptions());
+	public ResponseEntity<PricingPlanOptions> getPricingPlanOptions(Long recordId) {
+		return ResponseEntity.ok(pricingPlanService.getOptions(recordId));
+	}
+
+	@Override
+	public ResponseEntity<PricingPlanOptions> getPricingPlanSecondaryOptions(Long productId, Long regionId) {
+		return ResponseEntity.ok(pricingPlanService.getSecondaryOptions(productId, regionId));
 	}
 
 	@Override
