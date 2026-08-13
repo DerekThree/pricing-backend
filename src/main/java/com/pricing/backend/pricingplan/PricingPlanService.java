@@ -2,8 +2,6 @@ package com.pricing.backend.pricingplan;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -11,21 +9,16 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
 import com.pricing.backend.config.RecordNotFoundException;
-import com.pricing.backend.generated.model.FeeOption;
 import com.pricing.backend.generated.model.PricingPlanDetail;
 import com.pricing.backend.generated.model.PricingPlanFeeRequest;
 import com.pricing.backend.generated.model.PricingPlanInterval;
 import com.pricing.backend.generated.model.PricingPlanListItem;
 import com.pricing.backend.generated.model.PricingPlanOptions;
 import com.pricing.backend.generated.model.PricingPlanRequest;
-import com.pricing.backend.generated.model.ProductOption;
-import com.pricing.backend.generated.model.ReasonOption;
-import com.pricing.backend.generated.model.RegionOption;
 import com.pricing.backend.product.ProductEntity;
 import com.pricing.backend.product.ProductRepository;
 import com.pricing.backend.region.RegionEntity;
@@ -43,28 +36,33 @@ public class PricingPlanService {
 	private final FeeRepository feeRepository;
 	private final EligibilityReasonRepository eligibilityReasonRepository;
 	private final SimulatorDateService simulatorDateService;
+	private final PricingPlanValidator pricingPlanValidator;
+	private final PricingPlanMapper pricingPlanMapper;
 
 	public PricingPlanService(PricingPlanRepository pricingPlanRepository, ProductRepository productRepository,
 			RegionRepository regionRepository, FeeRepository feeRepository,
-			EligibilityReasonRepository eligibilityReasonRepository, SimulatorDateService simulatorDateService) {
+			EligibilityReasonRepository eligibilityReasonRepository, SimulatorDateService simulatorDateService,
+			PricingPlanValidator pricingPlanValidator, PricingPlanMapper pricingPlanMapper) {
 		this.pricingPlanRepository = pricingPlanRepository;
 		this.productRepository = productRepository;
 		this.regionRepository = regionRepository;
 		this.feeRepository = feeRepository;
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
 		this.simulatorDateService = simulatorDateService;
+		this.pricingPlanValidator = pricingPlanValidator;
+		this.pricingPlanMapper = pricingPlanMapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<PricingPlanListItem> list() {
 		return pricingPlanRepository.findAllByOrderByPlanCodeAsc().stream()
-				.map(this::toListItem)
+				.map(pricingPlanMapper::toPricingPlanListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<PricingPlanDetail> get(Long id) {
-		return pricingPlanRepository.findById(id).map(this::toDetail);
+		return pricingPlanRepository.findById(id).map(pricingPlanMapper::toPricingPlanDetail);
 	}
 
 	@Transactional(readOnly = true)
@@ -92,7 +90,7 @@ public class PricingPlanService {
 	public PricingPlanDetail create(PricingPlanRequest request) {
 		PricingPlanEntity entity = new PricingPlanEntity();
 		apply(entity, request);
-		return toDetail(pricingPlanRepository.saveAndFlush(entity));
+		return pricingPlanMapper.toPricingPlanDetail(pricingPlanRepository.saveAndFlush(entity));
 	}
 
 	@Transactional
@@ -100,7 +98,7 @@ public class PricingPlanService {
 		return pricingPlanRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return toDetail(pricingPlanRepository.saveAndFlush(entity));
+					return pricingPlanMapper.toPricingPlanDetail(pricingPlanRepository.saveAndFlush(entity));
 				});
 	}
 
@@ -108,10 +106,7 @@ public class PricingPlanService {
 	public boolean delete(Long id) {
 		return pricingPlanRepository.findById(id)
 				.map(entity -> {
-					if (isActive(entity, simulatorDateService.getCurrentDate())) {
-						throw new IllegalArgumentException("Active pricing plans cannot be deleted");
-					}
-
+					pricingPlanValidator.validateCanDelete(entity);
 					pricingPlanRepository.delete(entity);
 					return true;
 				})
@@ -119,11 +114,10 @@ public class PricingPlanService {
 	}
 
 	private void apply(PricingPlanEntity entity, PricingPlanRequest request) {
-		validateLifecycle(entity, request);
+		pricingPlanValidator.validate(entity, request);
 		var product = productRepository.findById(request.getProductId())
 				.orElseThrow(() -> new IllegalArgumentException("Product with id " + request.getProductId() + " was not found"));
 		var region = regionRepository.getReferenceById(request.getRegionId());
-		validateActivePeriod(entity, request);
 		Map<Long, FeeEntity> feesById = feeRepository
 				.findAllById(request.getFees().stream().map(PricingPlanFeeRequest::getFeeId).toList())
 				.stream()
@@ -158,129 +152,13 @@ public class PricingPlanService {
 		}
 	}
 
-	private void validateLifecycle(PricingPlanEntity entity, PricingPlanRequest request) {
-		LocalDate currentDate = simulatorDateService.getCurrentDate();
-		if (entity.getId() == null || currentDate.isBefore(entity.getActiveFrom())) {
-			return;
-		}
-
-		if (isActive(entity, currentDate)) {
-			if (!hasSameActiveFields(entity, request)) {
-				throw new IllegalArgumentException("Only planName and activeThrough can be updated for an active pricing plan");
-			}
-			if (request.getActiveThrough().isBefore(currentDate)) {
-				throw new IllegalArgumentException("activeThrough must be on or after the application current date");
-			}
-			return;
-		}
-
-		if (!hasSamePastFields(entity, request)) {
-			throw new IllegalArgumentException("Only planName can be updated for a past pricing plan");
-		}
-	}
-
-	private boolean isActive(PricingPlanEntity entity, LocalDate currentDate) {
-		return !entity.getActiveFrom().isAfter(currentDate) && !entity.getActiveThrough().isBefore(currentDate);
-	}
-
-	private boolean hasSameActiveFields(PricingPlanEntity entity, PricingPlanRequest request) {
-		return entity.getPlanCode().equals(request.getPlanCode())
-				&& entity.getProduct().getId().equals(request.getProductId())
-				&& entity.getRegion().getId().equals(request.getRegionId())
-				&& entity.getActiveFrom().equals(request.getActiveFrom())
-				&& hasSameFees(entity, request);
-	}
-
-	private boolean hasSamePastFields(PricingPlanEntity entity, PricingPlanRequest request) {
-		return hasSameActiveFields(entity, request)
-				&& entity.getActiveThrough().equals(request.getActiveThrough());
-	}
-
-	private boolean hasSameFees(PricingPlanEntity entity, PricingPlanRequest request) {
-		if (entity.getFees().size() != request.getFees().size()) {
-			return false;
-		}
-
-		return request.getFees().stream().allMatch(requestFee -> entity.getFees().stream()
-				.filter(entityFee -> entityFee.getFee().getId().equals(requestFee.getFeeId()))
-				.findFirst()
-				.map(entityFee -> entityFee.getAmount().compareTo(requestFee.getAmount()) == 0
-						&& entityFee.getReasons().stream().map(EligibilityReasonEntity::getId).collect(Collectors.toSet())
-								.equals(new HashSet<>(requestFee.getReasonIds())))
-				.orElse(false));
-	}
-
-	private void validateActivePeriod(PricingPlanEntity entity, PricingPlanRequest request) {
-		if (entity.getId() == null &&
-				request.getActiveFrom().isBefore(simulatorDateService.getCurrentDate())) {
-			throw new IllegalArgumentException("activeFrom must be on or after the application current date");
-		}
-	}
-
-	private PricingPlanListItem toListItem(PricingPlanEntity entity) {
-		return new PricingPlanListItem(
-				entity.getId(),
-				formatCodeAndName(entity.getPlanCode(), entity.getPlanName()),
-				formatCodeAndName(entity.getProduct().getProductCode(), entity.getProduct().getProductName()),
-				formatCodeAndName(entity.getRegion().getRegionCode(), entity.getRegion().getRegionName()),
-				entity.getActiveFrom(),
-				entity.getActiveThrough(),
-				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
-		);
-	}
-
-	private PricingPlanDetail toDetail(PricingPlanEntity entity) {
-		return new PricingPlanDetail(
-				entity.getPlanCode(),
-				entity.getPlanName(),
-				entity.getProduct().getId(),
-				entity.getRegion().getId(),
-				entity.getActiveFrom(),
-				entity.getActiveThrough(),
-				entity.getFees().stream()
-						.sorted(pricingPlanFeeComparator())
-						.map(this::toPricingPlanFeeDetail)
-						.toList(),
-				entity.getUpdatedBy(),
-				entity.getId(),
-				entity.getUpdatedOn(),
-				new PricingPlanOptions(List.of(toProductOption(entity.getProduct())),
-						List.of(toRegionOption(entity.getRegion())))
-						.fees(entity.getFees().stream()
-								.sorted(pricingPlanFeeComparator())
-								.map(PricingPlanFeeEntity::getFee)
-								.map(this::toFeeOption)
-								.toList())
-						.reasons(entity.getFees().stream()
-								.flatMap(fee -> fee.getReasons().stream())
-								.distinct()
-								.sorted(reasonComparator())
-								.map(this::toReasonOption)
-								.toList())
-						.intervals(null)
-		);
-	}
-
-	private PricingPlanFeeRequest toPricingPlanFeeDetail(PricingPlanFeeEntity entity) {
-		return new PricingPlanFeeRequest(
-				entity.getFee().getId(), entity.getAmount(), entity.getReasons().stream()
-						.sorted(reasonComparator())
-						.map(reason -> reason.getId())
-						.toList());
-	}
-
-	private String formatCodeAndName(String code, String name) {
-		return code + " - " + name;
-	}
-
 	private PricingPlanOptions buildPricingPlanOptions() {
 		return new PricingPlanOptions(
 				productRepository.findAllByOrderByProductCodeAsc().stream()
-						.map(this::toProductOption)
+						.map(pricingPlanMapper::toProductOption)
 						.toList(),
 				regionRepository.findAllByOrderByRegionCodeAsc().stream()
-						.map(this::toRegionOption)
+						.map(pricingPlanMapper::toRegionOption)
 						.toList())
 				.currentDate(simulatorDateService.getCurrentDate())
 				.fees(null)
@@ -296,10 +174,10 @@ public class PricingPlanService {
 				.regionId(region.getId())
 				.fees(feeRepository.findAllByOrderByFeeCodeAsc().stream()
 						.filter(fee -> fee.getProductTypes().contains(product.getProductType()))
-						.map(this::toFeeOption)
+						.map(pricingPlanMapper::toFeeOption)
 						.toList())
 				.reasons(eligibilityReasonRepository.findAllByOrderByReasonCodeAsc().stream()
-						.map(this::toReasonOption)
+						.map(pricingPlanMapper::toReasonOption)
 						.toList())
 				.intervals(pricingPlanRepository
 						.findAllByProductIdAndRegionIdAndActiveThroughGreaterThanEqual(product.getId(), region.getId(), currentDate)
@@ -309,46 +187,4 @@ public class PricingPlanService {
 						.toList());
 	}
 
-	private ProductOption toProductOption(ProductEntity product) {
-		return new ProductOption(
-				product.getId(),
-				product.getProductCode(),
-				product.getProductName(),
-				product.getProductType()
-		);
-	}
-
-	private RegionOption toRegionOption(RegionEntity region) {
-		return new RegionOption(
-				region.getId(), 
-				region.getRegionCode(), 
-				region.getRegionName()
-		);
-	}
-
-	private FeeOption toFeeOption(FeeEntity fee) {
-		return new FeeOption(
-				fee.getId(),
-				fee.getFeeCode(),
-				fee.getFeeName(),
-				fee.getFeeType(),
-				fee.getProductTypes()
-		);
-	}
-
-	private ReasonOption toReasonOption(EligibilityReasonEntity reason) {
-		return new ReasonOption(
-				reason.getId(),
-				reason.getReasonCode(),
-				reason.getReasonName()
-		);
-	}
-
-	private Comparator<PricingPlanFeeEntity> pricingPlanFeeComparator() {
-		return Comparator.comparing((PricingPlanFeeEntity fee) -> fee.getFee().getFeeCode());
-	}
-
-	private Comparator<EligibilityReasonEntity> reasonComparator() {
-		return Comparator.comparing(EligibilityReasonEntity::getReasonCode);
-	}
 }
