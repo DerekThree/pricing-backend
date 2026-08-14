@@ -10,15 +10,15 @@ import com.pricing.backend.simulator.SimulatorDateService;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PricingPlanValidator {
+class PricingPlanValidator {
 
 	private final SimulatorDateService simulatorDateService;
 
-	public PricingPlanValidator(SimulatorDateService simulatorDateService) {
+	PricingPlanValidator(SimulatorDateService simulatorDateService) {
 		this.simulatorDateService = simulatorDateService;
 	}
 
-	public void validate(PricingPlanEntity entity, PricingPlanRequest request) {
+	void validate(PricingPlanEntity entity, PricingPlanRequest request) {
 		LocalDate currentDate = simulatorDateService.getCurrentDate();
 		validateLifecycle(entity, request, currentDate);
 		if (entity.getId() == null && request.getActiveFrom().isBefore(currentDate)) {
@@ -26,7 +26,7 @@ public class PricingPlanValidator {
 		}
 	}
 
-	public void validateCanDelete(PricingPlanEntity entity) {
+	void validateCanDelete(PricingPlanEntity entity) {
 		if (isActive(entity, simulatorDateService.getCurrentDate())) {
 			throw new IllegalArgumentException("Active pricing plans cannot be deleted");
 		}

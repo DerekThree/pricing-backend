@@ -14,7 +14,7 @@ import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
 import com.pricing.backend.config.RecordNotFoundException;
 import com.pricing.backend.generated.model.PricingPlanDetail;
-import com.pricing.backend.generated.model.PricingPlanFeeRequest;
+import com.pricing.backend.generated.model.PricingPlanFee;
 import com.pricing.backend.generated.model.PricingPlanInterval;
 import com.pricing.backend.generated.model.PricingPlanListItem;
 import com.pricing.backend.generated.model.PricingPlanOptions;
@@ -119,7 +119,7 @@ public class PricingPlanService {
 				.orElseThrow(() -> new IllegalArgumentException("Product with id " + request.getProductId() + " was not found"));
 		var region = regionRepository.getReferenceById(request.getRegionId());
 		Map<Long, FeeEntity> feesById = feeRepository
-				.findAllById(request.getFees().stream().map(PricingPlanFeeRequest::getFeeId).toList())
+				.findAllById(request.getFees().stream().map(PricingPlanFee::getFeeId).toList())
 				.stream()
 				.collect(Collectors.toMap(FeeEntity::getId, Function.identity()));
 		entity.setPlanCode(request.getPlanCode());
@@ -131,7 +131,7 @@ public class PricingPlanService {
 		entity.setUpdatedBy(request.getUpdatedBy());
 		entity.setUpdatedOn(OffsetDateTime.now());
 		entity.getFees().clear();
-		for (PricingPlanFeeRequest feeRequest : request.getFees()) {
+		for (PricingPlanFee feeRequest : request.getFees()) {
 			FeeEntity fee = feesById.get(feeRequest.getFeeId());
 			if (fee == null) {
 				throw new IllegalArgumentException("Fee with id " + feeRequest.getFeeId() + " was not found");

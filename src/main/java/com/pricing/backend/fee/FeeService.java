@@ -17,38 +17,43 @@ public class FeeService {
 
 	private final FeeRepository feeRepository;
 	private final PricingPlanFeeRepository pricingPlanFeeRepository;
+	private final FeeValidator feeValidator;
+	private final FeeMapper feeMapper;
 
-	public FeeService(FeeRepository feeRepository, PricingPlanFeeRepository pricingPlanFeeRepository) {
+	public FeeService(FeeRepository feeRepository, PricingPlanFeeRepository pricingPlanFeeRepository,
+			FeeValidator feeValidator, FeeMapper feeMapper) {
 		this.feeRepository = feeRepository;
 		this.pricingPlanFeeRepository = pricingPlanFeeRepository;
+		this.feeValidator = feeValidator;
+		this.feeMapper = feeMapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<FeeListItem> list() {
 		return feeRepository.findAllByOrderByFeeCodeAsc().stream()
-				.map(this::toListItem)
+				.map(feeMapper::toFeeListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<FeeDetail> get(Long id) {
-		return feeRepository.findById(id).map(this::toDetail);
+		return feeRepository.findById(id).map(feeMapper::toFeeDetail);
 	}
 
 	@Transactional
 	public FeeDetail create(FeeRequest request) {
 		FeeEntity entity = new FeeEntity();
 		apply(entity, request);
-		return toDetail(feeRepository.save(entity));
+		return feeMapper.toFeeDetail(feeRepository.save(entity));
 	}
 
 	@Transactional
 	public Optional<FeeDetail> update(Long id, FeeRequest request) {
 		return feeRepository.findById(id)
 				.map(entity -> {
-					validateFeeTypeCanChange(entity, request);
+					feeValidator.validateFeeTypeCanChange(entity, request);
 					apply(entity, request);
-					return toDetail(feeRepository.save(entity));
+					return feeMapper.toFeeDetail(feeRepository.save(entity));
 				});
 	}
 
@@ -68,18 +73,6 @@ public class FeeService {
 		return true;
 	}
 
-	private void validateFeeTypeCanChange(FeeEntity entity, FeeRequest request) {
-		if (entity.getFeeType() == request.getFeeType()) {
-			return;
-		}
-
-		pricingPlanFeeRepository.findFirstByFee_IdOrderByPricingPlan_PlanCodeAsc(entity.getId())
-				.ifPresent(pricingPlanFee -> {
-					throw new RecordInUseException(
-							"fee", "pricing plan", pricingPlanFee.getPricingPlan().getPlanCode());
-				});
-	}
-
 	private void apply(FeeEntity entity, FeeRequest request) {
 		entity.setFeeCode(request.getFeeCode());
 		entity.setFeeName(request.getFeeName());
@@ -89,30 +82,4 @@ public class FeeService {
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
 
-	private FeeListItem toListItem(FeeEntity entity) {
-		return new FeeListItem(
-				entity.getId(),
-				formatCodeAndName(entity.getFeeCode(), entity.getFeeName()),
-				entity.getFeeType(),
-				entity.getProductTypes(),
-				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
-		);
-	}
-
-	private FeeDetail toDetail(FeeEntity entity) {
-		return new FeeDetail(
-				entity.getFeeCode(),
-				entity.getFeeName(),
-				entity.getFeeType(),
-				entity.getProductTypes(),
-				entity.getUpdatedBy(),
-				entity.getId(),
-				entity.getUpdatedOn()
-		);
-	}
-
-	private String formatCodeAndName(String code, String name) {
-		return code + " - " + name;
-	}
 }

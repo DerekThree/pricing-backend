@@ -1211,11 +1211,11 @@ components:
         fees:
           type: array
           items:
-            $ref: "#/components/schemas/PricingPlanFeeRequest"
+            $ref: "#/components/schemas/PricingPlanFee"
         updatedBy:
           $ref: "#/components/schemas/UpdatedBy"
 
-    PricingPlanFeeRequest:
+    PricingPlanFee:
       type: object
       required:
         - feeId

@@ -17,29 +17,32 @@ public class ProductService {
 
 	private final ProductRepository productRepository;
 	private final PricingPlanRepository pricingPlanRepository;
+	private final ProductMapper productMapper;
 
-	public ProductService(ProductRepository productRepository, PricingPlanRepository pricingPlanRepository) {
+	public ProductService(ProductRepository productRepository, PricingPlanRepository pricingPlanRepository,
+			ProductMapper productMapper) {
 		this.productRepository = productRepository;
 		this.pricingPlanRepository = pricingPlanRepository;
+		this.productMapper = productMapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<ProductListItem> list() {
 		return productRepository.findAllByOrderByProductCodeAsc().stream()
-				.map(this::toListItem)
+				.map(productMapper::toProductListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<ProductDetail> get(Long id) {
-		return productRepository.findById(id).map(this::toDetail);
+		return productRepository.findById(id).map(productMapper::toProductDetail);
 	}
 
 	@Transactional
 	public ProductDetail create(ProductRequest request) {
 		ProductEntity entity = new ProductEntity();
 		apply(entity, request);
-		return toDetail(productRepository.save(entity));
+		return productMapper.toProductDetail(productRepository.save(entity));
 	}
 
 	@Transactional
@@ -47,7 +50,7 @@ public class ProductService {
 		return productRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return toDetail(productRepository.save(entity));
+					return productMapper.toProductDetail(productRepository.save(entity));
 				});
 	}
 
@@ -74,28 +77,4 @@ public class ProductService {
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
 
-	private ProductListItem toListItem(ProductEntity entity) {
-		return new ProductListItem(
-				entity.getId(),
-				formatCodeAndName(entity.getProductCode(), entity.getProductName()),
-				entity.getProductType(),
-				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
-		);
-	}
-
-	private ProductDetail toDetail(ProductEntity entity) {
-		return new ProductDetail(
-				entity.getProductCode(),
-				entity.getProductName(),
-				entity.getProductType(),
-				entity.getUpdatedBy(),
-				entity.getId(),
-				entity.getUpdatedOn()
-		);
-	}
-
-	private String formatCodeAndName(String code, String name) {
-		return code + " - " + name;
-	}
 }

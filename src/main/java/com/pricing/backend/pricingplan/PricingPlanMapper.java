@@ -7,7 +7,7 @@ import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.generated.model.FeeOption;
 import com.pricing.backend.generated.model.PricingPlanDetail;
-import com.pricing.backend.generated.model.PricingPlanFeeRequest;
+import com.pricing.backend.generated.model.PricingPlanFee;
 import com.pricing.backend.generated.model.PricingPlanListItem;
 import com.pricing.backend.generated.model.PricingPlanOptions;
 import com.pricing.backend.generated.model.ProductOption;
@@ -18,9 +18,9 @@ import com.pricing.backend.region.RegionEntity;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PricingPlanMapper {
+class PricingPlanMapper {
 
-	public PricingPlanListItem toPricingPlanListItem(PricingPlanEntity entity) {
+	PricingPlanListItem toPricingPlanListItem(PricingPlanEntity entity) {
 		return new PricingPlanListItem(
 				entity.getId(),
 				formatCodeAndName(entity.getPlanCode(), entity.getPlanName()),
@@ -33,7 +33,7 @@ public class PricingPlanMapper {
 		);
 	}
 
-	public PricingPlanDetail toPricingPlanDetail(PricingPlanEntity entity) {
+	PricingPlanDetail toPricingPlanDetail(PricingPlanEntity entity) {
 		return new PricingPlanDetail(
 				entity.getPlanCode(),
 				entity.getPlanName(),
@@ -43,7 +43,7 @@ public class PricingPlanMapper {
 				entity.getActiveThrough(),
 				entity.getFees().stream()
 						.sorted(pricingPlanFeeComparator())
-						.map(this::toPricingPlanFeeDetail)
+						.map(this::toPricingPlanFee)
 						.toList(),
 				entity.getUpdatedBy(),
 				entity.getId(),
@@ -65,15 +65,15 @@ public class PricingPlanMapper {
 		);
 	}
 
-	public PricingPlanFeeRequest toPricingPlanFeeDetail(PricingPlanFeeEntity entity) {
-		return new PricingPlanFeeRequest(
+	PricingPlanFee toPricingPlanFee(PricingPlanFeeEntity entity) {
+		return new PricingPlanFee(
 				entity.getFee().getId(), entity.getAmount(), entity.getReasons().stream()
 						.sorted(reasonComparator())
 						.map(reason -> reason.getId())
 						.toList());
 	}
 
-	public ProductOption toProductOption(ProductEntity product) {
+	ProductOption toProductOption(ProductEntity product) {
 		return new ProductOption(
 				product.getId(),
 				product.getProductCode(),
@@ -82,7 +82,7 @@ public class PricingPlanMapper {
 		);
 	}
 
-	public RegionOption toRegionOption(RegionEntity region) {
+	RegionOption toRegionOption(RegionEntity region) {
 		return new RegionOption(
 				region.getId(),
 				region.getRegionCode(),
@@ -90,7 +90,7 @@ public class PricingPlanMapper {
 		);
 	}
 
-	public FeeOption toFeeOption(FeeEntity fee) {
+	FeeOption toFeeOption(FeeEntity fee) {
 		return new FeeOption(
 				fee.getId(),
 				fee.getFeeCode(),
@@ -100,7 +100,7 @@ public class PricingPlanMapper {
 		);
 	}
 
-	public ReasonOption toReasonOption(EligibilityReasonEntity reason) {
+	ReasonOption toReasonOption(EligibilityReasonEntity reason) {
 		return new ReasonOption(
 				reason.getId(),
 				reason.getReasonCode(),

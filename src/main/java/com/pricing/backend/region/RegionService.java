@@ -3,10 +3,8 @@ package com.pricing.backend.region;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.pricing.backend.branch.BranchEntity;
@@ -28,24 +26,26 @@ public class RegionService {
 	private final RegionRepository regionRepository;
 	private final BranchRepository branchRepository;
 	private final PricingPlanRepository pricingPlanRepository;
+	private final RegionMapper regionMapper;
 
 	public RegionService(RegionRepository regionRepository, BranchRepository branchRepository,
-			PricingPlanRepository pricingPlanRepository) {
+			PricingPlanRepository pricingPlanRepository, RegionMapper regionMapper) {
 		this.regionRepository = regionRepository;
 		this.branchRepository = branchRepository;
 		this.pricingPlanRepository = pricingPlanRepository;
+		this.regionMapper = regionMapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<RegionListItem> list() {
 		return regionRepository.findAllByOrderByRegionCodeAsc().stream()
-				.map(this::toListItem)
+				.map(regionMapper::toRegionListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<RegionDetail> get(Long id) {
-		return regionRepository.findById(id).map(this::toDetail);
+		return regionRepository.findById(id).map(regionMapper::toRegionDetail);
 	}
 
 	@Transactional(readOnly = true)
@@ -59,7 +59,7 @@ public class RegionService {
 	public RegionDetail create(RegionRequest request) {
 		RegionEntity entity = new RegionEntity();
 		apply(entity, request);
-		return toDetail(regionRepository.save(entity));
+		return regionMapper.toRegionDetail(regionRepository.save(entity));
 	}
 
 	@Transactional
@@ -67,7 +67,7 @@ public class RegionService {
 		return regionRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return toDetail(regionRepository.save(entity));
+					return regionMapper.toRegionDetail(regionRepository.save(entity));
 				});
 	}
 
@@ -97,56 +97,13 @@ public class RegionService {
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
 
-	private RegionListItem toListItem(RegionEntity entity) {
-		Map<Long, BranchEntity> branchesById = branchRepository.findAllById(entity.getBranches()).stream()
-				.collect(Collectors.toMap(BranchEntity::getId, Function.identity()));
-		return new RegionListItem(
-				entity.getId(),
-				formatCodeAndName(entity.getRegionCode(), entity.getRegionName()),
-				entity.getStates(),
-				entity.getZipCodes(),
-				entity.getBranches().stream()
-						.map(branchesById::get)
-						.map(BranchEntity::getBranchCode)
-						.toList(),
-				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
-		);
-	}
-
-	private RegionDetail toDetail(RegionEntity entity) {
-		Map<Long, BranchEntity> branchesById = branchRepository.findAllById(entity.getBranches()).stream()
-				.collect(Collectors.toMap(BranchEntity::getId, Function.identity()));
-		return new RegionDetail(
-				entity.getRegionCode(),
-				entity.getRegionName(),
-				entity.getStates(),
-				entity.getZipCodes(),
-				entity.getBranches(),
-				entity.getUpdatedBy(),
-				entity.getId(),
-				entity.getUpdatedOn(),
-				new RegionOptions(
-						entity.getStates(),
-						entity.getZipCodes(),
-						entity.getBranches().stream()
-								.map(branchesById::get)
-								.map(branch -> new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName()))
-								.toList()
-				)
-		);
-	}
-
 	private void validateBranchesExist(List<Long> branchIds) {
 		Set<Long> uniqueBranchIds = new LinkedHashSet<>(branchIds);
-		List<Long> existingBranchIds = branchRepository.findAllById(uniqueBranchIds).stream().map(BranchEntity::getId).toList();
+		List<Long> existingBranchIds = branchRepository.findAllById(uniqueBranchIds).stream()
+				.map(BranchEntity::getId).toList();
 		if (existingBranchIds.size() != uniqueBranchIds.size()) {
 			throw new IllegalArgumentException("One or more branch IDs do not exist");
 		}
-	}
-
-	private String formatCodeAndName(String code, String name) {
-		return code + " - " + name;
 	}
 
 	private RegionOptions buildRegionOptions(RegionEntity record) {
@@ -171,14 +128,10 @@ public class RegionService {
 				.toList();
 		List<BranchOption> availableBranches = branches.stream()
 				.filter(branch -> !usedBranchIds.contains(branch.getId()))
-				.map(this::toBranchOption)
+				.map(regionMapper::toBranchOption)
 				.toList();
-		
-				return new RegionOptions(availableStates, availableZipCodes, availableBranches);
-	}
 
-	private BranchOption toBranchOption(BranchEntity branch) {
-		return new BranchOption(branch.getId(), branch.getBranchCode(), branch.getBranchName());
+		return new RegionOptions(availableStates, availableZipCodes, availableBranches);
 	}
 
 }

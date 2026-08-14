@@ -17,29 +17,31 @@ public class BranchService {
 
 	private final BranchRepository branchRepository;
 	private final RegionRepository regionRepository;
+	private final BranchMapper branchMapper;
 
-	public BranchService(BranchRepository branchRepository, RegionRepository regionRepository) {
+	public BranchService(BranchRepository branchRepository, RegionRepository regionRepository, BranchMapper branchMapper) {
 		this.branchRepository = branchRepository;
 		this.regionRepository = regionRepository;
+		this.branchMapper = branchMapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<BranchListItem> list() {
 		return branchRepository.findAllByOrderByBranchCodeAsc().stream()
-				.map(this::toListItem)
+				.map(branchMapper::toBranchListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<BranchDetail> get(Long id) {
-		return branchRepository.findById(id).map(this::toDetail);
+		return branchRepository.findById(id).map(branchMapper::toBranchDetail);
 	}
 
 	@Transactional
 	public BranchDetail create(BranchRequest request) {
 		BranchEntity entity = new BranchEntity();
 		apply(entity, request);
-		return toDetail(branchRepository.save(entity));
+		return branchMapper.toBranchDetail(branchRepository.save(entity));
 	}
 
 	@Transactional
@@ -47,7 +49,7 @@ public class BranchService {
 		return branchRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return toDetail(branchRepository.save(entity));
+					return branchMapper.toBranchDetail(branchRepository.save(entity));
 				});
 	}
 
@@ -75,30 +77,4 @@ public class BranchService {
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
 
-	private BranchListItem toListItem(BranchEntity entity) {
-		return new BranchListItem(
-				entity.getId(),
-				formatCodeAndName(entity.getBranchCode(), entity.getBranchName()),
-				entity.getState(),
-				entity.getZipCode(),
-				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
-		);
-	}
-
-	private BranchDetail toDetail(BranchEntity entity) {
-		return new BranchDetail(
-				entity.getBranchCode(),
-				entity.getBranchName(),
-				entity.getState(),
-				entity.getZipCode(),
-				entity.getUpdatedBy(),
-				entity.getId(),
-				entity.getUpdatedOn()
-		);
-	}
-
-	private String formatCodeAndName(String code, String name) {
-		return code + " - " + name;
-	}
 }

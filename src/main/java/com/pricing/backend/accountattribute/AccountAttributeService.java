@@ -9,7 +9,6 @@ import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.generated.model.AttributeDetail;
 import com.pricing.backend.generated.model.AttributeListItem;
 import com.pricing.backend.generated.model.AttributeRequest;
-import com.pricing.backend.generated.model.AttributeType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,30 +17,32 @@ public class AccountAttributeService {
 
 	private final AccountAttributeRepository accountAttributeRepository;
 	private final EligibilityReasonRepository eligibilityReasonRepository;
+	private final AccountAttributeMapper accountAttributeMapper;
 
 	public AccountAttributeService(AccountAttributeRepository accountAttributeRepository,
-			EligibilityReasonRepository eligibilityReasonRepository) {
+			EligibilityReasonRepository eligibilityReasonRepository, AccountAttributeMapper accountAttributeMapper) {
 		this.accountAttributeRepository = accountAttributeRepository;
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
+		this.accountAttributeMapper = accountAttributeMapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<AttributeListItem> list() {
 		return accountAttributeRepository.findAllByOrderByAttributeCodeAsc().stream()
-				.map(this::toListItem)
+				.map(accountAttributeMapper::toAttributeListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<AttributeDetail> get(Long id) {
-		return accountAttributeRepository.findById(id).map(this::toDetail);
+		return accountAttributeRepository.findById(id).map(accountAttributeMapper::toAttributeDetail);
 	}
 
 	@Transactional
 	public AttributeDetail create(AttributeRequest request) {
 		AccountAttributeEntity entity = new AccountAttributeEntity();
 		apply(entity, request);
-		return toDetail(accountAttributeRepository.save(entity));
+		return accountAttributeMapper.toAttributeDetail(accountAttributeRepository.save(entity));
 	}
 
 	@Transactional
@@ -49,7 +50,7 @@ public class AccountAttributeService {
 		return accountAttributeRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return toDetail(accountAttributeRepository.save(entity));
+					return accountAttributeMapper.toAttributeDetail(accountAttributeRepository.save(entity));
 				});
 	}
 
@@ -77,28 +78,4 @@ public class AccountAttributeService {
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}
 
-	private AttributeListItem toListItem(AccountAttributeEntity entity) {
-		return new AttributeListItem(
-				entity.getId(),
-				formatCodeAndName(entity.getAttributeCode(), entity.getAttributeName()),
-				entity.getAttributeType(),
-				entity.getUpdatedOn(),
-				entity.getUpdatedBy()
-		);
-	}
-
-	private AttributeDetail toDetail(AccountAttributeEntity entity) {
-		return new AttributeDetail(
-				entity.getAttributeCode(),
-				entity.getAttributeName(),
-				entity.getAttributeType(),
-				entity.getUpdatedBy(),
-				entity.getId(),
-				entity.getUpdatedOn()
-		);
-	}
-
-	private String formatCodeAndName(String code, String name) {
-		return code + " - " + name;
-	}
 }

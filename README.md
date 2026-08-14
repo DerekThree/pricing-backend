@@ -2,13 +2,14 @@
 
 ## Regenerating OpenAPI code
 
-Use `scripts\regen-openapi.cmd` to regenerate backend OpenAPI classes from a clean output folder.
+Run the Maven resource phase to regenerate backend OpenAPI classes from a clean output folder:
 
-- `scripts\regen-openapi.cmd`
-- `scripts\regen-openapi.cmd -RunTests`
+```powershell
+.\mvnw.cmd -q clean process-resources
+```
 
-This deletes `target/generated-sources/openapi` and compiled class output before generation so renamed
-schemas and operations do not leave stale generated files behind.
+This removes generated sources and compiled class output before generation so renamed schemas and
+operations do not leave stale artifacts behind, then copies Maven resources.
 
 ## Local Postgres
 
