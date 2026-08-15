@@ -22,6 +22,9 @@ public class GlobalExceptionHandler {
 
 	private static final String ACTIVE_PERIOD_OVERLAP_CONSTRAINT = "excl_pricing_plans_active_period";
 	private static final String ACTIVE_PERIOD_ORDER_CONSTRAINT = "chk_pricing_plans_active_period_order";
+	private static final String PRICING_PLAN_FEE_PRIMARY_KEY = "pk_pricing_plan_fees";
+	private static final String PRICING_PLAN_FEE_REASON_PRIMARY_KEY = "pk_pricing_plan_fee_reasons";
+	private static final String FEE_PRODUCT_TYPE_UNIQUE_CONSTRAINT = "uk_fee_product_types_fee_id_product_type";
 	private static final String UNIQUE_VIOLATION = "23505";
 	private static final String FOREIGN_KEY_VIOLATION = "23503";
 	private static final String H2_FOREIGN_KEY_VIOLATION = "23506";
@@ -76,8 +79,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(RecordInUseException.class)
 	public ResponseEntity<ErrorResponse> handleRecordInUse(RecordInUseException ex) {
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(new ErrorResponse(ex.getMessage()));
+		return conflict(ex.getMessage());
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
@@ -90,14 +92,24 @@ public class GlobalExceptionHandler {
 			return badRequest("Active Through must be on or after Active From");
 		}
 
+		if (hasConstraint(ex, PRICING_PLAN_FEE_PRIMARY_KEY, UNIQUE_VIOLATION)) {
+			return badRequest("A pricing plan cannot contain the same fee twice");
+		}
+
+		if (hasConstraint(ex, PRICING_PLAN_FEE_REASON_PRIMARY_KEY, UNIQUE_VIOLATION)) {
+			return badRequest("A fee cannot contain the same eligibility reason twice");
+		}
+
+		if (hasConstraint(ex, FEE_PRODUCT_TYPE_UNIQUE_CONSTRAINT, UNIQUE_VIOLATION)) {
+			return badRequest("A fee cannot contain the same product type twice");
+		}
+
 		if (hasSqlState(ex, UNIQUE_VIOLATION)) {
-			return ResponseEntity.status(HttpStatus.CONFLICT)
-					.body(new ErrorResponse("A record with the same code already exists"));
+			return conflict("A record with the same code already exists");
 		}
 
 		if (hasSqlState(ex, FOREIGN_KEY_VIOLATION, H2_FOREIGN_KEY_VIOLATION)) {
-			return ResponseEntity.status(HttpStatus.CONFLICT)
-					.body(new ErrorResponse("The request violates a record relationship"));
+			return conflict("The request violates a record relationship");
 		}
 
 		if (hasSqlState(ex, NOT_NULL_VIOLATION, CHECK_VIOLATION, H2_CHECK_VIOLATION)) {
@@ -108,8 +120,7 @@ public class GlobalExceptionHandler {
 			return badRequest("The request data is invalid");
 		}
 
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(new ErrorResponse("The request violates a database constraint"));
+		return conflict("The request violates a database constraint");
 	}
 
 	@ExceptionHandler(NoResourceFoundException.class)
@@ -126,6 +137,10 @@ public class GlobalExceptionHandler {
 
 	private ResponseEntity<ErrorResponse> badRequest(String message) {
 		return ResponseEntity.badRequest().body(new ErrorResponse(message));
+	}
+
+	private ResponseEntity<ErrorResponse> conflict(String message) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(message));
 	}
 
 	private boolean hasConstraint(Throwable exception, String constraint, String... states) {

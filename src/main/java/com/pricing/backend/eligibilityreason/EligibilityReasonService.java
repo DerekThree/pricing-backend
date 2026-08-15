@@ -27,17 +27,17 @@ public class EligibilityReasonService {
 	private final EligibilityReasonRepository eligibilityReasonRepository;
 	private final AccountAttributeRepository accountAttributeRepository;
 	private final PricingPlanFeeRepository pricingPlanFeeRepository;
-	private final EligibilityReasonNormalizer eligibilityReasonConditionValueNormalizer;
+	private final EligibilityReasonNormalizer eligibilityReasonNormalizer;
 	private final EligibilityReasonMapper eligibilityReasonMapper;
 
 	public EligibilityReasonService(EligibilityReasonRepository eligibilityReasonRepository,
 			AccountAttributeRepository accountAttributeRepository, PricingPlanFeeRepository pricingPlanFeeRepository,
-			EligibilityReasonNormalizer eligibilityReasonConditionValueNormalizer,
+			EligibilityReasonNormalizer eEligibilityReasonNormalizer,
 			EligibilityReasonMapper eligibilityReasonMapper) {
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
 		this.accountAttributeRepository = accountAttributeRepository;
 		this.pricingPlanFeeRepository = pricingPlanFeeRepository;
-		this.eligibilityReasonConditionValueNormalizer = eligibilityReasonConditionValueNormalizer;
+		this.eligibilityReasonNormalizer = eEligibilityReasonNormalizer;
 		this.eligibilityReasonMapper = eligibilityReasonMapper;
 	}
 
@@ -102,13 +102,15 @@ public class EligibilityReasonService {
 		entity.setUpdatedOn(OffsetDateTime.now());
 		entity.getConditions().clear();
 		for (ReasonCondition condition : request.getConditions()) {
-			AccountAttributeEntity attribute = validateCondition(attributesById, uniqueConditions, condition);
+			AccountAttributeEntity attribute = attributesById.get(condition.getAttributeId());
+			validateCondition(uniqueConditions, condition);
 
 			entity.getConditions().add(new EligibilityReasonConditionEntity(
-					new EligibilityReasonConditionId(entity.getId(), attribute.getId(), condition.getOperator().getValue()),
+					new EligibilityReasonConditionId(entity.getId(), condition.getAttributeId(), condition.getOperator().getValue()),
 					entity,
-					attribute,
-					eligibilityReasonConditionValueNormalizer.normalizeAttributeValue(attribute, condition.getValue())
+					accountAttributeRepository.getReferenceById(condition.getAttributeId()),
+					attribute == null ? eligibilityReasonNormalizer.serializeScalarValue(condition.getValue())
+							: eligibilityReasonNormalizer.normalizeAttributeValue(attribute, condition.getValue())
 			));
 		}
 	}
@@ -120,21 +122,14 @@ public class EligibilityReasonService {
 						.toList()
 		);
 	}
-	
-	private AccountAttributeEntity validateCondition(Map<Long, AccountAttributeEntity> attributesById,
-			Set<String> uniqueConditions, ReasonCondition condition) {
-		AccountAttributeEntity attribute = attributesById.get(condition.getAttributeId());
-		if (attribute == null) {
-			throw new IllegalArgumentException("Account attribute with id " + condition.getAttributeId() + " was not found");
-		}
 
+	private void validateCondition(Set<String> uniqueConditions, ReasonCondition condition) {
 		String operator = condition.getOperator().getValue();
-		String uniqueCondition = attribute.getId() + "|" + operator;
+		String uniqueCondition = condition.getAttributeId() + "|" + operator;
 		if (!uniqueConditions.add(uniqueCondition)) {
 			throw new IllegalArgumentException(
-					"Duplicate condition for account attribute id " + attribute.getId() + " and operator " + operator);
+					"Duplicate condition for account attribute id " + condition.getAttributeId() + " and operator " + operator);
 		}
-		return attribute;
 	}
 
 }

@@ -22,7 +22,7 @@ class PricingPlanValidator {
 		LocalDate currentDate = simulatorDateService.getCurrentDate();
 		validateLifecycle(entity, request, currentDate);
 		if (entity.getId() == null && request.getActiveFrom().isBefore(currentDate)) {
-			throw new IllegalArgumentException("activeFrom must be on or after the application current date");
+			throw new IllegalArgumentException("Active From must be on or after the application current date");
 		}
 	}
 
@@ -39,7 +39,7 @@ class PricingPlanValidator {
 
 		if (isActive(entity, currentDate)) {
 			if (!hasSameActiveFields(entity, request)) {
-				throw new IllegalArgumentException("Only planName and activeThrough can be updated for an active pricing plan");
+				throw new IllegalArgumentException("Only Plan Name and activeThrough can be updated for an active pricing plan");
 			}
 			if (request.getActiveThrough().isBefore(currentDate)) {
 				throw new IllegalArgumentException("activeThrough must be on or after the application current date");
@@ -48,7 +48,7 @@ class PricingPlanValidator {
 		}
 
 		if (!hasSamePastFields(entity, request)) {
-			throw new IllegalArgumentException("Only planName can be updated for a past pricing plan");
+			throw new IllegalArgumentException("Only Plan Name can be updated for a past pricing plan");
 		}
 	}
 

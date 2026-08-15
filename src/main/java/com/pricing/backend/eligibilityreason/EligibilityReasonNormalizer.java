@@ -22,6 +22,10 @@ class EligibilityReasonNormalizer {
 		};
 	}
 
+	String serializeScalarValue(ReasonConditionValue value) {
+		return extractScalarValue(value).toString();
+	}
+
 	private String normalizeBooleanValue(AccountAttributeEntity attribute, Object value) {
 		if (value instanceof Boolean booleanValue) {
 			return booleanValue.toString();

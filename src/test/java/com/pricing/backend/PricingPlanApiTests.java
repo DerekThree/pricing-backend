@@ -81,7 +81,7 @@ class PricingPlanApiTests {
 	}
 
 	@Test
-	void createsPricingPlanWithRequestShapedDetail() throws Exception {
+	void createsPricingPlanWithZeroFeeAmount() throws Exception {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
 				.productName("Premier Checking")
@@ -124,7 +124,7 @@ class PricingPlanApiTests {
 								  "activeFrom": "2026-08-11",
 								  "activeThrough": "2026-12-31",
 								  "fees": [
-								    {"feeId": %d, "amount": 7.50, "reasonIds": [%d]}
+							    {"feeId": %d, "amount": 0, "reasonIds": [%d]}
 								  ],
 								  "updatedBy": "Derek Ochal"
 								}
@@ -135,7 +135,7 @@ class PricingPlanApiTests {
 				.andExpect(jsonPath("$.regionId").value(region.getId()))
 				.andExpect(jsonPath("$.fees", hasSize(1)))
 				.andExpect(jsonPath("$.fees[0].feeId").value(fee.getId()))
-				.andExpect(jsonPath("$.fees[0].amount").value(7.5))
+				.andExpect(jsonPath("$.fees[0].amount").value(0))
 				.andExpect(jsonPath("$.fees[0].reasonIds[0]").value(reason.getId()))
 				.andExpect(jsonPath("$.product").doesNotExist())
 				.andExpect(jsonPath("$.region").doesNotExist())
@@ -253,7 +253,7 @@ class PricingPlanApiTests {
 								}
 				""".formatted(product.getId(), region.getId(), fee.getId(), reason.getId(),
 						reason.getId())))
-				.andExpect(status().isConflict());
+				.andExpect(status().isBadRequest());
 		mockMvc.perform(post("/pricing-plans")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Test Plan", product.getId(), region.getId(),

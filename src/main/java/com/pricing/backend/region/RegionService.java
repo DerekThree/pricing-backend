@@ -1,7 +1,6 @@
 package com.pricing.backend.region;
 
 import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -87,7 +86,6 @@ public class RegionService {
 	}
 
 	private void apply(RegionEntity entity, RegionRequest request) {
-		validateBranchesExist(request.getBranches());
 		entity.setRegionCode(request.getRegionCode());
 		entity.setRegionName(request.getRegionName());
 		entity.setStates(request.getStates());
@@ -95,15 +93,6 @@ public class RegionService {
 		entity.setBranches(request.getBranches());
 		entity.setUpdatedBy(request.getUpdatedBy());
 		entity.setUpdatedOn(OffsetDateTime.now());
-	}
-
-	private void validateBranchesExist(List<Long> branchIds) {
-		Set<Long> uniqueBranchIds = new LinkedHashSet<>(branchIds);
-		List<Long> existingBranchIds = branchRepository.findAllById(uniqueBranchIds).stream()
-				.map(BranchEntity::getId).toList();
-		if (existingBranchIds.size() != uniqueBranchIds.size()) {
-			throw new IllegalArgumentException("One or more branch IDs do not exist");
-		}
 	}
 
 	private RegionOptions buildRegionOptions(RegionEntity record) {

@@ -115,8 +115,7 @@ public class PricingPlanService {
 
 	private void apply(PricingPlanEntity entity, PricingPlanRequest request) {
 		pricingPlanValidator.validate(entity, request);
-		var product = productRepository.findById(request.getProductId())
-				.orElseThrow(() -> new IllegalArgumentException("Product with id " + request.getProductId() + " was not found"));
+		ProductEntity product = productRepository.findById(request.getProductId()).orElse(null);
 		var region = regionRepository.getReferenceById(request.getRegionId());
 		Map<Long, FeeEntity> feesById = feeRepository
 				.findAllById(request.getFees().stream().map(PricingPlanFee::getFeeId).toList())
@@ -124,7 +123,7 @@ public class PricingPlanService {
 				.collect(Collectors.toMap(FeeEntity::getId, Function.identity()));
 		entity.setPlanCode(request.getPlanCode());
 		entity.setPlanName(request.getPlanName());
-		entity.setProduct(product);
+		entity.setProduct(productRepository.getReferenceById(request.getProductId()));
 		entity.setRegion(region);
 		entity.setActiveFrom(request.getActiveFrom());
 		entity.setActiveThrough(request.getActiveThrough());
@@ -133,17 +132,14 @@ public class PricingPlanService {
 		entity.getFees().clear();
 		for (PricingPlanFee feeRequest : request.getFees()) {
 			FeeEntity fee = feesById.get(feeRequest.getFeeId());
-			if (fee == null) {
-				throw new IllegalArgumentException("Fee with id " + feeRequest.getFeeId() + " was not found");
-			}
-			if (!fee.getProductTypes().contains(product.getProductType())) {
-				throw new IllegalArgumentException("Fee with id " + fee.getId() + " cannot be used for this product type");
+			if (product != null && fee != null && !fee.getProductTypes().contains(product.getProductType())) {
+				throw new IllegalArgumentException("Fee with code " + fee.getFeeCode() + " cannot be used for this product type");
 			}
 
 			PricingPlanFeeEntity pricingPlanFee = new PricingPlanFeeEntity();
-			pricingPlanFee.setId(new PricingPlanFeeId(entity.getId(), fee.getId()));
+			pricingPlanFee.setId(new PricingPlanFeeId(entity.getId(), feeRequest.getFeeId()));
 			pricingPlanFee.setPricingPlan(entity);
-			pricingPlanFee.setFee(fee);
+			pricingPlanFee.setFee(feeRepository.getReferenceById(feeRequest.getFeeId()));
 			pricingPlanFee.setAmount(feeRequest.getAmount());
 			for (Long reasonId : feeRequest.getReasonIds()) {
 				pricingPlanFee.getReasons().add(eligibilityReasonRepository.getReferenceById(reasonId));

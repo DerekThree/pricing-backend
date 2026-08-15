@@ -784,7 +784,6 @@ components:
       schema:
         type: integer
         format: int64
-        minimum: 1
 
   responses:
     BranchDetail:
@@ -1227,7 +1226,6 @@ components:
         amount:
           type: number
           minimum: 0
-          exclusiveMinimum: true
           example: 10.00
         reasonIds:
           type: array
