@@ -27,16 +27,19 @@ public class EligibilityReasonService {
 	private final EligibilityReasonRepository eligibilityReasonRepository;
 	private final AccountAttributeRepository accountAttributeRepository;
 	private final PricingPlanFeeRepository pricingPlanFeeRepository;
+	private final EligibilityReasonValidator eligibilityReasonValidator;
 	private final EligibilityReasonNormalizer eligibilityReasonNormalizer;
 	private final EligibilityReasonMapper eligibilityReasonMapper;
 
 	public EligibilityReasonService(EligibilityReasonRepository eligibilityReasonRepository,
 			AccountAttributeRepository accountAttributeRepository, PricingPlanFeeRepository pricingPlanFeeRepository,
+			EligibilityReasonValidator eligibilityReasonValidator,
 			EligibilityReasonNormalizer eEligibilityReasonNormalizer,
 			EligibilityReasonMapper eligibilityReasonMapper) {
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
 		this.accountAttributeRepository = accountAttributeRepository;
 		this.pricingPlanFeeRepository = pricingPlanFeeRepository;
+		this.eligibilityReasonValidator = eligibilityReasonValidator;
 		this.eligibilityReasonNormalizer = eEligibilityReasonNormalizer;
 		this.eligibilityReasonMapper = eligibilityReasonMapper;
 	}
@@ -69,6 +72,7 @@ public class EligibilityReasonService {
 	public Optional<ReasonDetail> update(Long id, ReasonRequest request) {
 		return eligibilityReasonRepository.findById(id)
 				.map(entity -> {
+					eligibilityReasonValidator.validateCanUpdate(entity);
 					apply(entity, request);
 					return eligibilityReasonMapper.toReasonDetail(eligibilityReasonRepository.save(entity));
 				});

@@ -1,26 +1,48 @@
 package com.pricing.backend;
 
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
+import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.generated.model.AttributeType;
+import com.pricing.backend.generated.model.FeeType;
+import com.pricing.backend.generated.model.ProductType;
+import com.pricing.backend.pricingplan.PricingPlanEntity;
+import com.pricing.backend.pricingplan.PricingPlanFeeEntity;
+import com.pricing.backend.pricingplan.PricingPlanFeeId;
 import com.pricing.backend.pricingplan.PricingPlanRepository;
+import com.pricing.backend.product.ProductEntity;
+import com.pricing.backend.product.ProductRepository;
+import com.pricing.backend.region.RegionEntity;
+import com.pricing.backend.region.RegionRepository;
+import com.pricing.backend.fee.FeeEntity;
+import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.simulator.SimulatorDateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -38,10 +60,31 @@ class EligibilityReasonApiTests {
 	@Autowired
 	private PricingPlanRepository pricingPlanRepository;
 
+	@Autowired
+	private ProductRepository productRepository;
+
+	@Autowired
+	private RegionRepository regionRepository;
+
+	@Autowired
+	private FeeRepository feeRepository;
+
+	@Autowired
+	private SimulatorDateService simulatorDateService;
+
+	@MockitoBean
+	private Clock clock;
+
 	@BeforeEach
 	void setUp() {
+		when(clock.getZone()).thenReturn(ZoneOffset.UTC);
+		when(clock.instant()).thenReturn(Instant.parse("2026-08-11T00:00:00Z"));
+		simulatorDateService.setCurrentDate(LocalDate.of(2026, 8, 11));
 		pricingPlanRepository.deleteAll();
 		eligibilityReasonRepository.deleteAll();
+		feeRepository.deleteAll();
+		regionRepository.deleteAll();
+		productRepository.deleteAll();
 		accountAttributeRepository.deleteAll();
 	}
 
@@ -99,6 +142,109 @@ class EligibilityReasonApiTests {
 				.andExpect(jsonPath("$.attributes[0].type").value("INTEGER"))
 				.andExpect(jsonPath("$.attributes[1].code").value("ATTR0002"))
 				.andExpect(jsonPath("$.attributes[1].type").value("BOOLEAN"));
+	}
+
+	@Test
+	void allowsReasonUpdatesUnlessAnActivePricingPlanReferencesIt() throws Exception {
+		ProductEntity product = productRepository.save(ProductEntity.builder()
+				.productCode("PROD0001")
+				.productName("Premier Checking")
+				.productType(ProductType.DEPOSIT)
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		RegionEntity region = regionRepository.save(RegionEntity.builder()
+				.regionCode("REG00001")
+				.regionName("Midwest")
+				.states(List.of())
+				.zipCodes(List.of())
+				.branches(List.of())
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		FeeEntity fee = feeRepository.save(FeeEntity.builder()
+				.feeCode("FEE00001")
+				.feeName("Monthly Maintenance Fee")
+				.feeType(FeeType.FLAT)
+				.productTypes(List.of(ProductType.DEPOSIT))
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		EligibilityReasonEntity past = saveReason("ELIG0001");
+		EligibilityReasonEntity scheduled = saveReason("ELIG0002");
+		EligibilityReasonEntity active = saveReason("ELIG0003");
+		EligibilityReasonEntity mixed = saveReason("ELIG0004");
+		savePricingPlan("PLAN0001", product, region, fee, "2026-08-01", "2026-08-10", past, mixed);
+		savePricingPlan("PLAN0002", product, region, fee, "2026-08-11", "2026-08-11", active, mixed);
+		savePricingPlan("PLAN0003", product, region, fee, "2026-08-12", "2026-08-20", scheduled);
+
+		mockMvc.perform(put("/eligibility-reasons/{id}", past.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(reasonRequestJson("ELIG0001", "Updated Past")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.reasonName").value("Updated Past"));
+		mockMvc.perform(put("/eligibility-reasons/{id}", scheduled.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(reasonRequestJson("ELIG0002", "Updated Scheduled")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.reasonName").value("Updated Scheduled"));
+		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(reasonRequestJson("ELIG0003", "Updated Active")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This eligibility reason is used by pricing plan with code PLAN0002. "
+								+ "Please update the pricing plan first."));
+		mockMvc.perform(put("/eligibility-reasons/{id}", mixed.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(reasonRequestJson("ELIG0004", "Updated Mixed")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This eligibility reason is used by pricing plan with code PLAN0002. "
+								+ "Please update the pricing plan first."));
+	}
+
+	private EligibilityReasonEntity saveReason(String code) {
+		return eligibilityReasonRepository.save(EligibilityReasonEntity.builder()
+				.reasonCode(code)
+				.reasonName("Reason " + code)
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+	}
+
+	private void savePricingPlan(String code, ProductEntity product, RegionEntity region,
+			FeeEntity fee,
+			String activeFrom, String activeThrough, EligibilityReasonEntity... reasons) {
+		PricingPlanEntity pricingPlan = PricingPlanEntity.builder()
+				.planCode(code)
+				.planName("Plan " + code)
+				.product(product)
+				.region(region)
+				.activeFrom(LocalDate.parse(activeFrom))
+				.activeThrough(LocalDate.parse(activeThrough))
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build();
+		PricingPlanFeeEntity pricingPlanFee = new PricingPlanFeeEntity();
+		pricingPlanFee.setId(new PricingPlanFeeId(null, fee.getId()));
+		pricingPlanFee.setPricingPlan(pricingPlan);
+		pricingPlanFee.setFee(fee);
+		pricingPlanFee.setAmount(BigDecimal.ONE);
+		pricingPlanFee.setReasons(List.of(reasons));
+		pricingPlan.getFees().add(pricingPlanFee);
+		pricingPlanRepository.saveAndFlush(pricingPlan);
+	}
+
+	private String reasonRequestJson(String code, String name) {
+		return """
+				{
+				  "reasonCode": "%s",
+				  "reasonName": "%s",
+				  "conditions": [],
+				  "updatedBy": "Derek Ochal"
+				}
+				""".formatted(code, name);
 	}
 
 	private AccountAttributeEntity saveAttribute(String code, String name, AttributeType type) {
