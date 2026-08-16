@@ -17,12 +17,15 @@ public class AccountAttributeService {
 
 	private final AccountAttributeRepository accountAttributeRepository;
 	private final EligibilityReasonRepository eligibilityReasonRepository;
+	private final AccountAttributeValidator accountAttributeValidator;
 	private final AccountAttributeMapper accountAttributeMapper;
 
 	public AccountAttributeService(AccountAttributeRepository accountAttributeRepository,
-			EligibilityReasonRepository eligibilityReasonRepository, AccountAttributeMapper accountAttributeMapper) {
+			EligibilityReasonRepository eligibilityReasonRepository,
+			AccountAttributeValidator accountAttributeValidator, AccountAttributeMapper accountAttributeMapper) {
 		this.accountAttributeRepository = accountAttributeRepository;
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
+		this.accountAttributeValidator = accountAttributeValidator;
 		this.accountAttributeMapper = accountAttributeMapper;
 	}
 
@@ -49,6 +52,7 @@ public class AccountAttributeService {
 	public Optional<AttributeDetail> update(Long id, AttributeRequest request) {
 		return accountAttributeRepository.findById(id)
 				.map(entity -> {
+					accountAttributeValidator.validateCanUpdate(entity, request);
 					apply(entity, request);
 					return accountAttributeMapper.toAttributeDetail(accountAttributeRepository.save(entity));
 				});

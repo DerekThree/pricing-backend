@@ -72,7 +72,7 @@ public class EligibilityReasonService {
 	public Optional<ReasonDetail> update(Long id, ReasonRequest request) {
 		return eligibilityReasonRepository.findById(id)
 				.map(entity -> {
-					eligibilityReasonValidator.validateCanUpdate(entity);
+					eligibilityReasonValidator.validateCanUpdate(entity, request);
 					apply(entity, request);
 					return eligibilityReasonMapper.toReasonDetail(eligibilityReasonRepository.save(entity));
 				});

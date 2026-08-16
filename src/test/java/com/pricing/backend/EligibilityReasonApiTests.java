@@ -10,6 +10,8 @@ import java.util.List;
 
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
+import com.pricing.backend.eligibilityreason.EligibilityReasonConditionEntity;
+import com.pricing.backend.eligibilityreason.EligibilityReasonConditionId;
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.generated.model.AttributeType;
@@ -145,7 +147,8 @@ class EligibilityReasonApiTests {
 	}
 
 	@Test
-	void allowsReasonUpdatesUnlessAnActivePricingPlanReferencesIt() throws Exception {
+	void allowsReasonNameUpdatesAndRejectsDefinitionChangesWhenAnActiveOrPastPricingPlanReferencesIt()
+			throws Exception {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
 				.productName("Premier Checking")
@@ -170,6 +173,7 @@ class EligibilityReasonApiTests {
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
+		AccountAttributeEntity attribute = saveAttribute("ATTR0001", "Active", AttributeType.BOOLEAN);
 		EligibilityReasonEntity past = saveReason("ELIG0001");
 		EligibilityReasonEntity scheduled = saveReason("ELIG0002");
 		EligibilityReasonEntity active = saveReason("ELIG0003");
@@ -183,25 +187,104 @@ class EligibilityReasonApiTests {
 						.content(reasonRequestJson("ELIG0001", "Updated Past")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reasonName").value("Updated Past"));
+		mockMvc.perform(put("/eligibility-reasons/{id}", past.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(reasonRequestJson("ELIG9998", "Updated Past")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This eligibility reason is used by pricing plan with code PLAN0001. "
+								+ "Please update the pricing plan first."));
 		mockMvc.perform(put("/eligibility-reasons/{id}", scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(reasonRequestJson("ELIG0002", "Updated Scheduled")))
+						.content(reasonRequestJson("ELIG9999", "Updated Scheduled")))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.reasonName").value("Updated Scheduled"));
+				.andExpect(jsonPath("$.reasonCode").value("ELIG9999"));
 		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG0003", "Updated Active")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.reasonName").value("Updated Active"));
+		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(reasonRequestJson("ELIG9999", "Updated Active")))
+				.andExpect(status().isConflict());
+		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(reasonRequestWithConditionJson("ELIG0003", "Updated Active", attribute.getId())))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0002. "
 								+ "Please update the pricing plan first."));
 		mockMvc.perform(put("/eligibility-reasons/{id}", mixed.getId())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(reasonRequestJson("ELIG0004", "Updated Mixed")))
+						.content(reasonRequestWithConditionJson("ELIG0004", "Updated Mixed", attribute.getId())))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
-						"This eligibility reason is used by pricing plan with code PLAN0002. "
+						"This eligibility reason is used by pricing plan with code PLAN0001. "
 								+ "Please update the pricing plan first."));
+	}
+
+	@Test
+	void allowsAttributeNameUpdatesAndRejectsDefinitionChangesWhenActiveOrPastPricingPlansUseItsReason()
+			throws Exception {
+		ProductEntity product = productRepository.save(ProductEntity.builder()
+				.productCode("PROD0001")
+				.productName("Premier Checking")
+				.productType(ProductType.DEPOSIT)
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		RegionEntity region = regionRepository.save(RegionEntity.builder()
+				.regionCode("REG00001")
+				.regionName("Midwest")
+				.states(List.of())
+				.zipCodes(List.of())
+				.branches(List.of())
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		FeeEntity fee = feeRepository.save(FeeEntity.builder()
+				.feeCode("FEE00001")
+				.feeName("Monthly Maintenance Fee")
+				.feeType(FeeType.FLAT)
+				.productTypes(List.of(ProductType.DEPOSIT))
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		AccountAttributeEntity past = saveAttribute("ATTR0001", "Past", AttributeType.BOOLEAN);
+		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AttributeType.BOOLEAN);
+		AccountAttributeEntity scheduled = saveAttribute("ATTR0003", "Scheduled", AttributeType.BOOLEAN);
+		EligibilityReasonEntity pastReason = saveReasonWithCondition("ELIG0001", past);
+		EligibilityReasonEntity activeReason = saveReasonWithCondition("ELIG0002", active);
+		EligibilityReasonEntity scheduledReason = saveReasonWithCondition("ELIG0003", scheduled);
+		savePricingPlan("PLAN0001", product, region, fee, "2026-08-01", "2026-08-10", pastReason);
+		savePricingPlan("PLAN0002", product, region, fee, "2026-08-11", "2026-08-11", activeReason);
+		savePricingPlan("PLAN0003", product, region, fee, "2026-08-12", "2026-08-20", scheduledReason);
+
+		mockMvc.perform(put("/account-attributes/{id}", past.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(attributeRequestJson("ATTR0001", "Updated Past", "BOOLEAN")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.attributeName").value("Updated Past"));
+		mockMvc.perform(put("/account-attributes/{id}", past.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(attributeRequestJson("ATTR9998", "Updated Past", "BOOLEAN")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This account attribute is used by eligibility reason with code ELIG0001. "
+								+ "Please update the eligibility reason first."));
+		mockMvc.perform(put("/account-attributes/{id}", active.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(attributeRequestJson("ATTR0002", "Updated Active", "INTEGER")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This account attribute is used by eligibility reason with code ELIG0002. "
+								+ "Please update the eligibility reason first."));
+		mockMvc.perform(put("/account-attributes/{id}", scheduled.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(attributeRequestJson("ATTR9999", "Updated Scheduled", "INTEGER")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.attributeCode").value("ATTR9999"));
 	}
 
 	private EligibilityReasonEntity saveReason(String code) {
@@ -211,6 +294,17 @@ class EligibilityReasonApiTests {
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
+	}
+
+	private EligibilityReasonEntity saveReasonWithCondition(String code, AccountAttributeEntity attribute) {
+		EligibilityReasonEntity reason = saveReason(code);
+		reason.getConditions().add(EligibilityReasonConditionEntity.builder()
+				.id(new EligibilityReasonConditionId(reason.getId(), attribute.getId(), "="))
+				.reason(reason)
+				.attribute(attribute)
+				.attributeValue("true")
+				.build());
+		return eligibilityReasonRepository.saveAndFlush(reason);
 	}
 
 	private void savePricingPlan(String code, ProductEntity product, RegionEntity region,
@@ -245,6 +339,28 @@ class EligibilityReasonApiTests {
 				  "updatedBy": "Derek Ochal"
 				}
 				""".formatted(code, name);
+	}
+
+	private String reasonRequestWithConditionJson(String code, String name, Long attributeId) {
+		return """
+				{
+				  "reasonCode": "%s",
+				  "reasonName": "%s",
+				  "conditions": [{"attributeId": %d, "operator": "=", "value": true}],
+				  "updatedBy": "Derek Ochal"
+				}
+				""".formatted(code, name, attributeId);
+	}
+
+	private String attributeRequestJson(String code, String name, String type) {
+		return """
+				{
+				  "attributeCode": "%s",
+				  "attributeName": "%s",
+				  "attributeType": "%s",
+				  "updatedBy": "Derek Ochal"
+				}
+				""".formatted(code, name, type);
 	}
 
 	private AccountAttributeEntity saveAttribute(String code, String name, AttributeType type) {

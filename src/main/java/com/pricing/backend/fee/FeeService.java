@@ -51,7 +51,7 @@ public class FeeService {
 	public Optional<FeeDetail> update(Long id, FeeRequest request) {
 		return feeRepository.findById(id)
 				.map(entity -> {
-					feeValidator.validateFeeTypeCanChange(entity, request);
+					feeValidator.validateCanUpdate(entity, request);
 					apply(entity, request);
 					return feeMapper.toFeeDetail(feeRepository.save(entity));
 				});
