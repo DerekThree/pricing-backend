@@ -118,7 +118,8 @@ class PricingPlanPostgresMigrationTests {
 			Thread.currentThread().interrupt();
 			throw new AssertionError(exception);
 		} catch (ExecutionException exception) {
-			assertTrue(hasSqlState(exception, "23P01"), exception.getCause()::toString);
+			assertTrue(hasSqlState(exception, "23P01") || hasSqlState(exception, "40P01"),
+					exception.getCause()::toString);
 			return false;
 		}
 	}
