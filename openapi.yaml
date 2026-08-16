@@ -1102,6 +1102,7 @@ components:
           $ref: "#/components/schemas/FeeType"
         productTypes:
           type: array
+          minItems: 1
           items:
             $ref: "#/components/schemas/ProductType"
         updatedOn:
@@ -1139,6 +1140,7 @@ components:
           $ref: "#/components/schemas/FeeType"
         productTypes:
           type: array
+          minItems: 1
           items:
             $ref: "#/components/schemas/ProductType"
         updatedBy:
@@ -1501,6 +1503,7 @@ components:
           $ref: "#/components/schemas/FeeType"  
         productTypes:
           type: array
+          minItems: 1
           items:
             $ref: "#/components/schemas/ProductType"
 

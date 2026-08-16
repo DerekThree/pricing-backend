@@ -225,7 +225,7 @@ class EligibilityReasonApiTests {
 	}
 
 	@Test
-	void allowsAttributeNameUpdatesAndRejectsDefinitionChangesWhenActiveOrPastPricingPlansUseItsReason()
+	void allowsAttributeNameUpdatesAndRejectsDefinitionChangesWhenAnEligibilityReasonUsesIt()
 			throws Exception {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
@@ -283,8 +283,10 @@ class EligibilityReasonApiTests {
 		mockMvc.perform(put("/account-attributes/{id}", scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("ATTR9999", "Updated Scheduled", "INTEGER")))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.attributeCode").value("ATTR9999"));
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This account attribute is used by eligibility reason with code ELIG0003. "
+								+ "Please update the eligibility reason first."));
 	}
 
 	private EligibilityReasonEntity saveReason(String code) {

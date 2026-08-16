@@ -102,7 +102,23 @@ class FeeApiTests {
 	}
 
 	@Test
-	void allowsFeeNameUpdatesAndRejectsDefinitionChangesWhenActiveOrPastPricingPlansContainIt()
+	void rejectsEmptyAndDuplicateProductTypes() throws Exception {
+		mockMvc.perform(post("/fees")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(feeRequestJson("FEE00001", "Monthly Maintenance Fee", "[]")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message")
+						.value("productTypes size must be between 1 and 2147483647"));
+		mockMvc.perform(post("/fees")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(feeRequestJson("FEE00001", "Monthly Maintenance Fee",
+								"[\"DEPOSIT\", \"DEPOSIT\"]")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value("A fee cannot contain the same product type twice"));
+	}
+
+	@Test
+	void allowsFeeNameUpdatesAndRejectsDefinitionChangesWhenAnyPricingPlanContainsIt()
 			throws Exception {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
@@ -149,8 +165,47 @@ class FeeApiTests {
 		mockMvc.perform(put("/fees/{id}", scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE9999", "Updated Scheduled", "[\"CREDIT\"]")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This fee is used by pricing plan with code PLAN0003. "
+								+ "Please update the pricing plan first."));
+	}
+
+	@Test
+	void allowsProductTypeReorderingWhenAPricingPlanContainsTheFee() throws Exception {
+		ProductEntity product = productRepository.save(ProductEntity.builder()
+				.productCode("PROD0001")
+				.productName("Premier Checking")
+				.productType(ProductType.DEPOSIT)
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		RegionEntity region = regionRepository.save(RegionEntity.builder()
+				.regionCode("REG00001")
+				.regionName("Midwest")
+				.states(List.of())
+				.zipCodes(List.of())
+				.branches(List.of())
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		FeeEntity fee = feeRepository.save(FeeEntity.builder()
+				.feeCode("FEE00001")
+				.feeName("Monthly Maintenance Fee")
+				.feeType(FeeType.FLAT)
+				.productTypes(List.of(ProductType.DEPOSIT, ProductType.CREDIT))
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		savePricingPlan("PLAN0001", product, region, fee, "2026-08-12", "2026-08-20");
+
+		mockMvc.perform(put("/fees/{id}", fee.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(feeRequestJson("FEE00001", "Monthly Maintenance Fee",
+								"[\"CREDIT\", \"DEPOSIT\"]")))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.feeCode").value("FEE9999"));
+				.andExpect(jsonPath("$.productTypes[0]").value("CREDIT"))
+				.andExpect(jsonPath("$.productTypes[1]").value("DEPOSIT"));
 	}
 
 	private FeeEntity saveFee(String code) {

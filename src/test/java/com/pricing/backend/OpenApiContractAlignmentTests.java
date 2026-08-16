@@ -244,6 +244,7 @@ class OpenApiContractAlignmentTests {
 		copyIfMeaningfulMaxLength(resolvedSchema, comparable);
 		copyIfPresent(resolvedSchema, comparable, "minimum");
 		copyIfPresent(resolvedSchema, comparable, "maximum");
+		copyIfPresent(resolvedSchema, comparable, "minItems");
 		copyIfPresent(resolvedSchema, comparable, "uniqueItems");
 
 		if (resolvedSchema.has("enum")) {

@@ -1,22 +1,19 @@
 package com.pricing.backend.fee;
 
-import java.time.LocalDate;
+import java.util.HashSet;
 
 import com.pricing.backend.config.RecordInUseException;
 import com.pricing.backend.generated.model.FeeRequest;
 import com.pricing.backend.pricingplan.PricingPlanFeeRepository;
-import com.pricing.backend.simulator.SimulatorDateService;
 import org.springframework.stereotype.Component;
 
 @Component
 class FeeValidator {
 
 	private final PricingPlanFeeRepository pricingPlanFeeRepository;
-	private final SimulatorDateService simulatorDateService;
 
-	FeeValidator(PricingPlanFeeRepository pricingPlanFeeRepository, SimulatorDateService simulatorDateService) {
+	FeeValidator(PricingPlanFeeRepository pricingPlanFeeRepository) {
 		this.pricingPlanFeeRepository = pricingPlanFeeRepository;
-		this.simulatorDateService = simulatorDateService;
 	}
 
 	void validateCanUpdate(FeeEntity entity, FeeRequest request) {
@@ -24,10 +21,7 @@ class FeeValidator {
 			return;
 		}
 
-		LocalDate currentDate = simulatorDateService.getCurrentDate();
-		pricingPlanFeeRepository
-				.findFirstByFee_IdAndPricingPlan_ActiveFromLessThanEqualOrderByPricingPlan_PlanCodeAsc(
-						entity.getId(), currentDate)
+		pricingPlanFeeRepository.findFirstByFee_IdOrderByPricingPlan_PlanCodeAsc(entity.getId())
 				.ifPresent(pricingPlanFee -> {
 					throw new RecordInUseException(
 							"fee", "pricing plan", pricingPlanFee.getPricingPlan().getPlanCode());
@@ -37,6 +31,6 @@ class FeeValidator {
 	private boolean hasSameDefinition(FeeEntity entity, FeeRequest request) {
 		return entity.getFeeCode().equals(request.getFeeCode())
 				&& entity.getFeeType() == request.getFeeType()
-				&& entity.getProductTypes().equals(request.getProductTypes());
+				&& new HashSet<>(entity.getProductTypes()).equals(new HashSet<>(request.getProductTypes()));
 	}
 }
