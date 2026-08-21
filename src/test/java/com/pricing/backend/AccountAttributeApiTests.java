@@ -85,7 +85,8 @@ class AccountAttributeApiTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("[]")))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.message").value("productTypes must contain at least one item"));
+				.andExpect(jsonPath("$.message")
+						.value("Applicable Product Types must contain at least one item"));
 		mockMvc.perform(post("/account-attributes")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("[\"DEPOSIT\", \"DEPOSIT\"]")))

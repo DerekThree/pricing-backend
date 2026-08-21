@@ -37,7 +37,9 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
 		String message = ex.getBindingResult().getFieldErrors().stream()
-				.map(fieldError -> fieldError.getField() + " " + fieldError.getDefaultMessage())
+				.map(fieldError -> (fieldError.getField().equals("productTypes")
+						? "Applicable Product Types"
+						: fieldError.getField()) + " " + fieldError.getDefaultMessage())
 				.collect(Collectors.joining(", "));
 
 		return badRequest(message.isBlank() ? "Request validation failed" : message);

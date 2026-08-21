@@ -161,7 +161,32 @@ class EligibilityReasonApiTests {
 	}
 
 	@Test
-	void allowsReasonNameUpdatesAndRejectsDefinitionChangesWhenAnActiveOrPastPricingPlanReferencesIt()
+	void rejectsEligibilityReasonWhenConditionAttributesHaveNoCommonProductType() throws Exception {
+		AccountAttributeEntity deposit = saveAttribute(
+				"ATTR0001", "Min Amount", AttributeType.DECIMAL, ProductType.DEPOSIT);
+		AccountAttributeEntity credit = saveAttribute(
+				"ATTR0002", "Active", AttributeType.BOOLEAN, ProductType.CREDIT);
+
+		mockMvc.perform(post("/eligibility-reasons")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "reasonCode": "ELIG0001",
+								  "reasonName": "Min. Balance",
+								  "conditions": [
+								    {"attributeId": %d, "operator": ">=", "value": 100.5},
+								    {"attributeId": %d, "operator": "=", "value": true}
+								  ],
+								  "updatedBy": "Derek Ochal"
+								}
+								""".formatted(deposit.getId(), credit.getId())))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message")
+						.value("Applicable Product Types must contain at least one item"));
+	}
+
+	@Test
+	void allowsReasonNameAndCodeUpdatesAndRejectsConditionChangesWhenAnyPricingPlanReferencesIt()
 			throws Exception {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
@@ -204,15 +229,20 @@ class EligibilityReasonApiTests {
 		mockMvc.perform(put("/eligibility-reasons/{id}", past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG9998", "Updated Past")))
-				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.message").value(
-						"This eligibility reason is used by pricing plan with code PLAN0001. "
-								+ "Please update the pricing plan first."));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.reasonCode").value("ELIG9998"));
 		mockMvc.perform(put("/eligibility-reasons/{id}", scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG9999", "Updated Scheduled")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reasonCode").value("ELIG9999"));
+		mockMvc.perform(put("/eligibility-reasons/{id}", scheduled.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(reasonRequestWithConditionJson("ELIG9999", "Updated Scheduled", attribute.getId())))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This eligibility reason is used by pricing plan with code PLAN0003. "
+								+ "Please update the pricing plan first."));
 		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG0003", "Updated Active")))
@@ -220,11 +250,12 @@ class EligibilityReasonApiTests {
 				.andExpect(jsonPath("$.reasonName").value("Updated Active"));
 		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(reasonRequestJson("ELIG9999", "Updated Active")))
-				.andExpect(status().isConflict());
+						.content(reasonRequestJson("ELIG9997", "Updated Active")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.reasonCode").value("ELIG9997"));
 		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(reasonRequestWithConditionJson("ELIG0003", "Updated Active", attribute.getId())))
+						.content(reasonRequestWithConditionJson("ELIG9997", "Updated Active", attribute.getId())))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0002. "
@@ -239,7 +270,7 @@ class EligibilityReasonApiTests {
 	}
 
 	@Test
-	void allowsAttributeNameUpdatesAndRejectsDefinitionChangesWhenAnEligibilityReasonUsesIt()
+	void allowsAttributeNameAndCodeUpdatesAndRejectsDefinitionChangesWhenAnEligibilityReasonUsesIt()
 			throws Exception {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
@@ -283,10 +314,8 @@ class EligibilityReasonApiTests {
 		mockMvc.perform(put("/account-attributes/{id}", past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("ATTR9998", "Updated Past", "BOOLEAN")))
-				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.message").value(
-						"This account attribute is used by eligibility reason with code ELIG0001. "
-								+ "Please update the eligibility reason first."));
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.attributeCode").value("ATTR9998"));
 		mockMvc.perform(put("/account-attributes/{id}", active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("ATTR0002", "Updated Active", "INTEGER")))
@@ -296,7 +325,7 @@ class EligibilityReasonApiTests {
 								+ "Please update the eligibility reason first."));
 		mockMvc.perform(put("/account-attributes/{id}", scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(attributeRequestJson("ATTR9999", "Updated Scheduled", "INTEGER")))
+						.content(attributeRequestJson("ATTR0003", "Updated Scheduled", "INTEGER")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This account attribute is used by eligibility reason with code ELIG0003. "
@@ -381,12 +410,17 @@ class EligibilityReasonApiTests {
 	}
 
 	private AccountAttributeEntity saveAttribute(String code, String name, AttributeType type) {
+		return saveAttribute(code, name, type, ProductType.DEPOSIT);
+	}
+
+	private AccountAttributeEntity saveAttribute(
+			String code, String name, AttributeType type, ProductType... productTypes) {
 		return accountAttributeRepository.save(new AccountAttributeEntity(
 				null,
 				code,
 				name,
 				type,
-				List.of(ProductType.DEPOSIT),
+				List.of(productTypes),
 				OffsetDateTime.parse("2026-06-06T09:00:00+08:00"),
 				"Derek Ochal"
 		));

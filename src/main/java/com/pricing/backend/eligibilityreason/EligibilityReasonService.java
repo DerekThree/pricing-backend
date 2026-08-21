@@ -99,6 +99,7 @@ public class EligibilityReasonService {
 				.findAllById(request.getConditions().stream().map(ReasonCondition::getAttributeId).toList())
 				.stream()
 				.collect(Collectors.toMap(AccountAttributeEntity::getId, Function.identity()));
+		eligibilityReasonValidator.validateProductTypes(attributesById.values());
 		Set<String> uniqueConditions = new HashSet<>();
 		entity.setReasonCode(request.getReasonCode());
 		entity.setReasonName(request.getReasonName());
