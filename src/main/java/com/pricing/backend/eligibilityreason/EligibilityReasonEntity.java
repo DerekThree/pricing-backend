@@ -2,8 +2,10 @@ package com.pricing.backend.eligibilityreason;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
+import com.pricing.backend.generated.model.ProductType;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -49,4 +51,11 @@ public class EligibilityReasonEntity {
 
 	@Column(name = "updated_by", nullable = false, length = 100)
 	private String updatedBy;
+
+	public List<ProductType> getProductTypes() {
+		EnumSet<ProductType> productTypes = EnumSet.allOf(ProductType.class);
+		conditions.forEach(condition ->
+				productTypes.retainAll(condition.getAttribute().getProductTypes()));
+		return productTypes.stream().toList();
+	}
 }

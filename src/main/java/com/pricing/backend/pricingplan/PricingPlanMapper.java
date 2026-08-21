@@ -104,7 +104,8 @@ class PricingPlanMapper {
 		return new ReasonOption(
 				reason.getId(),
 				reason.getReasonCode(),
-				reason.getReasonName()
+				reason.getReasonName(),
+				reason.getProductTypes()
 		);
 	}
 

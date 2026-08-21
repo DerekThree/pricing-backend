@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
@@ -121,6 +122,12 @@ public class PricingPlanService {
 				.findAllById(request.getFees().stream().map(PricingPlanFee::getFeeId).toList())
 				.stream()
 				.collect(Collectors.toMap(FeeEntity::getId, Function.identity()));
+		Map<Long, EligibilityReasonEntity> reasonsById = eligibilityReasonRepository
+				.findAllById(request.getFees().stream()
+						.flatMap(fee -> fee.getReasonIds().stream())
+						.toList())
+				.stream()
+				.collect(Collectors.toMap(EligibilityReasonEntity::getId, Function.identity()));
 		entity.setPlanCode(request.getPlanCode());
 		entity.setPlanName(request.getPlanName());
 		entity.setProduct(productRepository.getReferenceById(request.getProductId()));
@@ -142,6 +149,10 @@ public class PricingPlanService {
 			pricingPlanFee.setFee(feeRepository.getReferenceById(feeRequest.getFeeId()));
 			pricingPlanFee.setAmount(feeRequest.getAmount());
 			for (Long reasonId : feeRequest.getReasonIds()) {
+				EligibilityReasonEntity reason = reasonsById.get(reasonId);
+				if (product != null && reason != null) {
+					pricingPlanValidator.validateReasonProductType(product.getProductType(), reason);
+				}
 				pricingPlanFee.getReasons().add(eligibilityReasonRepository.getReferenceById(reasonId));
 			}
 			entity.getFees().add(pricingPlanFee);

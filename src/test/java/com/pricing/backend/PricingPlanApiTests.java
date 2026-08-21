@@ -7,10 +7,15 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import com.pricing.backend.accountattribute.AccountAttributeEntity;
+import com.pricing.backend.accountattribute.AccountAttributeRepository;
+import com.pricing.backend.eligibilityreason.EligibilityReasonConditionEntity;
+import com.pricing.backend.eligibilityreason.EligibilityReasonConditionId;
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.FeeType;
 import com.pricing.backend.generated.model.ProductType;
 import com.pricing.backend.pricingplan.PricingPlanEntity;
@@ -63,6 +68,9 @@ class PricingPlanApiTests {
 	private EligibilityReasonRepository eligibilityReasonRepository;
 
 	@Autowired
+	private AccountAttributeRepository accountAttributeRepository;
+
+	@Autowired
 	private SimulatorDateService simulatorDateService;
 
 	@MockitoBean
@@ -75,6 +83,7 @@ class PricingPlanApiTests {
 		simulatorDateService.setCurrentDate(LocalDate.of(2026, 8, 11));
 		pricingPlanRepository.deleteAll();
 		eligibilityReasonRepository.deleteAll();
+		accountAttributeRepository.deleteAll();
 		feeRepository.deleteAll();
 		regionRepository.deleteAll();
 		productRepository.deleteAll();
@@ -144,6 +153,8 @@ class PricingPlanApiTests {
 				.andExpect(jsonPath("$.recordOptions.regions[0].id").value(region.getId()))
 				.andExpect(jsonPath("$.recordOptions.fees[0].id").value(fee.getId()))
 				.andExpect(jsonPath("$.recordOptions.reasons[0].id").value(reason.getId()))
+				.andExpect(jsonPath("$.recordOptions.reasons[0].productTypes",
+						contains("DEPOSIT", "CD", "CREDIT")))
 				.andExpect(jsonPath("$.recordOptions.currentDate").doesNotExist())
 				.andExpect(jsonPath("$.recordOptions.intervals").doesNotExist())
 				.andExpect(jsonPath("$.formOptions").doesNotExist());
@@ -264,6 +275,49 @@ class PricingPlanApiTests {
 						.content(pricingPlanFeeRequestJson("PLAN0004", "Test Plan", product.getId(), 999_999L,
 								"2026-08-11", "2026-12-31", fee.getId(), "7.50", reason.getId())))
 				.andExpect(status().isConflict());
+	}
+
+	@Test
+	void rejectsReasonOutsidePricingPlanProductTypeOnCreateAndUpdate() throws Exception {
+		ProductEntity product = productRepository.save(ProductEntity.builder()
+				.productCode("PROD0001")
+				.productName("Premier Checking")
+				.productType(ProductType.DEPOSIT)
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build());
+		RegionEntity region = regionRepository.save(region("REG00001", "Midwest"));
+		FeeEntity fee = feeRepository.save(fee("FEE00001", ProductType.DEPOSIT));
+		AccountAttributeEntity attribute = accountAttributeRepository.save(
+				attribute("ATTR0001", ProductType.CREDIT));
+		EligibilityReasonEntity reason = eligibilityReasonRepository.save(
+				EligibilityReasonEntity.builder()
+						.reasonCode("ELIG0001")
+						.reasonName("Credit Score")
+						.updatedBy("Derek Ochal")
+						.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+						.build());
+		reason.getConditions().add(condition(reason, attribute));
+		eligibilityReasonRepository.save(reason);
+		String request = pricingPlanFeeRequestJson(
+				"PLAN0001", "Test Plan", product.getId(), region.getId(), "2026-08-12", "2026-12-31",
+				fee.getId(), "7.50", reason.getId());
+
+		mockMvc.perform(post("/pricing-plans")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value(
+						"Eligibility reason with code ELIG0001 cannot be used for this product type"));
+
+		PricingPlanEntity scheduled = pricingPlanRepository.save(pricingPlan(
+				"PLAN0001", product, region, "2026-08-12", "2026-12-31"));
+		mockMvc.perform(put("/pricing-plans/{id}", scheduled.getId())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(request))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value(
+						"Eligibility reason with code ELIG0001 cannot be used for this product type"));
 	}
 
 	@Test
@@ -502,12 +556,20 @@ class PricingPlanApiTests {
 		RegionEntity northeast = regionRepository.save(region("REG00002", "Northeast"));
 		FeeEntity maintenanceFee = feeRepository.save(fee("FEE00001", ProductType.DEPOSIT));
 		feeRepository.save(fee("FEE00002", ProductType.CREDIT));
-		EligibilityReasonEntity reason = eligibilityReasonRepository.save(EligibilityReasonEntity.builder()
-				.reasonCode("ELIG0001")
-				.reasonName("Min. Balance")
-				.updatedBy("Derek Ochal")
-				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
-				.build());
+		AccountAttributeEntity firstAttribute = accountAttributeRepository.save(
+				attribute("ATTR0001", ProductType.DEPOSIT, ProductType.CD));
+		AccountAttributeEntity secondAttribute = accountAttributeRepository.save(
+				attribute("ATTR0002", ProductType.DEPOSIT, ProductType.CREDIT));
+		EligibilityReasonEntity reason = eligibilityReasonRepository.save(
+				EligibilityReasonEntity.builder()
+						.reasonCode("ELIG0001")
+						.reasonName("Min. Balance")
+						.updatedBy("Derek Ochal")
+						.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+						.build());
+		reason.getConditions().add(condition(reason, firstAttribute));
+		reason.getConditions().add(condition(reason, secondAttribute));
+		eligibilityReasonRepository.save(reason);
 		PricingPlanEntity active = pricingPlanRepository.save(pricingPlan("PLAN0001", checking, midwest,
 					"2026-08-11", "2026-12-31"));
 		pricingPlanRepository.save(pricingPlan("PLAN0002", checking, midwest, "2026-09-01", "2027-08-31"));
@@ -532,6 +594,7 @@ class PricingPlanApiTests {
 				.andExpect(jsonPath("$.regionId").value(midwest.getId()))
 				.andExpect(jsonPath("$.fees[*].id", contains(maintenanceFee.getId().intValue())))
 				.andExpect(jsonPath("$.reasons[*].id", contains(reason.getId().intValue())))
+				.andExpect(jsonPath("$.reasons[0].productTypes", contains("DEPOSIT")))
 				.andExpect(jsonPath("$.intervals[*].activeFrom",
 						contains("2026-09-01")));
 
@@ -542,6 +605,7 @@ class PricingPlanApiTests {
 				.andExpect(jsonPath("$.productId").value(checking.getId()))
 				.andExpect(jsonPath("$.regionId").value(midwest.getId()))
 				.andExpect(jsonPath("$.fees[*].id", contains(maintenanceFee.getId().intValue())))
+				.andExpect(jsonPath("$.reasons[0].productTypes", contains("DEPOSIT")))
 				.andExpect(jsonPath("$.intervals[*].activeFrom",
 						containsInAnyOrder("2026-08-11", "2026-09-01")));
 
@@ -569,6 +633,27 @@ class PricingPlanApiTests {
 				.productTypes(List.of(productType))
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build();
+	}
+
+	private AccountAttributeEntity attribute(String code, ProductType... productTypes) {
+		return AccountAttributeEntity.builder()
+				.attributeCode(code)
+				.attributeName("Attribute " + code)
+				.attributeType(AttributeType.DECIMAL)
+				.productTypes(List.of(productTypes))
+				.updatedBy("Derek Ochal")
+				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
+				.build();
+	}
+
+	private EligibilityReasonConditionEntity condition(
+			EligibilityReasonEntity reason, AccountAttributeEntity attribute) {
+		return EligibilityReasonConditionEntity.builder()
+				.id(new EligibilityReasonConditionId(reason.getId(), attribute.getId(), "="))
+				.reason(reason)
+				.attribute(attribute)
+				.attributeValue("10")
 				.build();
 	}
 

@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.generated.model.PricingPlanRequest;
+import com.pricing.backend.generated.model.ProductType;
 import com.pricing.backend.simulator.SimulatorDateService;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,13 @@ class PricingPlanValidator {
 	void validateCanDelete(PricingPlanEntity entity) {
 		if (isActive(entity, simulatorDateService.getCurrentDate())) {
 			throw new IllegalArgumentException("Active pricing plans cannot be deleted");
+		}
+	}
+
+	void validateReasonProductType(ProductType productType, EligibilityReasonEntity reason) {
+		if (!reason.getProductTypes().contains(productType)) {
+			throw new IllegalArgumentException("Eligibility reason with code " + reason.getReasonCode()
+					+ " cannot be used for this product type");
 		}
 	}
 

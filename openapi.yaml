@@ -1465,6 +1465,7 @@ components:
         - id
         - code
         - name
+        - productTypes
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -1472,6 +1473,10 @@ components:
           $ref: "#/components/schemas/ReasonCode"
         name:
           $ref: "#/components/schemas/ReasonName"
+        productTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductType"
 
     ProductOption:
       type: object
