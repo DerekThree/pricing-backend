@@ -121,9 +121,11 @@ class EligibilityReasonApiTests {
 				.andExpect(jsonPath("$.recordOptions.attributes[0].id").value(amount.getId()))
 				.andExpect(jsonPath("$.recordOptions.attributes[0].code").value("ATTR0001"))
 				.andExpect(jsonPath("$.recordOptions.attributes[0].type").value("DECIMAL"))
+				.andExpect(jsonPath("$.recordOptions.attributes[0].productTypes[0]").value("DEPOSIT"))
 				.andExpect(jsonPath("$.recordOptions.attributes[1].id").value(active.getId()))
 				.andExpect(jsonPath("$.recordOptions.attributes[1].code").value("ATTR0002"))
 				.andExpect(jsonPath("$.recordOptions.attributes[1].type").value("BOOLEAN"))
+				.andExpect(jsonPath("$.recordOptions.attributes[1].productTypes[0]").value("DEPOSIT"))
 				.andExpect(jsonPath("$.formOptions").doesNotExist());
 
 		mockMvc.perform(get("/eligibility-reasons"))
@@ -142,8 +144,20 @@ class EligibilityReasonApiTests {
 				.andExpect(jsonPath("$.attributes", hasSize(2)))
 				.andExpect(jsonPath("$.attributes[0].code").value("ATTR0001"))
 				.andExpect(jsonPath("$.attributes[0].type").value("INTEGER"))
+				.andExpect(jsonPath("$.attributes[0].productTypes[0]").value("DEPOSIT"))
 				.andExpect(jsonPath("$.attributes[1].code").value("ATTR0002"))
-				.andExpect(jsonPath("$.attributes[1].type").value("BOOLEAN"));
+				.andExpect(jsonPath("$.attributes[1].type").value("BOOLEAN"))
+				.andExpect(jsonPath("$.attributes[1].productTypes[0]").value("DEPOSIT"));
+	}
+
+	@Test
+	void retrievesEligibilityReasonWithAttributeProductTypes() throws Exception {
+		AccountAttributeEntity attribute = saveAttribute("ATTR0001", "Active", AttributeType.BOOLEAN);
+		EligibilityReasonEntity reason = saveReasonWithCondition("ELIG0001", attribute);
+
+		mockMvc.perform(get("/eligibility-reasons/{id}", reason.getId()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.recordOptions.attributes[0].productTypes[0]").value("DEPOSIT"));
 	}
 
 	@Test

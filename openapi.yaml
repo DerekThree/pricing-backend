@@ -1443,6 +1443,7 @@ components:
         - code
         - name
         - type
+        - productTypes
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -1452,6 +1453,11 @@ components:
           $ref: "#/components/schemas/AttributeName"
         type:
           $ref: "#/components/schemas/AttributeType"
+        productTypes:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ProductType"
 
     ReasonOption:
       type: object

@@ -65,7 +65,8 @@ class EligibilityReasonMapper {
 				attribute.getId(),
 				attribute.getAttributeCode(),
 				attribute.getAttributeName(),
-				attribute.getAttributeType()
+				attribute.getAttributeType(),
+				attribute.getProductTypes().stream().toList()
 		);
 	}
 
