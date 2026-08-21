@@ -10,7 +10,6 @@ import java.util.List;
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.eligibilityreason.EligibilityReasonConditionEntity;
-import com.pricing.backend.eligibilityreason.EligibilityReasonConditionId;
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
@@ -650,9 +649,9 @@ class PricingPlanApiTests {
 	private EligibilityReasonConditionEntity condition(
 			EligibilityReasonEntity reason, AccountAttributeEntity attribute) {
 		return EligibilityReasonConditionEntity.builder()
-				.id(new EligibilityReasonConditionId(reason.getId(), attribute.getId(), "="))
 				.reason(reason)
 				.attribute(attribute)
+				.operator("=")
 				.attributeValue("10")
 				.build();
 	}

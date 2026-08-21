@@ -55,7 +55,7 @@ class EligibilityReasonMapper {
 	ReasonCondition toReasonCondition(EligibilityReasonConditionEntity entity) {
 		return new ReasonCondition(
 				entity.getAttribute().getId(),
-				ReasonOperator.fromValue(entity.getId().getOperator()),
+				ReasonOperator.fromValue(entity.getOperator()),
 				toReasonConditionValue(entity.getAttribute().getAttributeType(), entity.getAttributeValue())
 		);
 	}
@@ -81,11 +81,11 @@ class EligibilityReasonMapper {
 	private Comparator<EligibilityReasonConditionEntity> conditionComparator() {
 		return Comparator.comparing(
 				(EligibilityReasonConditionEntity condition) -> condition.getAttribute().getAttributeCode())
-				.thenComparing(condition -> condition.getId().getOperator());
+				.thenComparing(EligibilityReasonConditionEntity::getOperator);
 	}
 
 	private String toConditionSummary(EligibilityReasonConditionEntity entity) {
-		return entity.getAttribute().getAttributeCode() + " " + entity.getId().getOperator() + " "
+		return entity.getAttribute().getAttributeCode() + " " + entity.getOperator() + " "
 				+ entity.getAttributeValue();
 	}
 

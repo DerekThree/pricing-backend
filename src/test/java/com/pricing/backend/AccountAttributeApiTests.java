@@ -6,7 +6,6 @@ import java.util.List;
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.eligibilityreason.EligibilityReasonConditionEntity;
-import com.pricing.backend.eligibilityreason.EligibilityReasonConditionId;
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.generated.model.AttributeType;
@@ -115,9 +114,9 @@ class AccountAttributeApiTests {
 						.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 						.build());
 		reason.getConditions().add(EligibilityReasonConditionEntity.builder()
-				.id(new EligibilityReasonConditionId(reason.getId(), attribute.getId(), ">="))
 				.reason(reason)
 				.attribute(attribute)
+				.operator(">=")
 				.attributeValue("18")
 				.build());
 		eligibilityReasonRepository.saveAndFlush(reason);

@@ -1,11 +1,9 @@
 package com.pricing.backend.eligibilityreason;
 
 import java.time.OffsetDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -100,7 +98,6 @@ public class EligibilityReasonService {
 				.stream()
 				.collect(Collectors.toMap(AccountAttributeEntity::getId, Function.identity()));
 		eligibilityReasonValidator.validateProductTypes(attributesById.values());
-		Set<String> uniqueConditions = new HashSet<>();
 		entity.setReasonCode(request.getReasonCode());
 		entity.setReasonName(request.getReasonName());
 		entity.setUpdatedBy(request.getUpdatedBy());
@@ -108,12 +105,12 @@ public class EligibilityReasonService {
 		entity.getConditions().clear();
 		for (ReasonCondition condition : request.getConditions()) {
 			AccountAttributeEntity attribute = attributesById.get(condition.getAttributeId());
-			validateCondition(uniqueConditions, condition);
 
 			entity.getConditions().add(new EligibilityReasonConditionEntity(
-					new EligibilityReasonConditionId(entity.getId(), condition.getAttributeId(), condition.getOperator().getValue()),
+					null,
 					entity,
 					accountAttributeRepository.getReferenceById(condition.getAttributeId()),
+					condition.getOperator().getValue(),
 					attribute == null ? eligibilityReasonNormalizer.serializeScalarValue(condition.getValue())
 							: eligibilityReasonNormalizer.normalizeAttributeValue(attribute, condition.getValue())
 			));
@@ -126,15 +123,6 @@ public class EligibilityReasonService {
 						.map(eligibilityReasonMapper::toAttributeOption)
 						.toList()
 		);
-	}
-
-	private void validateCondition(Set<String> uniqueConditions, ReasonCondition condition) {
-		String operator = condition.getOperator().getValue();
-		String uniqueCondition = condition.getAttributeId() + "|" + operator;
-		if (!uniqueConditions.add(uniqueCondition)) {
-			throw new IllegalArgumentException(
-					"Duplicate condition for account attribute id " + condition.getAttributeId() + " and operator " + operator);
-		}
 	}
 
 }

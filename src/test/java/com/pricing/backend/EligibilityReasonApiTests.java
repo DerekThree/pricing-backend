@@ -11,7 +11,6 @@ import java.util.List;
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.eligibilityreason.EligibilityReasonConditionEntity;
-import com.pricing.backend.eligibilityreason.EligibilityReasonConditionId;
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.generated.model.AttributeType;
@@ -132,6 +131,33 @@ class EligibilityReasonApiTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].eligibilityReason").value("ELIG0001 - Min. Balance"))
 				.andExpect(jsonPath("$[0].conditions", contains("ATTR0001 >= 100.5", "ATTR0002 = true")));
+	}
+
+	@Test
+	void allowsConditionsWithSameAttributeAndOperator() throws Exception {
+		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AttributeType.DECIMAL);
+
+		mockMvc.perform(post("/eligibility-reasons")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "reasonCode": "ELIG0001",
+								  "reasonName": "Balance Range",
+								  "conditions": [
+								    {"attributeId": %d, "operator": ">=", "value": 100.5},
+								    {"attributeId": %d, "operator": ">=", "value": 200.5}
+								  ],
+								  "updatedBy": "Derek Ochal"
+								}
+								""".formatted(amount.getId(), amount.getId())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.conditions", hasSize(2)))
+				.andExpect(jsonPath("$.conditions[0].attributeId").value(amount.getId()))
+				.andExpect(jsonPath("$.conditions[0].operator").value(">="))
+				.andExpect(jsonPath("$.conditions[0].value").value(100.5))
+				.andExpect(jsonPath("$.conditions[1].attributeId").value(amount.getId()))
+				.andExpect(jsonPath("$.conditions[1].operator").value(">="))
+				.andExpect(jsonPath("$.conditions[1].value").value(200.5));
 	}
 
 	@Test
@@ -344,9 +370,9 @@ class EligibilityReasonApiTests {
 	private EligibilityReasonEntity saveReasonWithCondition(String code, AccountAttributeEntity attribute) {
 		EligibilityReasonEntity reason = saveReason(code);
 		reason.getConditions().add(EligibilityReasonConditionEntity.builder()
-				.id(new EligibilityReasonConditionId(reason.getId(), attribute.getId(), "="))
 				.reason(reason)
 				.attribute(attribute)
+				.operator("=")
 				.attributeValue("true")
 				.build());
 		return eligibilityReasonRepository.saveAndFlush(reason);

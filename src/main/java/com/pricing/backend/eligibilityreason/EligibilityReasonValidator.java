@@ -55,9 +55,9 @@ class EligibilityReasonValidator {
 			String conditionKey = requestCondition.getAttributeId() + "|"
 					+ requestCondition.getOperator().getValue();
 			return requestConditionKeys.add(conditionKey) && entity.getConditions().stream()
-					.filter(entityCondition -> entityCondition.getId().getAttributeId()
+					.filter(entityCondition -> entityCondition.getAttribute().getId()
 							.equals(requestCondition.getAttributeId())
-							&& entityCondition.getId().getOperator().equals(requestCondition.getOperator().getValue()))
+							&& entityCondition.getOperator().equals(requestCondition.getOperator().getValue()))
 					.findFirst()
 					.map(entityCondition -> entityCondition.getAttributeValue().equals(
 							eligibilityReasonNormalizer.normalizeAttributeValue(
