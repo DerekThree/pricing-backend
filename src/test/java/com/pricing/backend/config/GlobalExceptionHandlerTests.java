@@ -86,6 +86,21 @@ class GlobalExceptionHandlerTests {
 	}
 
 	@Test
+	void mapsDuplicateAccountAttributeProductTypesToBadRequests() {
+		SQLException cause = new SQLException(
+				"ERROR: duplicate key value violates unique constraint "
+						+ "\"uk_account_attribute_product_types_attribute_id_product_type\"",
+				"23505");
+
+		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
+				.handleDataIntegrityViolation(new DataIntegrityViolationException("constraint failed", cause));
+
+		assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+		assertEquals("An account attribute cannot contain the same product type twice",
+				response.getBody().getMessage());
+	}
+
+	@Test
 	void mapsForeignKeyConstraintViolationsToConflicts() {
 		SQLException cause = new SQLException("violates foreign key constraint", "23503");
 

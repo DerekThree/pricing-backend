@@ -180,6 +180,7 @@ class DeleteReferenceApiTests {
 				.attributeCode("ATTR0001")
 				.attributeName("Minimum Balance")
 				.attributeType(AttributeType.DECIMAL)
+				.productTypes(List.of(ProductType.DEPOSIT))
 				.updatedBy("Derek Ochal")
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());

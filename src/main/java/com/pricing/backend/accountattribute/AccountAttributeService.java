@@ -78,6 +78,7 @@ public class AccountAttributeService {
 		entity.setAttributeCode(request.getAttributeCode());
 		entity.setAttributeName(request.getAttributeName());
 		entity.setAttributeType(request.getAttributeType());
+		entity.setProductTypes(request.getProductTypes());
 		entity.setUpdatedBy(request.getUpdatedBy());
 		entity.setUpdatedOn(OffsetDateTime.now());
 	}

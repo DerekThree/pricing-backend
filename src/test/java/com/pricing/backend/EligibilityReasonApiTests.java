@@ -360,6 +360,7 @@ class EligibilityReasonApiTests {
 				  "attributeCode": "%s",
 				  "attributeName": "%s",
 				  "attributeType": "%s",
+				  "productTypes": ["DEPOSIT"],
 				  "updatedBy": "Derek Ochal"
 				}
 				""".formatted(code, name, type);
@@ -371,6 +372,7 @@ class EligibilityReasonApiTests {
 				code,
 				name,
 				type,
+				List.of(ProductType.DEPOSIT),
 				OffsetDateTime.parse("2026-06-06T09:00:00+08:00"),
 				"Derek Ochal"
 		));

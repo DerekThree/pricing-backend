@@ -12,6 +12,7 @@ class AccountAttributeMapper {
 				entity.getId(),
 				formatCodeAndName(entity.getAttributeCode(), entity.getAttributeName()),
 				entity.getAttributeType(),
+				entity.getProductTypes(),
 				entity.getUpdatedOn(),
 				entity.getUpdatedBy()
 		);
@@ -22,6 +23,7 @@ class AccountAttributeMapper {
 				entity.getAttributeCode(),
 				entity.getAttributeName(),
 				entity.getAttributeType(),
+				entity.getProductTypes(),
 				entity.getUpdatedBy(),
 				entity.getId(),
 				entity.getUpdatedOn()

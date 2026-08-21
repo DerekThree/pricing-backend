@@ -7,6 +7,7 @@ import java.util.List;
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.generated.model.AttributeType;
+import com.pricing.backend.generated.model.ProductType;
 import com.pricing.backend.generated.model.ReasonCondition;
 import com.pricing.backend.generated.model.ReasonDetail;
 import com.pricing.backend.generated.model.ReasonOperator;
@@ -134,6 +135,7 @@ class EligibilityReasonServiceTests {
 				code,
 				name,
 				type,
+				List.of(ProductType.DEPOSIT),
 				OffsetDateTime.parse("2026-06-06T09:00:00+08:00"),
 				"Derek Ochal"
 		));

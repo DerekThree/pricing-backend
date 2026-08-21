@@ -1,5 +1,7 @@
 package com.pricing.backend.accountattribute;
 
+import java.util.HashSet;
+
 import com.pricing.backend.config.RecordInUseException;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.generated.model.AttributeRequest;
@@ -28,6 +30,7 @@ class AccountAttributeValidator {
 
 	private boolean hasSameDefinition(AccountAttributeEntity entity, AttributeRequest request) {
 		return entity.getAttributeCode().equals(request.getAttributeCode())
-				&& entity.getAttributeType() == request.getAttributeType();
+				&& entity.getAttributeType() == request.getAttributeType()
+				&& new HashSet<>(entity.getProductTypes()).equals(new HashSet<>(request.getProductTypes()));
 	}
 }

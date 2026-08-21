@@ -107,8 +107,7 @@ class FeeApiTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE00001", "Monthly Maintenance Fee", "[]")))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.message")
-						.value("productTypes size must be between 1 and 2147483647"));
+				.andExpect(jsonPath("$.message").value("productTypes must contain at least one item"));
 		mockMvc.perform(post("/fees")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE00001", "Monthly Maintenance Fee",
