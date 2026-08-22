@@ -42,27 +42,55 @@ public class PrototypeRuleEngine implements RuleEngine {
 
 	private AccountResult price(Account account, PriceConfig config) {
 		if (!config.productCodes().contains(account.productCode())) {
-			throw new IllegalStateException("Product is outside the flat-Fee tracer");
+			return failed(account, AccountStatus.PRODUCT_NOT_FOUND);
 		}
 
 		Branch branch = config.branches().get(account.branchCode());
 		if (branch == null) {
-			throw new IllegalStateException("Branch is outside the flat-Fee tracer");
+			return failed(account, AccountStatus.BRANCH_NOT_FOUND);
 		}
 
-		Region region = requireOne(config.regions().stream()
+		List<Region> regionMatches = config.regions().stream()
 				.filter(candidate -> candidate.branchCodes().contains(branch.code()))
-				.toList(), "Region");
-		Plan plan = requireOne(config.plans().stream()
+				.toList();
+		if (regionMatches.isEmpty()) {
+			regionMatches = config.regions().stream()
+					.filter(candidate -> candidate.zipCodes().contains(branch.zipCode()))
+					.toList();
+		}
+		if (regionMatches.isEmpty()) {
+			regionMatches = config.regions().stream()
+					.filter(candidate -> candidate.states().contains(branch.state()))
+					.toList();
+		}
+		if (regionMatches.isEmpty()) {
+			return failed(account, AccountStatus.REGION_NOT_FOUND);
+		}
+		if (regionMatches.size() > 1) {
+			return failed(account, AccountStatus.ERROR);
+		}
+		Region region = regionMatches.getFirst();
+		List<Plan> planMatches = config.plans().stream()
 				.filter(candidate -> candidate.productCode().equals(account.productCode()))
 				.filter(candidate -> candidate.regionCode().equals(region.code()))
 				.filter(candidate -> !account.pricingDate().isBefore(candidate.activeFrom()))
 				.filter(candidate -> !account.pricingDate().isAfter(candidate.activeThrough()))
-				.toList(), "Pricing Plan");
+				.toList();
+		if (planMatches.isEmpty()) {
+			return failed(account, AccountStatus.PLAN_NOT_FOUND);
+		}
+		if (planMatches.size() > 1) {
+			return failed(account, AccountStatus.ERROR);
+		}
+		Plan plan = planMatches.getFirst();
 		List<FeeResult> fees = account.fees().stream()
 				.map(request -> price(request, plan))
 				.toList();
 		return new AccountResult(account.accountNumber(), AccountStatus.OK, plan.code(), fees);
+	}
+
+	private AccountResult failed(Account account, AccountStatus status) {
+		return new AccountResult(account.accountNumber(), status, null, null);
 	}
 
 	private FeeResult price(FeeRequest request, Plan plan) {

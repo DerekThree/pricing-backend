@@ -157,6 +157,41 @@ class BatchApiTests {
 	}
 
 	@Test
+	void returnsFailedAccountResolutionWithoutConfigurationDetails() throws Exception {
+		productRepository.save(ProductEntity.builder()
+				.productCode("PROD0001")
+				.productName("Premier Checking")
+				.productType(ProductType.DEPOSIT)
+				.updatedOn(OffsetDateTime.parse("2026-08-01T00:00:00Z"))
+				.updatedBy("test")
+				.build());
+
+		mockMvc.perform(post("/batch")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "batchId": "5fd2879b-7f17-4a05-8fbe-7ebce6958f3b",
+								  "accounts": [{
+								    "accountNumber": "ACCOUNT001",
+								    "productCode": "PROD0001",
+								    "branchCode": "BRANCH001",
+								    "pricingDate": "2026-08-31",
+								    "attributes": [],
+								    "fees": [{
+								      "feeRequestId": 1,
+								      "code": "FEE00001"
+								    }]
+								  }]
+								}
+								"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accounts[0].accountNumber").value("ACCOUNT001"))
+				.andExpect(jsonPath("$.accounts[0].status").value("BRANCH_NOT_FOUND"))
+				.andExpect(jsonPath("$.accounts[0].pricingPlanCode").doesNotExist())
+				.andExpect(jsonPath("$.accounts[0].fees").doesNotExist());
+	}
+
+	@Test
 	void rejectsOverlongAccountNumber() throws Exception {
 		mockMvc.perform(post("/batch")
 					.contentType(MediaType.APPLICATION_JSON)

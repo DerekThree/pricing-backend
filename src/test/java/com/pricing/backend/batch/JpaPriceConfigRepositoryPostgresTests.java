@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -64,6 +65,7 @@ class JpaPriceConfigRepositoryPostgresTests {
 		jdbcTemplate.update("delete from fee_product_types");
 		jdbcTemplate.update("delete from fees");
 		jdbcTemplate.update("delete from region_branches");
+		jdbcTemplate.update("delete from region_zip_codes");
 		jdbcTemplate.update("delete from branches");
 		jdbcTemplate.update("delete from regions");
 		jdbcTemplate.update("delete from products");
@@ -139,6 +141,59 @@ class JpaPriceConfigRepositoryPostgresTests {
 				.collect(Collectors.toSet()));
 	}
 
+	@Test
+	void resolvesZipCodeRegionAndReturnsPlanNotFoundForAnotherPricingDate() {
+		Long productId = insertProduct();
+		insertBranch();
+		Long regionId = insertRegionByZipCode();
+		Long feeId = insertFee();
+		Long pricingPlanId = insertPricingPlan(
+				"PLAN0001",
+				productId,
+				regionId,
+				LocalDate.of(2026, 8, 1),
+				LocalDate.of(2026, 8, 31));
+		jdbcTemplate.update("insert into pricing_plan_fees values (?, ?, ?)",
+				pricingPlanId, feeId, new BigDecimal("7.5000"));
+		AccountBatch batch = new AccountBatch(
+				UUID.fromString("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b"),
+				List.of(
+						new Account(
+								"ACCOUNT001",
+								"PROD0001",
+								"BRANCH001",
+								LocalDate.of(2026, 8, 31),
+								List.of(),
+								List.of(new FeeRequest(1L, "FEE00001", null))),
+						new Account(
+								"ACCOUNT002",
+								"PROD0001",
+								"BRANCH001",
+								LocalDate.of(2026, 9, 1),
+								List.of(),
+								List.of(new FeeRequest(2L, "FEE00001", null)))));
+
+		AccountBatchResult result = ruleEngine.price(batch);
+
+		Map<String, AccountResult> accounts = result.accounts().stream()
+				.collect(Collectors.toMap(AccountResult::accountNumber, account -> account));
+		assertEquals(new AccountResult(
+				"ACCOUNT001",
+				AccountStatus.OK,
+				"PLAN0001",
+				List.of(new FeeResult(
+						1L,
+						FeeStatus.OK,
+						Decision.CHARGED,
+						new BigDecimal("7.50"),
+						null))), accounts.get("ACCOUNT001"));
+		assertEquals(new AccountResult(
+				"ACCOUNT002",
+				AccountStatus.PLAN_NOT_FOUND,
+				null,
+				null), accounts.get("ACCOUNT002"));
+	}
+
 	private Long insertProduct() {
 		return jdbcTemplate.queryForObject("""
 				insert into products (product_code, product_name, product_type, updated_on, updated_by)
@@ -160,6 +215,16 @@ class JpaPriceConfigRepositoryPostgresTests {
 				""", Long.class, OffsetDateTime.now());
 		jdbcTemplate.update("insert into region_branches (region_id, branch_id) values (?, ?)",
 				regionId, branchId);
+		return regionId;
+	}
+
+	private Long insertRegionByZipCode() {
+		Long regionId = jdbcTemplate.queryForObject("""
+				insert into regions (region_code, region_name, updated_on, updated_by)
+				values ('REGION001', 'Midwest', ?, 'test') returning id
+				""", Long.class, OffsetDateTime.now());
+		jdbcTemplate.update("insert into region_zip_codes (region_id, zip_code) values (?, '60459')",
+				regionId);
 		return regionId;
 	}
 
