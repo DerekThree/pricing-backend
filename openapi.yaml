@@ -930,12 +930,6 @@ components:
         value:
           $ref: "#/components/schemas/AccountAttributeValue"
 
-    AccountAttributeValue:
-      oneOf:
-        - type: string
-        - type: number
-        - type: boolean
-
     BatchFeeRequest:
       type: object
       required:
@@ -1617,9 +1611,9 @@ components:
         operator:
           $ref: "#/components/schemas/ReasonOperator"
         value:
-          $ref: "#/components/schemas/ReasonConditionValue"
+          $ref: "#/components/schemas/AccountAttributeValue"
 
-    ReasonConditionValue:
+    AccountAttributeValue:
       oneOf:
         - type: string
         - type: number
