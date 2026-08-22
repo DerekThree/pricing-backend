@@ -29,7 +29,8 @@ class AccountAttributeValidator {
 	}
 
 	private boolean hasSameDefinition(AccountAttributeEntity entity, AttributeRequest request) {
-		return entity.getAttributeType() == request.getAttributeType()
+		return entity.getAttributeCode().equals(request.getAttributeCode())
+				&& entity.getAttributeType() == request.getAttributeType()
 				&& new HashSet<>(entity.getProductTypes()).equals(new HashSet<>(request.getProductTypes()));
 	}
 }

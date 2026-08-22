@@ -46,7 +46,8 @@ class EligibilityReasonValidator {
 	}
 
 	private boolean hasSameDefinition(EligibilityReasonEntity entity, ReasonRequest request) {
-		if (entity.getConditions().size() != request.getConditions().size()) {
+		if (!entity.getReasonCode().equals(request.getReasonCode())
+				|| entity.getConditions().size() != request.getConditions().size()) {
 			return false;
 		}
 

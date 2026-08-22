@@ -212,7 +212,7 @@ class EligibilityReasonApiTests {
 	}
 
 	@Test
-	void allowsReasonNameAndCodeUpdatesAndRejectsConditionChangesWhenAnyPricingPlanReferencesIt()
+	void allowsReasonNameUpdatesAndRejectsCodeAndConditionChangesWhenAnyPricingPlanReferencesIt()
 			throws Exception {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
@@ -255,16 +255,20 @@ class EligibilityReasonApiTests {
 		mockMvc.perform(put("/eligibility-reasons/{id}", past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG9998", "Updated Past")))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.reasonCode").value("ELIG9998"));
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This eligibility reason is used by pricing plan with code PLAN0001. "
+								+ "Please update the pricing plan first."));
 		mockMvc.perform(put("/eligibility-reasons/{id}", scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG9999", "Updated Scheduled")))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.reasonCode").value("ELIG9999"));
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This eligibility reason is used by pricing plan with code PLAN0003. "
+								+ "Please update the pricing plan first."));
 		mockMvc.perform(put("/eligibility-reasons/{id}", scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(reasonRequestWithConditionJson("ELIG9999", "Updated Scheduled", attribute.getId())))
+						.content(reasonRequestWithConditionJson("ELIG0002", "Updated Scheduled", attribute.getId())))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0003. "
@@ -277,11 +281,13 @@ class EligibilityReasonApiTests {
 		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG9997", "Updated Active")))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.reasonCode").value("ELIG9997"));
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This eligibility reason is used by pricing plan with code PLAN0002. "
+								+ "Please update the pricing plan first."));
 		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(reasonRequestWithConditionJson("ELIG9997", "Updated Active", attribute.getId())))
+						.content(reasonRequestWithConditionJson("ELIG0003", "Updated Active", attribute.getId())))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0002. "
@@ -296,7 +302,7 @@ class EligibilityReasonApiTests {
 	}
 
 	@Test
-	void allowsAttributeNameAndCodeUpdatesAndRejectsDefinitionChangesWhenAnEligibilityReasonUsesIt()
+	void allowsAttributeNameUpdatesAndRejectsDefinitionChangesWhenAnEligibilityReasonUsesIt()
 			throws Exception {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
@@ -340,8 +346,10 @@ class EligibilityReasonApiTests {
 		mockMvc.perform(put("/account-attributes/{id}", past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("ATTR9998", "Updated Past", "BOOLEAN")))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.attributeCode").value("ATTR9998"));
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.message").value(
+						"This account attribute is used by eligibility reason with code ELIG0001. "
+								+ "Please update the eligibility reason first."));
 		mockMvc.perform(put("/account-attributes/{id}", active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("ATTR0002", "Updated Active", "INTEGER")))
