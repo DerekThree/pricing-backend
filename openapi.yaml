@@ -937,11 +937,16 @@ components:
         - code
       properties:
         feeRequestId:
-          $ref: "#/components/schemas/FeeRequestId"
+          $ref: "#/components/schemas/Id"
         code:
           $ref: "#/components/schemas/FeeCode"
         transactionAmount:
           type: number
+          minimum: 0
+          multipleOf: 0.01
+          x-setter-extra-annotation: >-
+            @com.fasterxml.jackson.annotation.JsonSetter(
+            nulls = com.fasterxml.jackson.annotation.Nulls.FAIL)
 
     BatchResult:
       type: object
@@ -981,7 +986,7 @@ components:
         - status
       properties:
         feeRequestId:
-          $ref: "#/components/schemas/FeeRequestId"
+          $ref: "#/components/schemas/Id"
         status:
           $ref: "#/components/schemas/BatchFeeStatus"
         decision:
@@ -1027,13 +1032,7 @@ components:
       type: string
       minLength: 1
       maxLength: 25
-      pattern: "^[A-Za-z0-9]{1,25}$"
-
-    FeeRequestId:
-      type: string
-      minLength: 1
-      maxLength: 25
-      pattern: "^[A-Za-z0-9]{1,25}$"
+      pattern: "^[A-Z0-9]{1,25}$"
 
     ErrorResponse:
       type: object

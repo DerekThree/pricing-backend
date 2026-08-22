@@ -1,7 +1,6 @@
 package com.pricing.backend.batch;
 
 import java.time.LocalDate;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,8 +45,11 @@ public class JpaPriceConfigRepository implements PriceConfigRepository {
 			return mapper.toPriceConfig(products, branches, regions, List.of());
 		}
 
-		LocalDate earliestPricingDate = Collections.min(pricingDates);
-		LocalDate latestPricingDate = Collections.max(pricingDates);
+		List<LocalDate> submittedPricingDates = pricingDates.stream().toList();
+		String pricingDatePredicate = IntStream.range(0, submittedPricingDates.size())
+				.mapToObj(index -> "(pricingPlan.activeFrom <= :pricingDate" + index
+						+ " and pricingPlan.activeThrough >= :pricingDate" + index + ")")
+				.collect(Collectors.joining(" or "));
 		TypedQuery<PricingPlanEntity> pricingPlanQuery = entityManager.createQuery("""
 				select distinct pricingPlan
 				from PricingPlanEntity pricingPlan
@@ -55,11 +57,11 @@ public class JpaPriceConfigRepository implements PriceConfigRepository {
 				join fetch pricingPlan.region
 				left join fetch pricingPlan.fees pricingPlanFee
 				left join fetch pricingPlanFee.fee
-				where pricingPlan.activeFrom <= :latestPricingDate
-					and pricingPlan.activeThrough >= :earliestPricingDate
-				""", PricingPlanEntity.class);
-		pricingPlanQuery.setParameter("latestPricingDate", latestPricingDate);
-		pricingPlanQuery.setParameter("earliestPricingDate", earliestPricingDate);
+				where %s
+				""".formatted(pricingDatePredicate), PricingPlanEntity.class);
+		IntStream.range(0, submittedPricingDates.size())
+				.forEach(index -> pricingPlanQuery.setParameter(
+						"pricingDate" + index, submittedPricingDates.get(index)));
 		List<PricingPlanEntity> pricingPlans = pricingPlanQuery.getResultList();
 		return mapper.toPriceConfig(products, branches, regions, pricingPlans);
 	}

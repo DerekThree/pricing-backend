@@ -22,7 +22,7 @@ public record AccountBatchResult(UUID batchId, List<AccountResult> accounts) {
 	}
 
 	public record FeeResult(
-			String feeRequestId,
+			Long feeRequestId,
 			FeeStatus status,
 			Decision decision,
 			BigDecimal amount,

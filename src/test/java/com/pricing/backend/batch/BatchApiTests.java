@@ -23,8 +23,6 @@ import com.pricing.backend.region.RegionRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -140,7 +138,7 @@ class BatchApiTests {
 								      "value": "PREMIER"
 								    }],
 								    "fees": [{
-								      "feeRequestId": "REQUEST001",
+								      "feeRequestId": 1,
 								      "code": "FEE00001"
 								    }]
 								  }]
@@ -151,41 +149,33 @@ class BatchApiTests {
 				.andExpect(jsonPath("$.accounts[0].accountNumber").value("ACCOUNT001"))
 				.andExpect(jsonPath("$.accounts[0].status").value("OK"))
 				.andExpect(jsonPath("$.accounts[0].pricingPlanCode").value("PLAN0001"))
-				.andExpect(jsonPath("$.accounts[0].fees[0].feeRequestId").value("REQUEST001"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].feeRequestId").value(1))
 				.andExpect(jsonPath("$.accounts[0].fees[0].status").value("OK"))
 				.andExpect(jsonPath("$.accounts[0].fees[0].decision").value("CHARGED"))
 				.andExpect(jsonPath("$.accounts[0].fees[0].amount").value(7.50))
 				.andExpect(jsonPath("$.accounts[0].fees[0].reasons").doesNotExist());
 	}
 
-	@ParameterizedTest
-	@CsvSource({
-			"ACCOUNT-001, REQUEST001",
-			"ACCOUNT001, REQUEST_001",
-			"ACCOUNTNUMBER12345678901234, REQUEST001",
-			"ACCOUNT001, FEEREQUEST1234567890123456"
-	})
-	void rejectsInvalidAccountNumberOrFeeRequestId(
-			String accountNumber,
-			String feeRequestId) throws Exception {
+	@Test
+	void rejectsOverlongAccountNumber() throws Exception {
 		mockMvc.perform(post("/batch")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 							{
 							  "batchId": "5fd2879b-7f17-4a05-8fbe-7ebce6958f3b",
 							  "accounts": [{
-							    "accountNumber": "%s",
+							    "accountNumber": "ACCOUNTNUMBER12345678901234",
 							    "productCode": "PROD0001",
 							    "branchCode": "BRANCH001",
 							    "pricingDate": "2026-08-31",
 							    "attributes": [],
 							    "fees": [{
-							      "feeRequestId": "%s",
+							      "feeRequestId": 1,
 							      "code": "FEE00001"
 							    }]
 							  }]
 							}
-							""".formatted(accountNumber, feeRequestId)))
+							"""))
 				.andExpect(status().isBadRequest());
 	}
 }

@@ -28,6 +28,6 @@ public record AccountBatch(UUID batchId, List<Account> accounts) {
 	public record AccountAttribute(String code, Object value) {
 	}
 
-	public record FeeRequest(String feeRequestId, String code, BigDecimal transactionAmount) {
+	public record FeeRequest(Long feeRequestId, String code, BigDecimal transactionAmount) {
 	}
 }

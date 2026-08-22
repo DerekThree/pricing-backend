@@ -48,7 +48,7 @@ class PrototypeRuleEngineTests {
 				"BRANCH001",
 				LocalDate.of(2026, 8, 31),
 				List.of(),
-				List.of(new FeeRequest("REQUEST001", "FEE00001", null)))));
+				List.of(new FeeRequest(1L, "FEE00001", null)))));
 
 		AccountBatchResult result = engine.price(batch);
 
@@ -57,7 +57,7 @@ class PrototypeRuleEngineTests {
 				AccountStatus.OK,
 				"PLAN0001",
 				List.of(new FeeResult(
-						"REQUEST001",
+						1L,
 						FeeStatus.OK,
 						Decision.CHARGED,
 						new BigDecimal("7.50"),
