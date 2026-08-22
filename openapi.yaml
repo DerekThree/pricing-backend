@@ -11,6 +11,7 @@ servers:
     description: Local development server
 
 tags:
+  - name: Batch
   - name: Branches
   - name: Regions
   - name: Products
@@ -20,6 +21,28 @@ tags:
   - name: Pricing Plans
 
 paths:
+  /batch:
+    post:
+      tags: [Batch]
+      summary: Price a batch synchronously
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchRequest"
+      responses:
+        "200":
+          description: Correlated Pricing Decisions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "500":
+          $ref: "#/components/responses/Error"
+
   /branches:
     get:
       tags: [Branches]
@@ -852,6 +875,172 @@ components:
             message: The app could not complete the backend request. Please try again later.
 
   schemas:
+    BatchRequest:
+      type: object
+      required:
+        - batchId
+        - accounts
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        accounts:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/BatchAccount"
+
+    BatchAccount:
+      type: object
+      required:
+        - accountNumber
+        - productCode
+        - branchCode
+        - pricingDate
+        - attributes
+        - fees
+      properties:
+        accountNumber:
+          $ref: "#/components/schemas/AccountNumber"
+        productCode:
+          $ref: "#/components/schemas/ProductCode"
+        branchCode:
+          $ref: "#/components/schemas/BranchCode"
+        pricingDate:
+          type: string
+          format: date
+        attributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountAttribute"
+        fees:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/BatchFeeRequest"
+
+    AccountAttribute:
+      type: object
+      required:
+        - code
+        - value
+      properties:
+        code:
+          $ref: "#/components/schemas/AttributeCode"
+        value:
+          $ref: "#/components/schemas/AccountAttributeValue"
+
+    AccountAttributeValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+
+    BatchFeeRequest:
+      type: object
+      required:
+        - feeRequestId
+        - code
+      properties:
+        feeRequestId:
+          $ref: "#/components/schemas/FeeRequestId"
+        code:
+          $ref: "#/components/schemas/FeeCode"
+        transactionAmount:
+          type: number
+
+    BatchResult:
+      type: object
+      required:
+        - batchId
+        - accounts
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchAccountResult"
+
+    BatchAccountResult:
+      type: object
+      required:
+        - accountNumber
+        - status
+      properties:
+        accountNumber:
+          $ref: "#/components/schemas/AccountNumber"
+        status:
+          $ref: "#/components/schemas/BatchAccountStatus"
+        pricingPlanCode:
+          $ref: "#/components/schemas/PricingPlanCode"
+        fees:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchFeeResult"
+
+    BatchFeeResult:
+      type: object
+      required:
+        - feeRequestId
+        - status
+      properties:
+        feeRequestId:
+          $ref: "#/components/schemas/FeeRequestId"
+        status:
+          $ref: "#/components/schemas/BatchFeeStatus"
+        decision:
+          $ref: "#/components/schemas/Decision"
+        amount:
+          type: number
+          minimum: 0
+        reasons:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/ReasonCode"
+
+    BatchAccountStatus:
+      type: string
+      enum:
+        - OK
+        - PRODUCT_NOT_FOUND
+        - BRANCH_NOT_FOUND
+        - REGION_NOT_FOUND
+        - PLAN_NOT_FOUND
+        - DUPLICATE_ATTRIBUTE
+        - INVALID_ATTRIBUTE_TYPE
+        - MISSING_ATTRIBUTE
+        - ERROR
+
+    BatchFeeStatus:
+      type: string
+      enum:
+        - OK
+        - FEE_NOT_FOUND
+        - MISSING_TRANSACTION
+        - INVALID_TRANSACTION_AMOUNT
+        - ERROR
+
+    Decision:
+      type: string
+      enum:
+        - CHARGED
+        - WAIVED
+
+    AccountNumber:
+      type: string
+      minLength: 1
+      maxLength: 25
+      pattern: "^[A-Za-z0-9]{1,25}$"
+
+    FeeRequestId:
+      type: string
+      minLength: 1
+      maxLength: 25
+      pattern: "^[A-Za-z0-9]{1,25}$"
+
     ErrorResponse:
       type: object
       required:

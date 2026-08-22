@@ -1,0 +1,60 @@
+package com.pricing.engine;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+public record AccountBatchResult(UUID batchId, List<AccountResult> accounts) {
+
+	public AccountBatchResult {
+		accounts = List.copyOf(accounts);
+	}
+
+	public record AccountResult(
+			String accountNumber,
+			AccountStatus status,
+			String pricingPlanCode,
+			List<FeeResult> fees) {
+
+		public AccountResult {
+			fees = fees == null ? null : List.copyOf(fees);
+		}
+	}
+
+	public record FeeResult(
+			String feeRequestId,
+			FeeStatus status,
+			Decision decision,
+			BigDecimal amount,
+			List<String> reasons) {
+
+		public FeeResult {
+			reasons = reasons == null ? null : List.copyOf(reasons);
+		}
+	}
+
+	public enum AccountStatus {
+		OK,
+		PRODUCT_NOT_FOUND,
+		BRANCH_NOT_FOUND,
+		REGION_NOT_FOUND,
+		PLAN_NOT_FOUND,
+		DUPLICATE_ATTRIBUTE,
+		INVALID_ATTRIBUTE_TYPE,
+		MISSING_ATTRIBUTE,
+		ERROR
+	}
+
+	public enum FeeStatus {
+		OK,
+		FEE_NOT_FOUND,
+		MISSING_TRANSACTION,
+		INVALID_TRANSACTION_AMOUNT,
+		ERROR
+	}
+
+	public enum Decision {
+		CHARGED,
+		WAIVED
+	}
+}

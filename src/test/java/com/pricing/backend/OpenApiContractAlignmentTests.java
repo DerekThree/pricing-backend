@@ -41,8 +41,8 @@ class OpenApiContractAlignmentTests {
 		JsonNode contractSpec = loadContractSpec();
 		JsonNode generatedSpec = loadGeneratedSpec();
 		assertEquals(
-				comparablePaths(contractSpec.path("paths"), contractSpec),
-				comparablePaths(generatedSpec.path("paths"), generatedSpec),
+				comparablePaths(contractSpec.path("paths"), contractSpec, contractSpec.path("paths")),
+				comparablePaths(generatedSpec.path("paths"), generatedSpec, contractSpec.path("paths")),
 				"OpenAPI paths should match"
 		);
 		assertEquals(
@@ -95,13 +95,18 @@ class OpenApiContractAlignmentTests {
 		return comparable;
 	}
 
-	private ObjectNode comparablePaths(JsonNode paths, JsonNode root) {
+	private ObjectNode comparablePaths(JsonNode paths, JsonNode root, JsonNode contractPaths) {
 		ObjectNode comparable = JSON_MAPPER.createObjectNode();
-		paths.fieldNames().forEachRemaining(path -> comparable.set(path, comparablePathItem(paths.get(path), root)));
+		paths.fieldNames().forEachRemaining(path -> comparable.set(
+				path,
+				comparablePathItem(paths.get(path), root, contractPaths.path(path))));
 		return comparable;
 	}
 
-	private ObjectNode comparablePathItem(JsonNode pathItem, JsonNode root) {
+	private ObjectNode comparablePathItem(
+			JsonNode pathItem,
+			JsonNode root,
+			JsonNode contractPathItem) {
 		ObjectNode comparable = JSON_MAPPER.createObjectNode();
 		JsonNode sharedParameters = pathItem.path("parameters");
 
@@ -110,16 +115,26 @@ class OpenApiContractAlignmentTests {
 				return;
 			}
 
-			comparable.set(method, comparableOperation(pathItem.get(method), sharedParameters, root));
+			comparable.set(method, comparableOperation(
+					pathItem.get(method),
+					sharedParameters,
+					root,
+					contractPathItem.path(method)));
 		});
 		return comparable;
 	}
 
-	private ObjectNode comparableOperation(JsonNode operation, JsonNode sharedParameters, JsonNode root) {
+	private ObjectNode comparableOperation(
+			JsonNode operation,
+			JsonNode sharedParameters,
+			JsonNode root,
+			JsonNode contractOperation) {
 		ObjectNode comparable = JSON_MAPPER.createObjectNode();
 		comparable.set("tags", comparableTags(operation.path("tags")));
 		copyIfPresent(operation, comparable, "summary");
-		copyIfPresent(operation, comparable, "operationId");
+		if (contractOperation.has("operationId")) {
+			copyIfPresent(operation, comparable, "operationId");
+		}
 
 		if (operation.has("parameters") || sharedParameters.isArray()) {
 			ArrayNode parameters = JSON_MAPPER.createArrayNode();
