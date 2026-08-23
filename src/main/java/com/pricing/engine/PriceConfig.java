@@ -57,11 +57,14 @@ public record PriceConfig(
 		}
 	}
 
-	public record EligibilityReason(List<AttributeDefinition> requiredAttributes) {
+	public record EligibilityReason(String code, List<EligibilityCondition> conditions) {
 
 		public EligibilityReason {
-			requiredAttributes = List.copyOf(requiredAttributes);
+			conditions = List.copyOf(conditions);
 		}
+	}
+
+	public record EligibilityCondition(AttributeDefinition attribute, String operator, String value) {
 	}
 
 	public record AttributeDefinition(String code, AttributeType type) {

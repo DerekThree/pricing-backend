@@ -24,6 +24,7 @@ import static com.pricing.engine.AccountBatchResult.FeeStatus;
 import static com.pricing.engine.PriceConfig.AttributeDefinition;
 import static com.pricing.engine.PriceConfig.AttributeType;
 import static com.pricing.engine.PriceConfig.Branch;
+import static com.pricing.engine.PriceConfig.EligibilityCondition;
 import static com.pricing.engine.PriceConfig.EligibilityReason;
 import static com.pricing.engine.PriceConfig.FeeType;
 import static com.pricing.engine.PriceConfig.Plan;
@@ -237,7 +238,7 @@ class PrototypeRuleEngineTests {
 				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
 				List.of(plan(List.of(
 						fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
-						fee("FEE00002")))));
+						flatFee("FEE00002")))));
 
 		AccountBatchResult result = price(config, batch(
 				List.of(),
@@ -271,6 +272,123 @@ class PrototypeRuleEngineTests {
 				AccountStatus.OK,
 				"PLAN0001",
 				List.of(new FeeResult(1L, FeeStatus.FEE_NOT_FOUND, null, null, null))))), result);
+	}
+
+	@ParameterizedTest
+	@MethodSource("satisfyingTypedComparisons")
+	void supportsEveryTypedEligibilityOperator(
+			AttributeType type, Object accountValue, String operator, String conditionValue) {
+		PriceConfig config = config(
+				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
+				List.of(plan(List.of(feeWithReasons("FEE00001", reason("REASON001",
+						condition("ATTR0001", type, operator, conditionValue)))))));
+
+		AccountBatchResult result = price(config, batch(
+				List.of(new AccountAttribute("ATTR0001", accountValue)),
+				List.of(new FeeRequest(1L, "FEE00001", null))));
+
+		assertEquals(waivedResult("REASON001"), result);
+	}
+
+	@Test
+	void requiresEveryConditionWithinOneEligibilityReason() {
+		PriceConfig config = config(
+				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
+				List.of(plan(List.of(feeWithReasons("FEE00001", reason("REASON001",
+						condition("ATTR0001", AttributeType.TEXT, "=", "PREMIER"),
+						condition("ATTR0002", AttributeType.DECIMAL, ">", "100")))))));
+
+		AccountBatchResult result = price(config, batch(
+				List.of(
+						new AccountAttribute("ATTR0001", "PREMIER"),
+						new AccountAttribute("ATTR0002", new BigDecimal("50"))),
+				List.of(new FeeRequest(1L, "FEE00001", null))));
+
+		assertEquals(chargedResult("PLAN0001"), result);
+	}
+
+	@Test
+	void waivesForAnySatisfiedReasonAndReturnsEverySatisfiedReasonCode() {
+		PriceConfig config = config(
+				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
+				List.of(plan(List.of(feeWithReasons(
+						"FEE00001",
+						reason("TEXT_REASON",
+								condition("ATTR0001", AttributeType.TEXT, "=", "PREMIER")),
+						reason("AMOUNT_REASON",
+								condition("ATTR0002", AttributeType.DECIMAL, ">=", "100")),
+						reason("BOOLEAN_REASON",
+								condition("ATTR0003", AttributeType.BOOLEAN, "=", "true")))))));
+
+		AccountBatchResult result = price(config, batch(
+				List.of(
+						new AccountAttribute("ATTR0001", " premier "),
+						new AccountAttribute("ATTR0002", new BigDecimal("100.00")),
+						new AccountAttribute("ATTR0003", false)),
+				List.of(new FeeRequest(1L, "FEE00001", null))));
+
+		FeeResult fee = result.accounts().getFirst().fees().getFirst();
+		assertEquals(FeeStatus.OK, fee.status());
+		assertEquals(Decision.WAIVED, fee.decision());
+		assertEquals(null, fee.amount());
+		assertEquals(Set.of("TEXT_REASON", "AMOUNT_REASON"), Set.copyOf(fee.reasons()));
+	}
+
+	@Test
+	void treatsAnEligibilityReasonWithoutConditionsAsSatisfied() {
+		PriceConfig config = config(
+				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
+				List.of(plan(List.of(feeWithReasons("FEE00001", reason("ALWAYS"))))));
+
+		AccountBatchResult result = price(config, batch(List.of(),
+				List.of(new FeeRequest(1L, "FEE00001", null))));
+
+		assertEquals(waivedResult("ALWAYS"), result);
+	}
+
+	@Test
+	void returnsFeeErrorForAnInvalidOperatorAndTypeCombination() {
+		PriceConfig config = config(
+				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
+				List.of(plan(List.of(
+						feeWithReasons("FEE00001", reason("INVALID",
+								condition("ATTR0001", AttributeType.BOOLEAN, ">", "false"))),
+						flatFee("FEE00002")))));
+
+		AccountBatchResult result = price(config, batch(
+				List.of(new AccountAttribute("ATTR0001", true)),
+				List.of(
+						new FeeRequest(1L, "FEE00001", null),
+						new FeeRequest(2L, "FEE00002", null))));
+
+		assertEquals(new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
+				"ACCOUNT001",
+				AccountStatus.OK,
+				"PLAN0001",
+				List.of(
+						new FeeResult(1L, FeeStatus.ERROR, null, null, null),
+						new FeeResult(2L, FeeStatus.OK, Decision.CHARGED,
+								new BigDecimal("7.50"), null))))), result);
+	}
+
+	@ParameterizedTest
+	@MethodSource("invalidConditionValues")
+	void returnsFeeErrorForAnInvalidPersistedConditionValue(
+			AttributeType type, Object accountValue, String conditionValue) {
+		PriceConfig config = config(
+				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
+				List.of(plan(List.of(feeWithReasons("FEE00001", reason("INVALID",
+						condition("ATTR0001", type, "=", conditionValue)))))));
+
+		AccountBatchResult result = price(config, batch(
+				List.of(new AccountAttribute("ATTR0001", accountValue)),
+				List.of(new FeeRequest(1L, "FEE00001", null))));
+
+		assertEquals(new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
+				"ACCOUNT001",
+				AccountStatus.OK,
+				"PLAN0001",
+				List.of(new FeeResult(1L, FeeStatus.ERROR, null, null, null))))), result);
 	}
 
 	private AccountBatchResult price(
@@ -345,11 +463,48 @@ class PrototypeRuleEngineTests {
 	}
 
 	private PlanFee fee(String code, AttributeDefinition... attributes) {
+		return feeWithReasons(code, new EligibilityReason(
+				"REASON001",
+				Stream.of(attributes)
+						.map(attribute -> new EligibilityCondition(
+								attribute,
+								"=",
+								unmatchedValue(attribute.type())))
+						.toList()));
+	}
+
+	private PlanFee flatFee(String code) {
 		return new PlanFee(
 				code,
 				FeeType.FLAT,
 				new BigDecimal("7.5000"),
-				List.of(new EligibilityReason(List.of(attributes))));
+				List.of());
+	}
+
+	private PlanFee feeWithReasons(String code, EligibilityReason... reasons) {
+		return new PlanFee(
+				code,
+				FeeType.FLAT,
+				new BigDecimal("7.5000"),
+				List.of(reasons));
+	}
+
+	private EligibilityReason reason(String code, EligibilityCondition... conditions) {
+		return new EligibilityReason(code, List.of(conditions));
+	}
+
+	private EligibilityCondition condition(
+			String code, AttributeType type, String operator, String value) {
+		return new EligibilityCondition(new AttributeDefinition(code, type), operator, value);
+	}
+
+	private String unmatchedValue(AttributeType type) {
+		return switch (type) {
+			case TEXT -> "DIFFERENT";
+			case BOOLEAN -> "false";
+			case DECIMAL, INTEGER -> "0";
+			case DATE -> "2025-01-01";
+		};
 	}
 
 	private AccountBatchResult chargedResult(String planCode) {
@@ -365,6 +520,19 @@ class PrototypeRuleEngineTests {
 						null)))));
 	}
 
+	private AccountBatchResult waivedResult(String... reasons) {
+		return new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
+				"ACCOUNT001",
+				AccountStatus.OK,
+				"PLAN0001",
+				List.of(new FeeResult(
+						1L,
+						FeeStatus.OK,
+						Decision.WAIVED,
+						null,
+						List.of(reasons))))));
+	}
+
 	private AccountBatchResult failedResult(AccountStatus status) {
 		return new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
 				"ACCOUNT001", status, null, null)));
@@ -377,6 +545,40 @@ class PrototypeRuleEngineTests {
 				arguments(AttributeType.DECIMAL, new BigDecimal("1.50")),
 				arguments(AttributeType.INTEGER, new BigDecimal("1.00")),
 				arguments(AttributeType.DATE, "2026-08-15"));
+	}
+
+	private static Stream<Arguments> satisfyingTypedComparisons() {
+		return Stream.of(
+				arguments(AttributeType.TEXT, " Premium ", "=", "premium"),
+				arguments(AttributeType.TEXT, "STANDARD", "<>", "premium"),
+				arguments(AttributeType.BOOLEAN, true, "=", "true"),
+				arguments(AttributeType.BOOLEAN, false, "<>", "true"),
+				arguments(AttributeType.DECIMAL, new BigDecimal("1.0"), "=", "1.00"),
+				arguments(AttributeType.DECIMAL, new BigDecimal("2"), "<>", "1"),
+				arguments(AttributeType.DECIMAL, new BigDecimal("2"), ">", "1"),
+				arguments(AttributeType.DECIMAL, new BigDecimal("1"), "<", "2"),
+				arguments(AttributeType.DECIMAL, new BigDecimal("1"), ">=", "1.00"),
+				arguments(AttributeType.DECIMAL, new BigDecimal("1"), "<=", "1.0"),
+				arguments(AttributeType.INTEGER, new BigDecimal("1"), "=", "1.00"),
+				arguments(AttributeType.INTEGER, new BigDecimal("2"), "<>", "1"),
+				arguments(AttributeType.INTEGER, new BigDecimal("2"), ">", "1"),
+				arguments(AttributeType.INTEGER, new BigDecimal("1"), "<", "2"),
+				arguments(AttributeType.INTEGER, new BigDecimal("1"), ">=", "1"),
+				arguments(AttributeType.INTEGER, new BigDecimal("1"), "<=", "1"),
+				arguments(AttributeType.DATE, "2026-08-15", "=", "2026-08-15"),
+				arguments(AttributeType.DATE, "2026-08-16", "<>", "2026-08-15"),
+				arguments(AttributeType.DATE, "2026-08-16", ">", "2026-08-15"),
+				arguments(AttributeType.DATE, "2026-08-14", "<", "2026-08-15"),
+				arguments(AttributeType.DATE, "2026-08-15", ">=", "2026-08-15"),
+				arguments(AttributeType.DATE, "2026-08-15", "<=", "2026-08-15"));
+	}
+
+	private static Stream<Arguments> invalidConditionValues() {
+		return Stream.of(
+				arguments(AttributeType.BOOLEAN, true, "not-a-boolean"),
+				arguments(AttributeType.DECIMAL, new BigDecimal("1"), "not-a-number"),
+				arguments(AttributeType.INTEGER, new BigDecimal("1"), "1.5"),
+				arguments(AttributeType.DATE, "2026-08-15", "not-a-date"));
 	}
 
 	private static class FakePriceConfigRepository implements PriceConfigRepository {

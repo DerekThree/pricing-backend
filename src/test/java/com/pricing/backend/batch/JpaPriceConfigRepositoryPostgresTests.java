@@ -62,6 +62,10 @@ class JpaPriceConfigRepositoryPostgresTests {
 	@AfterEach
 	void cleanUp() {
 		jdbcTemplate.update("delete from pricing_plans");
+		jdbcTemplate.update("delete from eligibility_reason_conditions");
+		jdbcTemplate.update("delete from eligibility_reasons");
+		jdbcTemplate.update("delete from account_attribute_product_types");
+		jdbcTemplate.update("delete from account_attributes");
 		jdbcTemplate.update("delete from fee_product_types");
 		jdbcTemplate.update("delete from fees");
 		jdbcTemplate.update("delete from region_branches");
@@ -77,7 +81,7 @@ class JpaPriceConfigRepositoryPostgresTests {
 		Long productId = insertProduct();
 		Long branchId = insertBranch();
 		Long regionId = insertRegion(branchId);
-		Long feeId = insertFee();
+		Long feeId = insertFee("FEE00001");
 		Long pricingPlanId = insertPricingPlan(
 				"PLAN0001",
 				productId,
@@ -106,6 +110,64 @@ class JpaPriceConfigRepositoryPostgresTests {
 						Decision.CHARGED,
 						new BigDecimal("7.50"),
 						null))))), result);
+	}
+
+	@Test
+	void pricesChargedAndWaivedFeesFromPersistedEligibilityConditions() {
+		UUID batchId = UUID.fromString("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b");
+		Long productId = insertProduct();
+		Long branchId = insertBranch();
+		Long regionId = insertRegion(branchId);
+		Long waivedFeeId = insertFee("FEE00001");
+		Long chargedFeeId = insertFee("FEE00002");
+		Long pricingPlanId = insertPricingPlan(
+				"PLAN0001",
+				productId,
+				regionId,
+				LocalDate.of(2026, 8, 1),
+				LocalDate.of(2026, 8, 31));
+		jdbcTemplate.update("insert into pricing_plan_fees values (?, ?, ?)",
+				pricingPlanId, waivedFeeId, new BigDecimal("7.5000"));
+		jdbcTemplate.update("insert into pricing_plan_fees values (?, ?, ?)",
+				pricingPlanId, chargedFeeId, new BigDecimal("8.5000"));
+		Long attributeId = insertTextAttribute();
+		Long waivedReasonId = insertReason("ELIG0001");
+		Long chargedReasonId = insertReason("ELIG0002");
+		insertCondition(waivedReasonId, attributeId, "PREMIER");
+		insertCondition(chargedReasonId, attributeId, "STANDARD");
+		jdbcTemplate.update("insert into pricing_plan_fee_reasons values (?, ?, ?)",
+				pricingPlanId, waivedFeeId, waivedReasonId);
+		jdbcTemplate.update("insert into pricing_plan_fee_reasons values (?, ?, ?)",
+				pricingPlanId, chargedFeeId, chargedReasonId);
+		AccountBatch batch = new AccountBatch(batchId, List.of(new Account(
+				"ACCOUNT001",
+				"PROD0001",
+				"BRANCH001",
+				LocalDate.of(2026, 8, 31),
+				List.of(new AccountBatch.AccountAttribute("ATTR0001", " premier ")),
+				List.of(
+						new FeeRequest(1L, "FEE00001", null),
+						new FeeRequest(2L, "FEE00002", null)))));
+
+		AccountBatchResult result = ruleEngine.price(batch);
+
+		assertEquals(new AccountBatchResult(batchId, List.of(new AccountResult(
+				"ACCOUNT001",
+				AccountStatus.OK,
+				"PLAN0001",
+				List.of(
+						new FeeResult(
+								1L,
+								FeeStatus.OK,
+								Decision.WAIVED,
+								null,
+								List.of("ELIG0001")),
+						new FeeResult(
+								2L,
+								FeeStatus.OK,
+								Decision.CHARGED,
+								new BigDecimal("8.50"),
+								null))))), result);
 	}
 
 	@Test
@@ -146,7 +208,7 @@ class JpaPriceConfigRepositoryPostgresTests {
 		Long productId = insertProduct();
 		insertBranch();
 		Long regionId = insertRegionByZipCode();
-		Long feeId = insertFee();
+		Long feeId = insertFee("FEE00001");
 		Long pricingPlanId = insertPricingPlan(
 				"PLAN0001",
 				productId,
@@ -228,13 +290,37 @@ class JpaPriceConfigRepositoryPostgresTests {
 		return regionId;
 	}
 
-	private Long insertFee() {
+	private Long insertFee(String feeCode) {
 		Long feeId = jdbcTemplate.queryForObject("""
 				insert into fees (fee_code, fee_name, fee_type, updated_on, updated_by)
-				values ('FEE00001', 'Monthly Maintenance Fee', 'FLAT', ?, 'test') returning id
-				""", Long.class, OffsetDateTime.now());
+				values (?, 'Monthly Maintenance Fee', 'FLAT', ?, 'test') returning id
+				""", Long.class, feeCode, OffsetDateTime.now());
 		jdbcTemplate.update("insert into fee_product_types values (?, 0, 'DEPOSIT')", feeId);
 		return feeId;
+	}
+
+	private Long insertTextAttribute() {
+		return jdbcTemplate.queryForObject("""
+				insert into account_attributes (
+						attribute_code, attribute_name, attribute_type, updated_on, updated_by)
+				values ('ATTR0001', 'Account Tier', 'TEXT', ?, 'test') returning id
+				""", Long.class, OffsetDateTime.now());
+	}
+
+	private Long insertReason(String reasonCode) {
+		return jdbcTemplate.queryForObject("""
+				insert into eligibility_reasons (
+						reason_code, reason_name, updated_on, updated_by)
+				values (?, 'Premier Account', ?, 'test') returning id
+				""", Long.class, reasonCode, OffsetDateTime.now());
+	}
+
+	private void insertCondition(Long reasonId, Long attributeId, String value) {
+		jdbcTemplate.update("""
+				insert into eligibility_reason_conditions (
+						reason_id, attribute_id, operator, attribute_value)
+				values (?, ?, '=', ?)
+				""", reasonId, attributeId, value);
 	}
 
 	private Long insertPricingPlan(

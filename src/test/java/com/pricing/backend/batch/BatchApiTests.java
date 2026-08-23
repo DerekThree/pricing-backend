@@ -5,10 +5,16 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import com.pricing.backend.accountattribute.AccountAttributeEntity;
+import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.branch.BranchEntity;
 import com.pricing.backend.branch.BranchRepository;
+import com.pricing.backend.eligibilityreason.EligibilityReasonConditionEntity;
+import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
+import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.FeeType;
 import com.pricing.backend.generated.model.ProductType;
 import com.pricing.backend.pricingplan.PricingPlanEntity;
@@ -41,7 +47,13 @@ class BatchApiTests {
 	private MockMvc mockMvc;
 
 	@Autowired
+	private AccountAttributeRepository accountAttributeRepository;
+
+	@Autowired
 	private BranchRepository branchRepository;
+
+	@Autowired
+	private EligibilityReasonRepository eligibilityReasonRepository;
 
 	@Autowired
 	private FeeRepository feeRepository;
@@ -66,6 +78,8 @@ class BatchApiTests {
 	@AfterEach
 	void cleanUp() {
 		pricingPlanRepository.deleteAll();
+		eligibilityReasonRepository.deleteAll();
+		accountAttributeRepository.deleteAll();
 		feeRepository.deleteAll();
 		regionRepository.deleteAll();
 		branchRepository.deleteAll();
@@ -74,6 +88,43 @@ class BatchApiTests {
 
 	@Test
 	void pricesOneFlatFeeEndToEnd() throws Exception {
+		saveFlatFeeConfiguration("STANDARD");
+
+		mockMvc.perform(post("/batch")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(batchRequestJson("PREMIER")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.batchId").value("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b"))
+				.andExpect(jsonPath("$.accounts[0].accountNumber").value("ACCOUNT001"))
+				.andExpect(jsonPath("$.accounts[0].status").value("OK"))
+				.andExpect(jsonPath("$.accounts[0].pricingPlanCode").value("PLAN0001"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].feeRequestId").value(1))
+				.andExpect(jsonPath("$.accounts[0].fees[0].status").value("OK"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].decision").value("CHARGED"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].amount").value(7.50))
+				.andExpect(jsonPath("$.accounts[0].fees[0].reasons").doesNotExist());
+	}
+
+	@Test
+	void waivesOneFlatFeeEndToEnd() throws Exception {
+		saveFlatFeeConfiguration("PREMIER");
+
+		mockMvc.perform(post("/batch")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(batchRequestJson(" premier ")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.batchId").value("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b"))
+				.andExpect(jsonPath("$.accounts[0].accountNumber").value("ACCOUNT001"))
+				.andExpect(jsonPath("$.accounts[0].status").value("OK"))
+				.andExpect(jsonPath("$.accounts[0].pricingPlanCode").value("PLAN0001"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].feeRequestId").value(1))
+				.andExpect(jsonPath("$.accounts[0].fees[0].status").value("OK"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].decision").value("WAIVED"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].amount").doesNotExist())
+				.andExpect(jsonPath("$.accounts[0].fees[0].reasons[0]").value("ELIG0001"));
+	}
+
+	private void saveFlatFeeConfiguration(String conditionValue) {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
 				.productName("Premier Checking")
@@ -106,6 +157,28 @@ class BatchApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-08-01T00:00:00Z"))
 				.updatedBy("test")
 				.build());
+		AccountAttributeEntity attribute = accountAttributeRepository.save(
+				AccountAttributeEntity.builder()
+						.attributeCode("ATTR0001")
+						.attributeName("Account Tier")
+						.attributeType(AttributeType.TEXT)
+						.productTypes(List.of(ProductType.DEPOSIT))
+						.updatedOn(OffsetDateTime.parse("2026-08-01T00:00:00Z"))
+						.updatedBy("test")
+						.build());
+		EligibilityReasonEntity reason = EligibilityReasonEntity.builder()
+				.reasonCode("ELIG0001")
+				.reasonName("Premier Account")
+				.updatedOn(OffsetDateTime.parse("2026-08-01T00:00:00Z"))
+				.updatedBy("test")
+				.build();
+		reason.getConditions().add(EligibilityReasonConditionEntity.builder()
+				.reason(reason)
+				.attribute(attribute)
+				.operator("=")
+				.attributeValue(conditionValue)
+				.build());
+		reason = eligibilityReasonRepository.save(reason);
 		PricingPlanEntity pricingPlan = pricingPlanRepository.save(PricingPlanEntity.builder()
 				.planCode("PLAN0001")
 				.planName("Premier Midwest")
@@ -121,39 +194,30 @@ class BatchApiTests {
 				.pricingPlan(pricingPlan)
 				.fee(fee)
 				.amount(new BigDecimal("7.5000"))
+				.reasons(List.of(reason))
 				.build());
+	}
 
-		mockMvc.perform(post("/batch")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "batchId": "5fd2879b-7f17-4a05-8fbe-7ebce6958f3b",
-								  "accounts": [{
-								    "accountNumber": "ACCOUNT001",
-								    "productCode": "PROD0001",
-								    "branchCode": "BRANCH001",
-								    "pricingDate": "2026-08-31",
-								    "attributes": [{
-								      "code": "ATTR0001",
-								      "value": "PREMIER"
-								    }],
-								    "fees": [{
-								      "feeRequestId": 1,
-								      "code": "FEE00001"
-								    }]
-								  }]
-								}
-								"""))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.batchId").value("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b"))
-				.andExpect(jsonPath("$.accounts[0].accountNumber").value("ACCOUNT001"))
-				.andExpect(jsonPath("$.accounts[0].status").value("OK"))
-				.andExpect(jsonPath("$.accounts[0].pricingPlanCode").value("PLAN0001"))
-				.andExpect(jsonPath("$.accounts[0].fees[0].feeRequestId").value(1))
-				.andExpect(jsonPath("$.accounts[0].fees[0].status").value("OK"))
-				.andExpect(jsonPath("$.accounts[0].fees[0].decision").value("CHARGED"))
-				.andExpect(jsonPath("$.accounts[0].fees[0].amount").value(7.50))
-				.andExpect(jsonPath("$.accounts[0].fees[0].reasons").doesNotExist());
+	private String batchRequestJson(String attributeValue) {
+		return """
+				{
+				  "batchId": "5fd2879b-7f17-4a05-8fbe-7ebce6958f3b",
+				  "accounts": [{
+				    "accountNumber": "ACCOUNT001",
+				    "productCode": "PROD0001",
+				    "branchCode": "BRANCH001",
+				    "pricingDate": "2026-08-31",
+				    "attributes": [{
+				      "code": "ATTR0001",
+				      "value": "%s"
+				    }],
+				    "fees": [{
+				      "feeRequestId": 1,
+				      "code": "FEE00001"
+				    }]
+				  }]
+				}
+				""".formatted(attributeValue);
 	}
 
 	@Test

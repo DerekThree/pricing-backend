@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.pricing.engine.AccountBatch.Account;
+import com.pricing.engine.AccountBatch.AccountAttribute;
 import com.pricing.engine.AccountBatch.FeeRequest;
 import com.pricing.engine.AccountBatchResult.AccountResult;
 import com.pricing.engine.AccountBatchResult.AccountStatus;
@@ -17,6 +18,8 @@ import com.pricing.engine.AccountBatchResult.FeeResult;
 import com.pricing.engine.AccountBatchResult.FeeStatus;
 import com.pricing.engine.PriceConfig.AttributeDefinition;
 import com.pricing.engine.PriceConfig.Branch;
+import com.pricing.engine.PriceConfig.EligibilityCondition;
+import com.pricing.engine.PriceConfig.EligibilityReason;
 import com.pricing.engine.PriceConfig.FeeType;
 import com.pricing.engine.PriceConfig.Plan;
 import com.pricing.engine.PriceConfig.PlanFee;
@@ -88,7 +91,8 @@ public class PrototypeRuleEngine implements RuleEngine {
 		Set<AttributeDefinition> requiredAttributes = plan.fees().stream()
 				.filter(fee -> requestedFeeCodes.contains(fee.code()))
 				.flatMap(fee -> fee.reasons().stream())
-				.flatMap(reason -> reason.requiredAttributes().stream())
+				.flatMap(reason -> reason.conditions().stream())
+				.map(EligibilityCondition::attribute)
 				.collect(Collectors.toSet());
 		Set<String> requiredAttributeCodes = requiredAttributes.stream()
 				.map(AttributeDefinition::code)
@@ -112,7 +116,7 @@ public class PrototypeRuleEngine implements RuleEngine {
 			return failed(account, AccountStatus.MISSING_ATTRIBUTE);
 		}
 		List<FeeResult> fees = account.fees().stream()
-				.map(request -> price(request, plan))
+				.map(request -> price(request, plan, account.attributes()))
 				.toList();
 		return new AccountResult(account.accountNumber(), AccountStatus.OK, plan.code(), fees);
 	}
@@ -140,7 +144,7 @@ public class PrototypeRuleEngine implements RuleEngine {
 		}
 	}
 
-	private FeeResult price(FeeRequest request, Plan plan) {
+	private FeeResult price(FeeRequest request, Plan plan, List<AccountAttribute> attributes) {
 		List<PlanFee> matches = plan.fees().stream()
 				.filter(candidate -> candidate.code().equals(request.code()))
 				.toList();
@@ -151,6 +155,20 @@ public class PrototypeRuleEngine implements RuleEngine {
 		if (fee.type() != FeeType.FLAT) {
 			throw new IllegalStateException("Fee is outside the flat-Fee tracer");
 		}
+		if (fee.reasons().stream()
+				.flatMap(reason -> reason.conditions().stream())
+				.anyMatch(condition -> !isValid(condition))) {
+			return new FeeResult(request.feeRequestId(), FeeStatus.ERROR, null, null, null);
+		}
+
+		List<String> reasons = fee.reasons().stream()
+				.filter(reason -> reason.conditions().stream()
+						.allMatch(condition -> matches(condition, attributes)))
+				.map(EligibilityReason::code)
+				.toList();
+		if (!reasons.isEmpty()) {
+			return new FeeResult(request.feeRequestId(), FeeStatus.OK, Decision.WAIVED, null, reasons);
+		}
 
 		return new FeeResult(
 				request.feeRequestId(),
@@ -158,6 +176,65 @@ public class PrototypeRuleEngine implements RuleEngine {
 				Decision.CHARGED,
 				fee.amount().setScale(2, RoundingMode.HALF_UP),
 				null);
+	}
+
+	private boolean isValid(EligibilityCondition condition) {
+		boolean operatorIsValid = switch (condition.attribute().type()) {
+			case TEXT, BOOLEAN -> condition.operator().equals("=")
+					|| condition.operator().equals("<>");
+			case DECIMAL, INTEGER, DATE -> switch (condition.operator()) {
+				case "=", "<>", ">", "<", ">=", "<=" -> true;
+				default -> false;
+			};
+		};
+		if (!operatorIsValid) {
+			return false;
+		}
+
+		try {
+			switch (condition.attribute().type()) {
+				case TEXT -> {
+				}
+				case BOOLEAN -> {
+					if (!condition.value().equals("true") && !condition.value().equals("false")) {
+						return false;
+					}
+				}
+				case DECIMAL -> new BigDecimal(condition.value());
+				case INTEGER -> new BigDecimal(condition.value()).toBigIntegerExact();
+				case DATE -> LocalDate.parse(condition.value());
+			}
+			return true;
+		} catch (NumberFormatException | ArithmeticException | DateTimeParseException exception) {
+			return false;
+		}
+	}
+
+	private boolean matches(EligibilityCondition condition, List<AccountAttribute> attributes) {
+		Object attributeValue = attributes.stream()
+				.filter(attribute -> attribute.code().equals(condition.attribute().code()))
+				.findFirst()
+				.orElseThrow()
+				.value();
+		int comparison = switch (condition.attribute().type()) {
+			case TEXT -> ((String) attributeValue).trim().compareToIgnoreCase(condition.value().trim());
+			case BOOLEAN -> Boolean.compare(
+					(Boolean) attributeValue,
+					Boolean.parseBoolean(condition.value()));
+			case DECIMAL, INTEGER -> ((BigDecimal) attributeValue)
+					.compareTo(new BigDecimal(condition.value()));
+			case DATE -> LocalDate.parse((String) attributeValue)
+					.compareTo(LocalDate.parse(condition.value()));
+		};
+		return switch (condition.operator()) {
+			case "=" -> comparison == 0;
+			case "<>" -> comparison != 0;
+			case ">" -> comparison > 0;
+			case "<" -> comparison < 0;
+			case ">=" -> comparison >= 0;
+			case "<=" -> comparison <= 0;
+			default -> throw new IllegalStateException("Unsupported Eligibility Reason operator");
+		};
 	}
 
 	private <T> T requireOne(List<T> matches, String configurationType) {

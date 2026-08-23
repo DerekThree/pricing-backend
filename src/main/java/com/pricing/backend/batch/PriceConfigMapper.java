@@ -14,6 +14,7 @@ import com.pricing.engine.PriceConfig;
 import com.pricing.engine.PriceConfig.AttributeDefinition;
 import com.pricing.engine.PriceConfig.AttributeType;
 import com.pricing.engine.PriceConfig.Branch;
+import com.pricing.engine.PriceConfig.EligibilityCondition;
 import com.pricing.engine.PriceConfig.EligibilityReason;
 import com.pricing.engine.PriceConfig.FeeType;
 import com.pricing.engine.PriceConfig.Plan;
@@ -69,9 +70,18 @@ class PriceConfigMapper {
 	}
 
 	private EligibilityReason toEligibilityReason(EligibilityReasonEntity reason) {
-		return new EligibilityReason(reason.getConditions().stream()
-				.map(this::toAttributeDefinition)
+		return new EligibilityReason(
+				reason.getReasonCode(),
+				reason.getConditions().stream()
+				.map(this::toEligibilityCondition)
 				.toList());
+	}
+
+	private EligibilityCondition toEligibilityCondition(EligibilityReasonConditionEntity condition) {
+		return new EligibilityCondition(
+				toAttributeDefinition(condition),
+				condition.getOperator(),
+				condition.getAttributeValue());
 	}
 
 	private AttributeDefinition toAttributeDefinition(EligibilityReasonConditionEntity condition) {
