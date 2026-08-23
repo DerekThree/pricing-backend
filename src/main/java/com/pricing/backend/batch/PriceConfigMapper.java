@@ -5,12 +5,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.pricing.backend.branch.BranchEntity;
+import com.pricing.backend.eligibilityreason.EligibilityReasonConditionEntity;
+import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.pricingplan.PricingPlanEntity;
 import com.pricing.backend.pricingplan.PricingPlanFeeEntity;
-import com.pricing.backend.product.ProductEntity;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.engine.PriceConfig;
+import com.pricing.engine.PriceConfig.AttributeDefinition;
+import com.pricing.engine.PriceConfig.AttributeType;
 import com.pricing.engine.PriceConfig.Branch;
+import com.pricing.engine.PriceConfig.EligibilityReason;
 import com.pricing.engine.PriceConfig.FeeType;
 import com.pricing.engine.PriceConfig.Plan;
 import com.pricing.engine.PriceConfig.PlanFee;
@@ -21,14 +25,12 @@ import org.springframework.stereotype.Component;
 class PriceConfigMapper {
 
 	PriceConfig toPriceConfig(
-			List<ProductEntity> products,
 			List<BranchEntity> branches,
 			List<RegionEntity> regions,
 			List<PricingPlanEntity> pricingPlans) {
 		Map<Long, String> branchCodesById = branches.stream()
 				.collect(Collectors.toMap(BranchEntity::getId, BranchEntity::getBranchCode));
 		return new PriceConfig(
-				products.stream().map(ProductEntity::getProductCode).collect(Collectors.toSet()),
 				branches.stream().collect(Collectors.toMap(
 						BranchEntity::getBranchCode,
 						this::toBranch)),
@@ -62,6 +64,19 @@ class PriceConfigMapper {
 		return new PlanFee(
 				pricingPlanFee.getFee().getFeeCode(),
 				FeeType.valueOf(pricingPlanFee.getFee().getFeeType().name()),
-				pricingPlanFee.getAmount());
+				pricingPlanFee.getAmount(),
+				pricingPlanFee.getReasons().stream().map(this::toEligibilityReason).toList());
+	}
+
+	private EligibilityReason toEligibilityReason(EligibilityReasonEntity reason) {
+		return new EligibilityReason(reason.getConditions().stream()
+				.map(this::toAttributeDefinition)
+				.toList());
+	}
+
+	private AttributeDefinition toAttributeDefinition(EligibilityReasonConditionEntity condition) {
+		return new AttributeDefinition(
+				condition.getAttribute().getAttributeCode(),
+				AttributeType.valueOf(condition.getAttribute().getAttributeType().name()));
 	}
 }

@@ -1,7 +1,9 @@
 package com.pricing.engine;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,6 +15,7 @@ import com.pricing.engine.AccountBatchResult.AccountStatus;
 import com.pricing.engine.AccountBatchResult.Decision;
 import com.pricing.engine.AccountBatchResult.FeeResult;
 import com.pricing.engine.AccountBatchResult.FeeStatus;
+import com.pricing.engine.PriceConfig.AttributeDefinition;
 import com.pricing.engine.PriceConfig.Branch;
 import com.pricing.engine.PriceConfig.FeeType;
 import com.pricing.engine.PriceConfig.Plan;
@@ -41,10 +44,6 @@ public class PrototypeRuleEngine implements RuleEngine {
 	}
 
 	private AccountResult price(Account account, PriceConfig config) {
-		if (!config.productCodes().contains(account.productCode())) {
-			return failed(account, AccountStatus.PRODUCT_NOT_FOUND);
-		}
-
 		Branch branch = config.branches().get(account.branchCode());
 		if (branch == null) {
 			return failed(account, AccountStatus.BRANCH_NOT_FOUND);
@@ -83,6 +82,35 @@ public class PrototypeRuleEngine implements RuleEngine {
 			return failed(account, AccountStatus.ERROR);
 		}
 		Plan plan = planMatches.getFirst();
+		Set<String> requestedFeeCodes = account.fees().stream()
+				.map(FeeRequest::code)
+				.collect(Collectors.toSet());
+		Set<AttributeDefinition> requiredAttributes = plan.fees().stream()
+				.filter(fee -> requestedFeeCodes.contains(fee.code()))
+				.flatMap(fee -> fee.reasons().stream())
+				.flatMap(reason -> reason.requiredAttributes().stream())
+				.collect(Collectors.toSet());
+		Set<String> requiredAttributeCodes = requiredAttributes.stream()
+				.map(AttributeDefinition::code)
+				.collect(Collectors.toSet());
+		Set<String> suppliedAttributeCodes = account.attributes().stream()
+				.map(AccountBatch.AccountAttribute::code)
+				.collect(Collectors.toSet());
+		if (requiredAttributeCodes.stream().anyMatch(code -> account.attributes().stream()
+						.filter(attribute -> attribute.code().equals(code))
+						.count() > 1)) {
+			return failed(account, AccountStatus.DUPLICATE_ATTRIBUTE);
+		}
+		if (requiredAttributes.stream().anyMatch(required -> account.attributes().stream()
+				.filter(attribute -> attribute.code().equals(required.code()))
+				.findFirst()
+				.map(attribute -> !matchesConfiguredType(required, attribute.value()))
+				.orElse(false))) {
+			return failed(account, AccountStatus.INVALID_ATTRIBUTE_TYPE);
+		}
+		if (requiredAttributeCodes.stream().anyMatch(code -> !suppliedAttributeCodes.contains(code))) {
+			return failed(account, AccountStatus.MISSING_ATTRIBUTE);
+		}
 		List<FeeResult> fees = account.fees().stream()
 				.map(request -> price(request, plan))
 				.toList();
@@ -93,10 +121,33 @@ public class PrototypeRuleEngine implements RuleEngine {
 		return new AccountResult(account.accountNumber(), status, null, null);
 	}
 
+	private boolean matchesConfiguredType(AttributeDefinition attribute, Object value) {
+		return switch (attribute.type()) {
+			case TEXT -> value instanceof String;
+			case BOOLEAN -> value instanceof Boolean;
+			case DECIMAL -> value instanceof BigDecimal;
+			case INTEGER -> value instanceof BigDecimal decimal && decimal.stripTrailingZeros().scale() <= 0;
+			case DATE -> value instanceof String date && isIsoLocalDate(date);
+		};
+	}
+
+	private boolean isIsoLocalDate(String value) {
+		try {
+			LocalDate.parse(value);
+			return true;
+		} catch (DateTimeParseException exception) {
+			return false;
+		}
+	}
+
 	private FeeResult price(FeeRequest request, Plan plan) {
-		PlanFee fee = requireOne(plan.fees().stream()
+		List<PlanFee> matches = plan.fees().stream()
 				.filter(candidate -> candidate.code().equals(request.code()))
-				.toList(), "Pricing Plan Fee");
+				.toList();
+		if (matches.isEmpty()) {
+			return new FeeResult(request.feeRequestId(), FeeStatus.FEE_NOT_FOUND, null, null, null);
+		}
+		PlanFee fee = requireOne(matches, "Pricing Plan Fee");
 		if (fee.type() != FeeType.FLAT) {
 			throw new IllegalStateException("Fee is outside the flat-Fee tracer");
 		}

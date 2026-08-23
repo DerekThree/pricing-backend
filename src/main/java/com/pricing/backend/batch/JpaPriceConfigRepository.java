@@ -7,8 +7,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.pricing.backend.branch.BranchEntity;
+import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.pricingplan.PricingPlanEntity;
-import com.pricing.backend.product.ProductEntity;
+import com.pricing.backend.pricingplan.PricingPlanFeeEntity;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.engine.PriceConfig;
 import com.pricing.engine.PriceConfigRepository;
@@ -32,17 +33,14 @@ public class JpaPriceConfigRepository implements PriceConfigRepository {
 	@Override
 	@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 	public PriceConfig load(Set<LocalDate> pricingDates) {
-		List<ProductEntity> products = entityManager
-				.createQuery("select product from ProductEntity product", ProductEntity.class)
-				.getResultList();
 		List<BranchEntity> branches = entityManager
 				.createQuery("select branch from BranchEntity branch", BranchEntity.class)
 				.getResultList();
 		List<RegionEntity> regions = entityManager
-				.createQuery("select distinct region from RegionEntity region", RegionEntity.class)
+				.createQuery("select region from RegionEntity region", RegionEntity.class)
 				.getResultList();
 		if (pricingDates.isEmpty()) {
-			return mapper.toPriceConfig(products, branches, regions, List.of());
+			return mapper.toPriceConfig(branches, regions, List.of());
 		}
 
 		List<LocalDate> submittedPricingDates = pricingDates.stream().toList();
@@ -63,6 +61,40 @@ public class JpaPriceConfigRepository implements PriceConfigRepository {
 				.forEach(index -> pricingPlanQuery.setParameter(
 						"pricingDate" + index, submittedPricingDates.get(index)));
 		List<PricingPlanEntity> pricingPlans = pricingPlanQuery.getResultList();
-		return mapper.toPriceConfig(products, branches, regions, pricingPlans);
+		loadReasons(pricingPlans);
+		return mapper.toPriceConfig(branches, regions, pricingPlans);
+	}
+
+	private void loadReasons(List<PricingPlanEntity> pricingPlans) {
+		List<PricingPlanFeeEntity> pricingPlanFees = pricingPlans.stream()
+				.flatMap(pricingPlan -> pricingPlan.getFees().stream())
+				.toList();
+		if (pricingPlanFees.isEmpty()) {
+			return;
+		}
+		entityManager.createQuery("""
+				select distinct pricingPlanFee
+				from PricingPlanFeeEntity pricingPlanFee
+				left join fetch pricingPlanFee.reasons
+				where pricingPlanFee in :pricingPlanFees
+				""", PricingPlanFeeEntity.class)
+				.setParameter("pricingPlanFees", pricingPlanFees)
+				.getResultList();
+		List<EligibilityReasonEntity> reasons = pricingPlanFees.stream()
+				.flatMap(pricingPlanFee -> pricingPlanFee.getReasons().stream())
+				.distinct()
+				.toList();
+		if (reasons.isEmpty()) {
+			return;
+		}
+		entityManager.createQuery("""
+				select distinct reason
+				from EligibilityReasonEntity reason
+				left join fetch reason.conditions condition
+				left join fetch condition.attribute
+				where reason in :reasons
+				""", EligibilityReasonEntity.class)
+				.setParameter("reasons", reasons)
+				.getResultList();
 	}
 }

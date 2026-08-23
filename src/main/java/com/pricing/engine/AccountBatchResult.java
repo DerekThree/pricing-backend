@@ -35,7 +35,6 @@ public record AccountBatchResult(UUID batchId, List<AccountResult> accounts) {
 
 	public enum AccountStatus {
 		OK,
-		PRODUCT_NOT_FOUND,
 		BRANCH_NOT_FOUND,
 		REGION_NOT_FOUND,
 		PLAN_NOT_FOUND,
