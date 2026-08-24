@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static com.pricing.engine.AccountBatch.Account;
 import static com.pricing.engine.AccountBatch.AccountAttribute;
@@ -44,8 +45,7 @@ class PrototypeRuleEngineTests {
 	@Test
 	void pricesOneFlatFeeAtInclusiveActiveThroughBoundary() {
 		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31)));
+				plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31));
 		FakePriceConfigRepository repository = new FakePriceConfigRepository(config);
 		RuleEngine engine = new PrototypeRuleEngine(repository);
 
@@ -59,8 +59,7 @@ class PrototypeRuleEngineTests {
 	@Test
 	void returnsPlanNotFoundForAnInexactProductCode() {
 		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31)));
+				plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31));
 
 		AccountBatchResult result = price(config, "PROD0001 ", "BRANCH001", AUGUST_15);
 
@@ -136,12 +135,10 @@ class PrototypeRuleEngineTests {
 	@Test
 	void selectsPlanByExactProductRegionAndInclusiveActiveFromBoundary() {
 		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(
-						plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31),
-						plan("PLAN0002", "PROD0002", "REGION001", AUGUST_1, AUGUST_31),
-						plan("PLAN0003", "PROD0001", "REGION002", AUGUST_1, AUGUST_31),
-						plan("PLAN0004", "PROD0001", "REGION001", AUGUST_15, AUGUST_31)));
+				plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31),
+				plan("PLAN0002", "PROD0002", "REGION001", AUGUST_1, AUGUST_31),
+				plan("PLAN0003", "PROD0001", "REGION002", AUGUST_1, AUGUST_31),
+				plan("PLAN0004", "PROD0001", "REGION001", AUGUST_15, AUGUST_31));
 
 		AccountBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_1);
 
@@ -151,8 +148,7 @@ class PrototypeRuleEngineTests {
 	@Test
 	void returnsPlanNotFoundWhenNoPlanMatchesProductRegionAndPricingDate() {
 		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31)));
+				plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31));
 
 		AccountBatchResult result = price(config, "PROD0001", "BRANCH001",
 				LocalDate.of(2026, 9, 1));
@@ -163,11 +159,9 @@ class PrototypeRuleEngineTests {
 	@Test
 	void returnsErrorWhenMultiplePricingPlansApply() {
 		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(
-						plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31),
-						plan("PLAN0002", "PROD0001", "REGION001", AUGUST_15,
-								LocalDate.of(2026, 9, 15))));
+				plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31),
+				plan("PLAN0002", "PROD0001", "REGION001", AUGUST_15,
+						LocalDate.of(2026, 9, 15)));
 
 		AccountBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
 
@@ -176,43 +170,29 @@ class PrototypeRuleEngineTests {
 
 	@Test
 	void returnsMissingAttributeWhenARequestedPlanFeeRequiresAnAbsentAttribute() {
-		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(fee("FEE00001",
-						new AttributeDefinition("ATTR0001", AttributeType.TEXT))))));
-
-		AccountBatchResult result = price(config, batch(List.of(),
-				List.of(new FeeRequest(1L, "FEE00001", null))));
+		AccountBatchResult result = price(
+				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
+				List.of());
 
 		assertEquals(failedResult(AccountStatus.MISSING_ATTRIBUTE), result);
 	}
 
 	@Test
 	void returnsDuplicateAttribute() {
-		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(fee("FEE00001",
-						new AttributeDefinition("ATTR0001", AttributeType.TEXT))))));
-
-		AccountBatchResult result = price(config, batch(
+		AccountBatchResult result = price(
+				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
 				List.of(
 						new AccountAttribute("ATTR0001", "FIRST"),
-						new AccountAttribute("ATTR0001", "SECOND")),
-				List.of(new FeeRequest(1L, "FEE00001", null))));
+						new AccountAttribute("ATTR0001", "SECOND")));
 
 		assertEquals(failedResult(AccountStatus.DUPLICATE_ATTRIBUTE), result);
 	}
 
 	@Test
 	void returnsInvalidAttributeType() {
-		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(fee("FEE00001",
-						new AttributeDefinition("ATTR0001", AttributeType.TEXT))))));
-
-		AccountBatchResult result = price(config, batch(
-				List.of(new AccountAttribute("ATTR0001", true)),
-				List.of(new FeeRequest(1L, "FEE00001", null))));
+		AccountBatchResult result = price(
+				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
+				List.of(new AccountAttribute("ATTR0001", true)));
 
 		assertEquals(failedResult(AccountStatus.INVALID_ATTRIBUTE_TYPE), result);
 	}
@@ -220,14 +200,9 @@ class PrototypeRuleEngineTests {
 	@ParameterizedTest
 	@MethodSource("validAttributeValues")
 	void acceptsEveryConfiguredAttributeRepresentation(AttributeType type, Object value) {
-		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(fee("FEE00001",
-						new AttributeDefinition("ATTR0001", type))))));
-
-		AccountBatchResult result = price(config, batch(
-				List.of(new AccountAttribute("ATTR0001", value)),
-				List.of(new FeeRequest(1L, "FEE00001", null))));
+		AccountBatchResult result = price(
+				fee("FEE00001", new AttributeDefinition("ATTR0001", type)),
+				List.of(new AccountAttribute("ATTR0001", value)));
 
 		assertEquals(chargedResult("PLAN0001"), result);
 	}
@@ -235,97 +210,129 @@ class PrototypeRuleEngineTests {
 	@Test
 	void doesNotRequireAttributesForAnUnrequestedPlanFee() {
 		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(
-						fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
-						flatFee("FEE00002")))));
+				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
+				flatFee("FEE00002"));
 
 		AccountBatchResult result = price(config, batch(
 				List.of(),
 				List.of(new FeeRequest(1L, "FEE00002", null))));
 
-		assertEquals(new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
-				"ACCOUNT001",
-				AccountStatus.OK,
-				"PLAN0001",
-				List.of(new FeeResult(
-						1L,
-						FeeStatus.OK,
-						Decision.CHARGED,
-						new BigDecimal("7.50"),
-						null))))), result);
+		assertEquals(okResult(chargedFee("7.50")), result);
 	}
 
 	@Test
 	void returnsFeeNotFoundWithoutCreatingAnAttributeRequirementForAnAbsentPlanFee() {
 		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(fee("FEE00001",
-						new AttributeDefinition("ATTR0001", AttributeType.TEXT))))));
+				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)));
 
 		AccountBatchResult result = price(config, batch(
 				List.of(),
 				List.of(new FeeRequest(1L, "FEE99999", null))));
 
-		assertEquals(new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
-				"ACCOUNT001",
-				AccountStatus.OK,
-				"PLAN0001",
-				List.of(new FeeResult(1L, FeeStatus.FEE_NOT_FOUND, null, null, null))))), result);
+		assertEquals(okResult(failedFee(FeeStatus.FEE_NOT_FOUND)), result);
+	}
+
+	@Test
+	void pricesFivePercentFeeWithDecimalArithmeticAndHalfUpRounding() {
+		FeeResult result = priceFee(
+				percentageFee("FEE00001", "5.0000"),
+				new BigDecimal("123.45"));
+
+		assertEquals(chargedFee("6.17"), result);
+	}
+
+	@Test
+	void doesNotCapConfiguredPercentagesAtOneHundredPercent() {
+		FeeResult result = priceFee(
+				percentageFee("FEE00001", "125.5000"),
+				new BigDecimal("10.00"));
+
+		assertEquals(new BigDecimal("12.55"), result.amount());
+	}
+
+	@Test
+	void returnsMissingTransactionWithoutPercentageDecisionFields() {
+		FeeResult result = priceFee(percentageFee("FEE00001", "5.0000"), null);
+
+		assertEquals(failedFee(FeeStatus.MISSING_TRANSACTION), result);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"-0.01", "1.001"})
+	void returnsInvalidTransactionBeforeEligibilityReasonEvaluation(String transactionAmount) {
+		FeeResult result = priceFee(
+				percentageFee("FEE00001", "5.0000", reason("ALWAYS")),
+				new BigDecimal(transactionAmount));
+
+		assertEquals(failedFee(FeeStatus.INVALID_TRANSACTION_AMOUNT), result);
+	}
+
+	@Test
+	void acceptsZeroTransactionAmountForAPercentageFee() {
+		FeeResult result = priceFee(
+				percentageFee("FEE00001", "5.0000"),
+				new BigDecimal("0.00"));
+
+		assertEquals(chargedFee("0.00"), result);
+	}
+
+	@Test
+	void waivesPercentageFeeAfterValidatingTransactionAmount() {
+		FeeResult result = priceFee(
+				percentageFee("FEE00001", "5.0000", reason("ALWAYS")),
+				new BigDecimal("10.00"));
+
+		assertEquals(waivedFee("ALWAYS"), result);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"-0.01", "1.001"})
+	void flatFeeIgnoresTransactionValuesThatAreInvalidForPercentageFees(String transactionAmount) {
+		FeeResult result = priceFee(flatFee("FEE00001"), new BigDecimal(transactionAmount));
+
+		assertEquals(chargedFee("7.50"), result);
 	}
 
 	@ParameterizedTest
 	@MethodSource("satisfyingTypedComparisons")
 	void supportsEveryTypedEligibilityOperator(
 			AttributeType type, Object accountValue, String operator, String conditionValue) {
-		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(feeWithReasons("FEE00001", reason("REASON001",
-						condition("ATTR0001", type, operator, conditionValue)))))));
-
-		AccountBatchResult result = price(config, batch(
-				List.of(new AccountAttribute("ATTR0001", accountValue)),
-				List.of(new FeeRequest(1L, "FEE00001", null))));
+		AccountBatchResult result = price(
+				feeWithReasons("FEE00001", reason("REASON001",
+						condition("ATTR0001", type, operator, conditionValue))),
+				List.of(new AccountAttribute("ATTR0001", accountValue)));
 
 		assertEquals(waivedResult("REASON001"), result);
 	}
 
 	@Test
 	void requiresEveryConditionWithinOneEligibilityReason() {
-		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(feeWithReasons("FEE00001", reason("REASON001",
+		AccountBatchResult result = price(
+				feeWithReasons("FEE00001", reason("REASON001",
 						condition("ATTR0001", AttributeType.TEXT, "=", "PREMIER"),
-						condition("ATTR0002", AttributeType.DECIMAL, ">", "100")))))));
-
-		AccountBatchResult result = price(config, batch(
+						condition("ATTR0002", AttributeType.DECIMAL, ">", "100"))),
 				List.of(
 						new AccountAttribute("ATTR0001", "PREMIER"),
-						new AccountAttribute("ATTR0002", new BigDecimal("50"))),
-				List.of(new FeeRequest(1L, "FEE00001", null))));
+						new AccountAttribute("ATTR0002", new BigDecimal("50"))));
 
 		assertEquals(chargedResult("PLAN0001"), result);
 	}
 
 	@Test
 	void waivesForAnySatisfiedReasonAndReturnsEverySatisfiedReasonCode() {
-		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(feeWithReasons(
+		AccountBatchResult result = price(
+				feeWithReasons(
 						"FEE00001",
 						reason("TEXT_REASON",
 								condition("ATTR0001", AttributeType.TEXT, "=", "PREMIER")),
 						reason("AMOUNT_REASON",
 								condition("ATTR0002", AttributeType.DECIMAL, ">=", "100")),
 						reason("BOOLEAN_REASON",
-								condition("ATTR0003", AttributeType.BOOLEAN, "=", "true")))))));
-
-		AccountBatchResult result = price(config, batch(
+								condition("ATTR0003", AttributeType.BOOLEAN, "=", "true"))),
 				List.of(
 						new AccountAttribute("ATTR0001", " premier "),
 						new AccountAttribute("ATTR0002", new BigDecimal("100.00")),
-						new AccountAttribute("ATTR0003", false)),
-				List.of(new FeeRequest(1L, "FEE00001", null))));
+						new AccountAttribute("ATTR0003", false)));
 
 		FeeResult fee = result.accounts().getFirst().fees().getFirst();
 		assertEquals(FeeStatus.OK, fee.status());
@@ -336,12 +343,9 @@ class PrototypeRuleEngineTests {
 
 	@Test
 	void treatsAnEligibilityReasonWithoutConditionsAsSatisfied() {
-		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(feeWithReasons("FEE00001", reason("ALWAYS"))))));
-
-		AccountBatchResult result = price(config, batch(List.of(),
-				List.of(new FeeRequest(1L, "FEE00001", null))));
+		AccountBatchResult result = price(
+				feeWithReasons("FEE00001", reason("ALWAYS")),
+				List.of());
 
 		assertEquals(waivedResult("ALWAYS"), result);
 	}
@@ -349,11 +353,9 @@ class PrototypeRuleEngineTests {
 	@Test
 	void returnsFeeErrorForAnInvalidOperatorAndTypeCombination() {
 		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(
-						feeWithReasons("FEE00001", reason("INVALID",
-								condition("ATTR0001", AttributeType.BOOLEAN, ">", "false"))),
-						flatFee("FEE00002")))));
+				feeWithReasons("FEE00001", reason("INVALID",
+						condition("ATTR0001", AttributeType.BOOLEAN, ">", "false"))),
+				flatFee("FEE00002"));
 
 		AccountBatchResult result = price(config, batch(
 				List.of(new AccountAttribute("ATTR0001", true)),
@@ -361,34 +363,19 @@ class PrototypeRuleEngineTests {
 						new FeeRequest(1L, "FEE00001", null),
 						new FeeRequest(2L, "FEE00002", null))));
 
-		assertEquals(new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
-				"ACCOUNT001",
-				AccountStatus.OK,
-				"PLAN0001",
-				List.of(
-						new FeeResult(1L, FeeStatus.ERROR, null, null, null),
-						new FeeResult(2L, FeeStatus.OK, Decision.CHARGED,
-								new BigDecimal("7.50"), null))))), result);
+		assertEquals(okResult(failedFee(FeeStatus.ERROR), chargedFee(2L, "7.50")), result);
 	}
 
 	@ParameterizedTest
 	@MethodSource("invalidConditionValues")
 	void returnsFeeErrorForAnInvalidPersistedConditionValue(
 			AttributeType type, Object accountValue, String conditionValue) {
-		PriceConfig config = config(
-				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
-				List.of(plan(List.of(feeWithReasons("FEE00001", reason("INVALID",
-						condition("ATTR0001", type, "=", conditionValue)))))));
+		AccountBatchResult result = price(
+				feeWithReasons("FEE00001", reason("INVALID",
+						condition("ATTR0001", type, "=", conditionValue))),
+				List.of(new AccountAttribute("ATTR0001", accountValue)));
 
-		AccountBatchResult result = price(config, batch(
-				List.of(new AccountAttribute("ATTR0001", accountValue)),
-				List.of(new FeeRequest(1L, "FEE00001", null))));
-
-		assertEquals(new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
-				"ACCOUNT001",
-				AccountStatus.OK,
-				"PLAN0001",
-				List.of(new FeeResult(1L, FeeStatus.ERROR, null, null, null))))), result);
+		assertEquals(okResult(failedFee(FeeStatus.ERROR)), result);
 	}
 
 	private AccountBatchResult price(
@@ -402,6 +389,19 @@ class PrototypeRuleEngineTests {
 
 	private AccountBatchResult price(PriceConfig config, AccountBatch batch) {
 		return new PrototypeRuleEngine(new FakePriceConfigRepository(config)).price(batch);
+	}
+
+	private AccountBatchResult price(PlanFee fee, List<AccountAttribute> attributes) {
+		return price(config(fee), batch(
+				attributes,
+				List.of(new FeeRequest(1L, fee.code(), null))));
+	}
+
+	private FeeResult priceFee(PlanFee fee, BigDecimal transactionAmount) {
+		return price(config(fee), batch(
+				List.of(),
+				List.of(new FeeRequest(1L, fee.code(), transactionAmount))))
+				.accounts().getFirst().fees().getFirst();
 	}
 
 	private AccountBatch batch(String productCode, String branchCode, LocalDate pricingDate) {
@@ -431,6 +431,18 @@ class PrototypeRuleEngineTests {
 				plans);
 	}
 
+	private PriceConfig config(PlanFee... fees) {
+		return config(
+				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
+				List.of(plan(List.of(fees))));
+	}
+
+	private PriceConfig config(Plan... plans) {
+		return config(
+				List.of(region("REGION001", Set.of("BRANCH001"), Set.of(), Set.of())),
+				List.of(plans));
+	}
+
 	private Region region(
 			String code,
 			Set<String> branchCodes,
@@ -451,11 +463,7 @@ class PrototypeRuleEngineTests {
 				regionCode,
 				activeFrom,
 				activeThrough,
-				List.of(new PlanFee(
-						"FEE00001",
-						FeeType.FLAT,
-						new BigDecimal("7.5000"),
-						List.of())));
+				List.of(flatFee("FEE00001")));
 	}
 
 	private Plan plan(List<PlanFee> fees) {
@@ -474,11 +482,16 @@ class PrototypeRuleEngineTests {
 	}
 
 	private PlanFee flatFee(String code) {
+		return feeWithReasons(code);
+	}
+
+	private PlanFee percentageFee(
+			String code, String percentage, EligibilityReason... reasons) {
 		return new PlanFee(
 				code,
-				FeeType.FLAT,
-				new BigDecimal("7.5000"),
-				List.of());
+				FeeType.PERCENT,
+				new BigDecimal(percentage),
+				List.of(reasons));
 	}
 
 	private PlanFee feeWithReasons(String code, EligibilityReason... reasons) {
@@ -508,29 +521,44 @@ class PrototypeRuleEngineTests {
 	}
 
 	private AccountBatchResult chargedResult(String planCode) {
+		return okResult(planCode, chargedFee("7.50"));
+	}
+
+	private AccountBatchResult waivedResult(String... reasons) {
+		return okResult(waivedFee(reasons));
+	}
+
+	private AccountBatchResult okResult(FeeResult... fees) {
+		return okResult("PLAN0001", fees);
+	}
+
+	private AccountBatchResult okResult(String planCode, FeeResult... fees) {
 		return new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
 				"ACCOUNT001",
 				AccountStatus.OK,
 				planCode,
-				List.of(new FeeResult(
-						1L,
-						FeeStatus.OK,
-						Decision.CHARGED,
-						new BigDecimal("7.50"),
-						null)))));
+				List.of(fees))));
 	}
 
-	private AccountBatchResult waivedResult(String... reasons) {
-		return new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
-				"ACCOUNT001",
-				AccountStatus.OK,
-				"PLAN0001",
-				List.of(new FeeResult(
-						1L,
-						FeeStatus.OK,
-						Decision.WAIVED,
-						null,
-						List.of(reasons))))));
+	private FeeResult chargedFee(String amount) {
+		return chargedFee(1L, amount);
+	}
+
+	private FeeResult chargedFee(long feeRequestId, String amount) {
+		return new FeeResult(
+				feeRequestId,
+				FeeStatus.OK,
+				Decision.CHARGED,
+				new BigDecimal(amount),
+				null);
+	}
+
+	private FeeResult waivedFee(String... reasons) {
+		return new FeeResult(1L, FeeStatus.OK, Decision.WAIVED, null, List.of(reasons));
+	}
+
+	private FeeResult failedFee(FeeStatus status) {
+		return new FeeResult(1L, status, null, null, null);
 	}
 
 	private AccountBatchResult failedResult(AccountStatus status) {

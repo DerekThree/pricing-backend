@@ -36,3 +36,4 @@ build/
 .env
 memories/
 AGENTS.md
+graphify-out/

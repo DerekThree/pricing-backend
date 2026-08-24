@@ -88,11 +88,11 @@ class BatchApiTests {
 
 	@Test
 	void pricesOneFlatFeeEndToEnd() throws Exception {
-		saveFlatFeeConfiguration("STANDARD");
+		saveFeeConfiguration(FeeType.FLAT, new BigDecimal("7.5000"), "STANDARD");
 
 		mockMvc.perform(post("/batch")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(batchRequestJson("PREMIER")))
+						.content(batchRequestJson("PREMIER", null)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.batchId").value("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b"))
 				.andExpect(jsonPath("$.accounts[0].accountNumber").value("ACCOUNT001"))
@@ -107,11 +107,11 @@ class BatchApiTests {
 
 	@Test
 	void waivesOneFlatFeeEndToEnd() throws Exception {
-		saveFlatFeeConfiguration("PREMIER");
+		saveFeeConfiguration(FeeType.FLAT, new BigDecimal("7.5000"), "PREMIER");
 
 		mockMvc.perform(post("/batch")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(batchRequestJson(" premier ")))
+						.content(batchRequestJson(" premier ", null)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.batchId").value("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b"))
 				.andExpect(jsonPath("$.accounts[0].accountNumber").value("ACCOUNT001"))
@@ -124,7 +124,36 @@ class BatchApiTests {
 				.andExpect(jsonPath("$.accounts[0].fees[0].reasons[0]").value("ELIG0001"));
 	}
 
-	private void saveFlatFeeConfiguration(String conditionValue) {
+	@Test
+	void pricesOnePercentageFeeEndToEnd() throws Exception {
+		saveFeeConfiguration(FeeType.PERCENT, new BigDecimal("5.0000"), "STANDARD");
+
+		mockMvc.perform(post("/batch")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(batchRequestJson("PREMIER", new BigDecimal("123.45"))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accounts[0].fees[0].status").value("OK"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].decision").value("CHARGED"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].amount").value(6.17))
+				.andExpect(jsonPath("$.accounts[0].fees[0].reasons").doesNotExist());
+	}
+
+	@Test
+	void waivesOnePercentageFeeEndToEnd() throws Exception {
+		saveFeeConfiguration(FeeType.PERCENT, new BigDecimal("5.0000"), "PREMIER");
+
+		mockMvc.perform(post("/batch")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(batchRequestJson(" premier ", new BigDecimal("10.00"))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.accounts[0].fees[0].status").value("OK"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].decision").value("WAIVED"))
+				.andExpect(jsonPath("$.accounts[0].fees[0].amount").doesNotExist())
+				.andExpect(jsonPath("$.accounts[0].fees[0].reasons[0]").value("ELIG0001"));
+	}
+
+	private void saveFeeConfiguration(
+			FeeType feeType, BigDecimal amount, String conditionValue) {
 		ProductEntity product = productRepository.save(ProductEntity.builder()
 				.productCode("PROD0001")
 				.productName("Premier Checking")
@@ -152,7 +181,7 @@ class BatchApiTests {
 		FeeEntity fee = feeRepository.save(FeeEntity.builder()
 				.feeCode("FEE00001")
 				.feeName("Monthly Maintenance Fee")
-				.feeType(FeeType.FLAT)
+				.feeType(feeType)
 				.productTypes(List.of(ProductType.DEPOSIT))
 				.updatedOn(OffsetDateTime.parse("2026-08-01T00:00:00Z"))
 				.updatedBy("test")
@@ -193,12 +222,15 @@ class BatchApiTests {
 				.id(new PricingPlanFeeId(pricingPlan.getId(), fee.getId()))
 				.pricingPlan(pricingPlan)
 				.fee(fee)
-				.amount(new BigDecimal("7.5000"))
+				.amount(amount)
 				.reasons(List.of(reason))
 				.build());
 	}
 
-	private String batchRequestJson(String attributeValue) {
+	private String batchRequestJson(String attributeValue, BigDecimal transactionAmount) {
+		String transactionAmountJson = transactionAmount == null
+				? ""
+				: ",\n      \"transactionAmount\": " + transactionAmount.toPlainString();
 		return """
 				{
 				  "batchId": "5fd2879b-7f17-4a05-8fbe-7ebce6958f3b",
@@ -213,11 +245,11 @@ class BatchApiTests {
 				    }],
 				    "fees": [{
 				      "feeRequestId": 1,
-				      "code": "FEE00001"
+				      "code": "FEE00001"%s
 				    }]
 				  }]
 				}
-				""".formatted(attributeValue);
+				""".formatted(attributeValue, transactionAmountJson);
 	}
 
 	@Test

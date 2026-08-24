@@ -152,8 +152,18 @@ public class PrototypeRuleEngine implements RuleEngine {
 			return new FeeResult(request.feeRequestId(), FeeStatus.FEE_NOT_FOUND, null, null, null);
 		}
 		PlanFee fee = requireOne(matches, "Pricing Plan Fee");
-		if (fee.type() != FeeType.FLAT) {
-			throw new IllegalStateException("Fee is outside the flat-Fee tracer");
+		if (fee.type() == FeeType.PERCENT && request.transactionAmount() == null) {
+			return new FeeResult(request.feeRequestId(), FeeStatus.MISSING_TRANSACTION, null, null, null);
+		}
+		if (fee.type() == FeeType.PERCENT
+				&& (request.transactionAmount().signum() < 0
+						|| request.transactionAmount().scale() > 2)) {
+			return new FeeResult(
+					request.feeRequestId(),
+					FeeStatus.INVALID_TRANSACTION_AMOUNT,
+					null,
+					null,
+					null);
 		}
 		if (fee.reasons().stream()
 				.flatMap(reason -> reason.conditions().stream())
@@ -170,11 +180,15 @@ public class PrototypeRuleEngine implements RuleEngine {
 			return new FeeResult(request.feeRequestId(), FeeStatus.OK, Decision.WAIVED, null, reasons);
 		}
 
+		BigDecimal amount = switch (fee.type()) {
+			case FLAT -> fee.amount();
+			case PERCENT -> request.transactionAmount().multiply(fee.amount()).movePointLeft(2);
+		};
 		return new FeeResult(
 				request.feeRequestId(),
 				FeeStatus.OK,
 				Decision.CHARGED,
-				fee.amount().setScale(2, RoundingMode.HALF_UP),
+				amount.setScale(2, RoundingMode.HALF_UP),
 				null);
 	}
 
