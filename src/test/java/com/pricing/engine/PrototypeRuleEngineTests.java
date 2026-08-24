@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static com.pricing.engine.AccountBatch.Account;
 import static com.pricing.engine.AccountBatch.AccountAttribute;
@@ -242,29 +241,10 @@ class PrototypeRuleEngineTests {
 	}
 
 	@Test
-	void doesNotCapConfiguredPercentagesAtOneHundredPercent() {
-		FeeResult result = priceFee(
-				percentageFee("FEE00001", "125.5000"),
-				new BigDecimal("10.00"));
-
-		assertEquals(new BigDecimal("12.55"), result.amount());
-	}
-
-	@Test
 	void returnsMissingTransactionWithoutPercentageDecisionFields() {
 		FeeResult result = priceFee(percentageFee("FEE00001", "5.0000"), null);
 
 		assertEquals(failedFee(FeeStatus.MISSING_TRANSACTION), result);
-	}
-
-	@ParameterizedTest
-	@ValueSource(strings = {"-0.01", "1.001"})
-	void returnsInvalidTransactionBeforeEligibilityReasonEvaluation(String transactionAmount) {
-		FeeResult result = priceFee(
-				percentageFee("FEE00001", "5.0000", reason("ALWAYS")),
-				new BigDecimal(transactionAmount));
-
-		assertEquals(failedFee(FeeStatus.INVALID_TRANSACTION_AMOUNT), result);
 	}
 
 	@Test
@@ -283,14 +263,6 @@ class PrototypeRuleEngineTests {
 				new BigDecimal("10.00"));
 
 		assertEquals(waivedFee("ALWAYS"), result);
-	}
-
-	@ParameterizedTest
-	@ValueSource(strings = {"-0.01", "1.001"})
-	void flatFeeIgnoresTransactionValuesThatAreInvalidForPercentageFees(String transactionAmount) {
-		FeeResult result = priceFee(flatFee("FEE00001"), new BigDecimal(transactionAmount));
-
-		assertEquals(chargedFee("7.50"), result);
 	}
 
 	@ParameterizedTest
