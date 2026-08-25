@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,56 @@ class PrototypeRuleEngineTests {
 		assertEquals(chargedResult("PLAN0001"), result);
 		assertEquals(1, repository.loadCount);
 		assertEquals(Set.of(AUGUST_31), repository.pricingDates);
+	}
+
+	@Test
+	void usesOneRepositoryConfigurationForEveryAccountAndFeeRequest() {
+		PriceConfig config = config(plan(List.of(
+				flatFee("FEE00001"),
+				flatFee("FEE00002"))));
+		FakePriceConfigRepository repository = new FakePriceConfigRepository(config);
+		RuleEngine engine = new PrototypeRuleEngine(repository);
+		AccountBatch batch = new AccountBatch(BATCH_ID, List.of(
+				new Account(
+						"ACCOUNT001",
+						"PROD0001",
+						"BRANCH001",
+						AUGUST_15,
+						List.of(),
+						List.of(
+								new FeeRequest(1L, "FEE00001", null),
+								new FeeRequest(2L, "FEE00002", null))),
+				new Account(
+						"ACCOUNT002",
+						"PROD0001",
+						"BRANCH001",
+						AUGUST_31,
+						List.of(),
+						List.of(
+								new FeeRequest(3L, "FEE00001", null),
+								new FeeRequest(4L, "FEE00002", null)))));
+
+		AccountBatchResult result = engine.price(batch);
+
+		assertEquals(Map.of(
+				"ACCOUNT001", AccountStatus.OK,
+				"ACCOUNT002", AccountStatus.OK), result.accounts().stream()
+				.collect(Collectors.toMap(AccountResult::accountNumber, AccountResult::status)));
+		assertEquals(Map.of(
+				"ACCOUNT001", "PLAN0001",
+				"ACCOUNT002", "PLAN0001"), result.accounts().stream()
+				.collect(Collectors.toMap(
+						AccountResult::accountNumber,
+						AccountResult::pricingPlanCode)));
+		assertEquals(Map.of(
+				1L, chargedFee(1L, "7.50"),
+				2L, chargedFee(2L, "7.50"),
+				3L, chargedFee(3L, "7.50"),
+				4L, chargedFee(4L, "7.50")), result.accounts().stream()
+				.flatMap(account -> account.fees().stream())
+				.collect(Collectors.toMap(FeeResult::feeRequestId, fee -> fee)));
+		assertEquals(1, repository.loadCount);
+		assertEquals(Set.of(AUGUST_15, AUGUST_31), repository.pricingDates);
 	}
 
 	@Test

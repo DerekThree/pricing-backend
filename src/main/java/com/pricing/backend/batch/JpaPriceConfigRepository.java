@@ -39,6 +39,7 @@ public class JpaPriceConfigRepository implements PriceConfigRepository {
 		List<RegionEntity> regions = entityManager
 				.createQuery("select region from RegionEntity region", RegionEntity.class)
 				.getResultList();
+		loadRegionMemberships(regions);
 		if (pricingDates.isEmpty()) {
 			return mapper.toPriceConfig(branches, regions, List.of());
 		}
@@ -63,6 +64,36 @@ public class JpaPriceConfigRepository implements PriceConfigRepository {
 		List<PricingPlanEntity> pricingPlans = pricingPlanQuery.getResultList();
 		loadReasons(pricingPlans);
 		return mapper.toPriceConfig(branches, regions, pricingPlans);
+	}
+
+	private void loadRegionMemberships(List<RegionEntity> regions) {
+		if (regions.isEmpty()) {
+			return;
+		}
+		entityManager.createQuery("""
+				select distinct region
+				from RegionEntity region
+				left join fetch region.states
+				where region in :regions
+				""", RegionEntity.class)
+				.setParameter("regions", regions)
+				.getResultList();
+		entityManager.createQuery("""
+				select distinct region
+				from RegionEntity region
+				left join fetch region.zipCodes
+				where region in :regions
+				""", RegionEntity.class)
+				.setParameter("regions", regions)
+				.getResultList();
+		entityManager.createQuery("""
+				select distinct region
+				from RegionEntity region
+				left join fetch region.branches
+				where region in :regions
+				""", RegionEntity.class)
+				.setParameter("regions", regions)
+				.getResultList();
 	}
 
 	private void loadReasons(List<PricingPlanEntity> pricingPlans) {

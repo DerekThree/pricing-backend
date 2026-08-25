@@ -41,21 +41,21 @@ public class RegionEntity {
 	@Column(name = "region_name", nullable = false, length = 100)
 	private String regionName;
 
-	@ElementCollection(fetch = FetchType.EAGER)
+	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(name = "region_states", joinColumns = @JoinColumn(name = "region_id"))
 	@Column(name = "state_code", nullable = false, length = 2)
 	@OrderBy("value asc")
 	@Default
 	private List<String> states = new ArrayList<>();
 
-	@ElementCollection(fetch = FetchType.EAGER)
+	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(name = "region_zip_codes", joinColumns = @JoinColumn(name = "region_id"))
 	@Column(name = "zip_code", nullable = false, length = 5)
 	@OrderBy("value asc")
 	@Default
 	private List<String> zipCodes = new ArrayList<>();
 
-	@ElementCollection(fetch = FetchType.EAGER)
+	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(name = "region_branches", joinColumns = @JoinColumn(name = "region_id"))
 	@Column(name = "branch_id", nullable = false)
 	@OrderBy("value asc")

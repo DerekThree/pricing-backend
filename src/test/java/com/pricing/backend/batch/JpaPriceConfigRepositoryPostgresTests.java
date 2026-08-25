@@ -1,13 +1,22 @@
 package com.pricing.backend.batch;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import javax.sql.DataSource;
 
 import com.pricing.engine.AccountBatch;
 import com.pricing.engine.AccountBatch.Account;
@@ -21,6 +30,9 @@ import com.pricing.engine.AccountBatchResult.FeeStatus;
 import com.pricing.engine.PriceConfig;
 import com.pricing.engine.PriceConfigRepository;
 import com.pricing.engine.RuleEngine;
+import jakarta.persistence.EntityManagerFactory;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +45,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
@@ -50,6 +63,12 @@ class JpaPriceConfigRepositoryPostgresTests {
 	@Autowired
 	private PriceConfigRepository configRepository;
 
+	@Autowired
+	private EntityManagerFactory entityManagerFactory;
+
+	@Autowired
+	private DataSource dataSource;
+
 	@DynamicPropertySource
 	static void configureProperties(DynamicPropertyRegistry registry) {
 		registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
@@ -57,6 +76,7 @@ class JpaPriceConfigRepositoryPostgresTests {
 		registry.add("spring.datasource.password", POSTGRES::getPassword);
 		registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
 		registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/postgresql");
+		registry.add("spring.jpa.properties.hibernate.generate_statistics", () -> "true");
 	}
 
 	@AfterEach
@@ -70,6 +90,7 @@ class JpaPriceConfigRepositoryPostgresTests {
 		jdbcTemplate.update("delete from fees");
 		jdbcTemplate.update("delete from region_branches");
 		jdbcTemplate.update("delete from region_zip_codes");
+		jdbcTemplate.update("delete from region_states");
 		jdbcTemplate.update("delete from branches");
 		jdbcTemplate.update("delete from regions");
 		jdbcTemplate.update("delete from products");
@@ -254,6 +275,109 @@ class JpaPriceConfigRepositoryPostgresTests {
 				AccountStatus.PLAN_NOT_FOUND,
 				null,
 				null), accounts.get("ACCOUNT002"));
+	}
+
+	@Test
+	void additionalRegionMembershipsDoNotAddConfigurationQueries() {
+		Long branchId = insertBranch();
+		insertRegion(branchId);
+		AccountBatch batch = new AccountBatch(
+				UUID.fromString("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b"),
+				List.of(new Account(
+						"ACCOUNT001",
+						"PROD0001",
+						"BRANCH001",
+						LocalDate.of(2026, 8, 31),
+						List.of(),
+						List.of(new FeeRequest(1L, "FEE00001", null)))));
+		Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+		statistics.clear();
+
+		AccountBatchResult oneRegionResult = ruleEngine.price(batch);
+		long oneRegionQueryCount = statistics.getPrepareStatementCount();
+		Long secondRegionId = jdbcTemplate.queryForObject("""
+				insert into regions (region_code, region_name, updated_on, updated_by)
+				values ('REGION002', 'Southwest', ?, 'test') returning id
+				""", Long.class, OffsetDateTime.now());
+		jdbcTemplate.update(
+				"insert into region_states (region_id, state_code) values (?, 'TX')",
+				secondRegionId);
+		jdbcTemplate.update(
+				"insert into region_zip_codes (region_id, zip_code) values (?, '75001')",
+				secondRegionId);
+		statistics.clear();
+
+		AccountBatchResult twoRegionResult = ruleEngine.price(batch);
+
+		assertEquals(AccountStatus.PLAN_NOT_FOUND,
+				oneRegionResult.accounts().getFirst().status());
+		assertEquals(AccountStatus.PLAN_NOT_FOUND,
+				twoRegionResult.accounts().getFirst().status());
+		assertEquals(oneRegionQueryCount, statistics.getPrepareStatementCount());
+	}
+
+	@Test
+	void usesOneRepeatableReadSnapshotAcrossConfigurationPhases() throws Exception {
+		UUID batchId = UUID.fromString("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b");
+		Long productId = insertProduct();
+		Long branchId = insertBranch();
+		Long regionId = insertRegion(branchId);
+		Long feeId = insertFee("FEE00001");
+		Long pricingPlanId = insertPricingPlan(
+				"PLAN0001",
+				productId,
+				regionId,
+				LocalDate.of(2026, 8, 1),
+				LocalDate.of(2026, 8, 31));
+		jdbcTemplate.update("insert into pricing_plan_fees values (?, ?, ?)",
+				pricingPlanId, feeId, new BigDecimal("7.5000"));
+		AccountBatch batch = new AccountBatch(batchId, List.of(new Account(
+				"ACCOUNT001",
+				"PROD0001",
+				"BRANCH001",
+				LocalDate.of(2026, 8, 31),
+				List.of(),
+				List.of(new FeeRequest(1L, "FEE00001", null)))));
+
+		try (ExecutorService executor = Executors.newSingleThreadExecutor();
+				Connection writer = dataSource.getConnection()) {
+			writer.setAutoCommit(false);
+			try (Statement statement = writer.createStatement()) {
+				statement.execute("lock table regions in access exclusive mode");
+				Future<AccountBatchResult> resultFuture = executor.submit(
+						() -> ruleEngine.price(batch));
+				awaitBlockedRegionRead();
+				try (PreparedStatement deleteMembership = writer.prepareStatement(
+						"delete from region_branches where region_id = ?")) {
+					deleteMembership.setLong(1, regionId);
+					deleteMembership.executeUpdate();
+				}
+				writer.commit();
+
+				AccountBatchResult result = resultFuture.get(10, TimeUnit.SECONDS);
+
+				assertEquals(AccountStatus.OK, result.accounts().getFirst().status());
+			}
+		}
+	}
+
+	private void awaitBlockedRegionRead() throws InterruptedException {
+		for (int attempt = 0; attempt < 100; attempt++) {
+			Integer blockedReads = jdbcTemplate.queryForObject("""
+					select count(*)
+					from pg_stat_activity
+					where datname = current_database()
+					  and pid <> pg_backend_pid()
+					  and state = 'active'
+					  and wait_event_type = 'Lock'
+					  and query like '%from regions%'
+					""", Integer.class);
+			if (blockedReads != null && blockedReads > 0) {
+				return;
+			}
+			Thread.sleep(50);
+		}
+		fail("Pricing Configuration load did not block on the Region phase");
 	}
 
 	private Long insertProduct() {
