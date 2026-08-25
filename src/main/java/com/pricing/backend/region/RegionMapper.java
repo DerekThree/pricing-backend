@@ -1,5 +1,6 @@
 package com.pricing.backend.region;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -22,14 +23,17 @@ class RegionMapper {
 	}
 
 	RegionListItem toRegionListItem(RegionEntity entity) {
-		Map<Long, BranchEntity> branchesById = branchRepository.findAllById(entity.getBranches()).stream()
+		List<String> states = List.copyOf(entity.getStates());
+		List<String> zipCodes = List.copyOf(entity.getZipCodes());
+		List<Long> branchIds = List.copyOf(entity.getBranches());
+		Map<Long, BranchEntity> branchesById = branchRepository.findAllById(branchIds).stream()
 				.collect(Collectors.toMap(BranchEntity::getId, Function.identity()));
 		return new RegionListItem(
 				entity.getId(),
 				formatCodeAndName(entity.getRegionCode(), entity.getRegionName()),
-				entity.getStates(),
-				entity.getZipCodes(),
-				entity.getBranches().stream()
+				states,
+				zipCodes,
+				branchIds.stream()
 						.map(branchesById::get)
 						.map(BranchEntity::getBranchCode)
 						.toList(),
@@ -39,21 +43,24 @@ class RegionMapper {
 	}
 
 	RegionDetail toRegionDetail(RegionEntity entity) {
-		Map<Long, BranchEntity> branchesById = branchRepository.findAllById(entity.getBranches()).stream()
+		List<String> states = List.copyOf(entity.getStates());
+		List<String> zipCodes = List.copyOf(entity.getZipCodes());
+		List<Long> branchIds = List.copyOf(entity.getBranches());
+		Map<Long, BranchEntity> branchesById = branchRepository.findAllById(branchIds).stream()
 				.collect(Collectors.toMap(BranchEntity::getId, Function.identity()));
 		return new RegionDetail(
 				entity.getRegionCode(),
 				entity.getRegionName(),
-				entity.getStates(),
-				entity.getZipCodes(),
-				entity.getBranches(),
+				states,
+				zipCodes,
+				branchIds,
 				entity.getUpdatedBy(),
 				entity.getId(),
 				entity.getUpdatedOn(),
 				new RegionOptions(
-						entity.getStates(),
-						entity.getZipCodes(),
-						entity.getBranches().stream()
+						states,
+						zipCodes,
+						branchIds.stream()
 								.map(branchesById::get)
 								.map(this::toBranchOption)
 								.toList()
