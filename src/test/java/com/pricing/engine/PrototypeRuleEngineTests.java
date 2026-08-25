@@ -323,7 +323,7 @@ class PrototypeRuleEngineTests {
 	}
 
 	@Test
-	void returnsFeeErrorForAnInvalidOperatorAndTypeCombination() {
+	void returnsInvalidEligibilityConditionForAnInvalidOperatorAndTypeCombination() {
 		PriceConfig config = config(
 				feeWithReasons("FEE00001", reason("INVALID",
 						condition("ATTR0001", AttributeType.BOOLEAN, ">", "false"))),
@@ -335,19 +335,23 @@ class PrototypeRuleEngineTests {
 						new FeeRequest(1L, "FEE00001", null),
 						new FeeRequest(2L, "FEE00002", null))));
 
-		assertEquals(okResult(failedFee(FeeStatus.ERROR), chargedFee(2L, "7.50")), result);
+		assertEquals(
+				okResult(
+						failedFee(FeeStatus.INVALID_ELIGIBILITY_CONDITION),
+						chargedFee(2L, "7.50")),
+				result);
 	}
 
 	@ParameterizedTest
 	@MethodSource("invalidConditionValues")
-	void returnsFeeErrorForAnInvalidPersistedConditionValue(
+	void returnsInvalidEligibilityConditionForAnInvalidPersistedConditionValue(
 			AttributeType type, Object accountValue, String conditionValue) {
 		AccountBatchResult result = price(
 				feeWithReasons("FEE00001", reason("INVALID",
 						condition("ATTR0001", type, "=", conditionValue))),
 				List.of(new AccountAttribute("ATTR0001", accountValue)));
 
-		assertEquals(okResult(failedFee(FeeStatus.ERROR)), result);
+		assertEquals(okResult(failedFee(FeeStatus.INVALID_ELIGIBILITY_CONDITION)), result);
 	}
 
 	private AccountBatchResult price(

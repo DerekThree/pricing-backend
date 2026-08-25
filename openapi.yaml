@@ -40,7 +40,7 @@ paths:
                 $ref: "#/components/schemas/BatchResult"
         "400":
           $ref: "#/components/responses/Error"
-        "500":
+        "503":
           $ref: "#/components/responses/Error"
 
   /branches:
@@ -1019,6 +1019,7 @@ components:
         - FEE_NOT_FOUND
         - MISSING_TRANSACTION
         - INVALID_TRANSACTION_AMOUNT
+        - INVALID_ELIGIBILITY_CONDITION
         - ERROR
 
     Decision:

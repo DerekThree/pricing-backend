@@ -40,85 +40,95 @@ public class PrototypeRuleEngine implements RuleEngine {
 		Set<LocalDate> pricingDates = batch.accounts().stream()
 				.map(Account::pricingDate)
 				.collect(Collectors.toUnmodifiableSet());
-		PriceConfig config = configRepository.load(pricingDates);
+		PriceConfig config;
+		try {
+			config = configRepository.load(pricingDates);
+		} catch (RuntimeException exception) {
+			throw new PricingConfigurationAccessException(exception);
+		}
 		return new AccountBatchResult(batch.batchId(), batch.accounts().stream()
 				.map(account -> price(account, config))
 				.toList());
 	}
 
 	private AccountResult price(Account account, PriceConfig config) {
-		Branch branch = config.branches().get(account.branchCode());
-		if (branch == null) {
-			return failed(account, AccountStatus.BRANCH_NOT_FOUND);
-		}
+		try {
+			Branch branch = config.branches().get(account.branchCode());
+			if (branch == null) {
+				return failed(account, AccountStatus.BRANCH_NOT_FOUND);
+			}
 
-		List<Region> regionMatches = config.regions().stream()
-				.filter(candidate -> candidate.branchCodes().contains(branch.code()))
-				.toList();
-		if (regionMatches.isEmpty()) {
-			regionMatches = config.regions().stream()
-					.filter(candidate -> candidate.zipCodes().contains(branch.zipCode()))
+			List<Region> regionMatches = config.regions().stream()
+					.filter(candidate -> candidate.branchCodes().contains(branch.code()))
 					.toList();
-		}
-		if (regionMatches.isEmpty()) {
-			regionMatches = config.regions().stream()
-					.filter(candidate -> candidate.states().contains(branch.state()))
+			if (regionMatches.isEmpty()) {
+				regionMatches = config.regions().stream()
+						.filter(candidate -> candidate.zipCodes().contains(branch.zipCode()))
+						.toList();
+			}
+			if (regionMatches.isEmpty()) {
+				regionMatches = config.regions().stream()
+						.filter(candidate -> candidate.states().contains(branch.state()))
+						.toList();
+			}
+			if (regionMatches.isEmpty()) {
+				return failed(account, AccountStatus.REGION_NOT_FOUND);
+			}
+			if (regionMatches.size() > 1) {
+				return failed(account, AccountStatus.ERROR);
+			}
+			Region region = regionMatches.getFirst();
+			List<Plan> planMatches = config.plans().stream()
+					.filter(candidate -> candidate.productCode().equals(account.productCode()))
+					.filter(candidate -> candidate.regionCode().equals(region.code()))
+					.filter(candidate -> !account.pricingDate().isBefore(candidate.activeFrom()))
+					.filter(candidate -> !account.pricingDate().isAfter(candidate.activeThrough()))
 					.toList();
-		}
-		if (regionMatches.isEmpty()) {
-			return failed(account, AccountStatus.REGION_NOT_FOUND);
-		}
-		if (regionMatches.size() > 1) {
+			if (planMatches.isEmpty()) {
+				return failed(account, AccountStatus.PLAN_NOT_FOUND);
+			}
+			if (planMatches.size() > 1) {
+				return failed(account, AccountStatus.ERROR);
+			}
+			Plan plan = planMatches.getFirst();
+			Set<String> requestedFeeCodes = account.fees().stream()
+					.map(FeeRequest::code)
+					.collect(Collectors.toSet());
+			Set<AttributeDefinition> requiredAttributes = plan.fees().stream()
+					.filter(fee -> requestedFeeCodes.contains(fee.code()))
+					.flatMap(fee -> fee.reasons().stream())
+					.flatMap(reason -> reason.conditions().stream())
+					.map(EligibilityCondition::attribute)
+					.collect(Collectors.toSet());
+			Set<String> requiredAttributeCodes = requiredAttributes.stream()
+					.map(AttributeDefinition::code)
+					.collect(Collectors.toSet());
+			Set<String> suppliedAttributeCodes = account.attributes().stream()
+					.map(AccountBatch.AccountAttribute::code)
+					.collect(Collectors.toSet());
+			if (requiredAttributeCodes.stream().anyMatch(code -> account.attributes().stream()
+							.filter(attribute -> attribute.code().equals(code))
+							.count() > 1)) {
+				return failed(account, AccountStatus.DUPLICATE_ATTRIBUTE);
+			}
+			if (requiredAttributes.stream().anyMatch(required -> account.attributes().stream()
+					.filter(attribute -> attribute.code().equals(required.code()))
+					.findFirst()
+					.map(attribute -> !matchesConfiguredType(required, attribute.value()))
+					.orElse(false))) {
+				return failed(account, AccountStatus.INVALID_ATTRIBUTE_TYPE);
+			}
+			if (requiredAttributeCodes.stream().anyMatch(
+					code -> !suppliedAttributeCodes.contains(code))) {
+				return failed(account, AccountStatus.MISSING_ATTRIBUTE);
+			}
+			List<FeeResult> fees = account.fees().stream()
+					.map(request -> price(request, plan, account.attributes()))
+					.toList();
+			return new AccountResult(account.accountNumber(), AccountStatus.OK, plan.code(), fees);
+		} catch (RuntimeException exception) {
 			return failed(account, AccountStatus.ERROR);
 		}
-		Region region = regionMatches.getFirst();
-		List<Plan> planMatches = config.plans().stream()
-				.filter(candidate -> candidate.productCode().equals(account.productCode()))
-				.filter(candidate -> candidate.regionCode().equals(region.code()))
-				.filter(candidate -> !account.pricingDate().isBefore(candidate.activeFrom()))
-				.filter(candidate -> !account.pricingDate().isAfter(candidate.activeThrough()))
-				.toList();
-		if (planMatches.isEmpty()) {
-			return failed(account, AccountStatus.PLAN_NOT_FOUND);
-		}
-		if (planMatches.size() > 1) {
-			return failed(account, AccountStatus.ERROR);
-		}
-		Plan plan = planMatches.getFirst();
-		Set<String> requestedFeeCodes = account.fees().stream()
-				.map(FeeRequest::code)
-				.collect(Collectors.toSet());
-		Set<AttributeDefinition> requiredAttributes = plan.fees().stream()
-				.filter(fee -> requestedFeeCodes.contains(fee.code()))
-				.flatMap(fee -> fee.reasons().stream())
-				.flatMap(reason -> reason.conditions().stream())
-				.map(EligibilityCondition::attribute)
-				.collect(Collectors.toSet());
-		Set<String> requiredAttributeCodes = requiredAttributes.stream()
-				.map(AttributeDefinition::code)
-				.collect(Collectors.toSet());
-		Set<String> suppliedAttributeCodes = account.attributes().stream()
-				.map(AccountBatch.AccountAttribute::code)
-				.collect(Collectors.toSet());
-		if (requiredAttributeCodes.stream().anyMatch(code -> account.attributes().stream()
-						.filter(attribute -> attribute.code().equals(code))
-						.count() > 1)) {
-			return failed(account, AccountStatus.DUPLICATE_ATTRIBUTE);
-		}
-		if (requiredAttributes.stream().anyMatch(required -> account.attributes().stream()
-				.filter(attribute -> attribute.code().equals(required.code()))
-				.findFirst()
-				.map(attribute -> !matchesConfiguredType(required, attribute.value()))
-				.orElse(false))) {
-			return failed(account, AccountStatus.INVALID_ATTRIBUTE_TYPE);
-		}
-		if (requiredAttributeCodes.stream().anyMatch(code -> !suppliedAttributeCodes.contains(code))) {
-			return failed(account, AccountStatus.MISSING_ATTRIBUTE);
-		}
-		List<FeeResult> fees = account.fees().stream()
-				.map(request -> price(request, plan, account.attributes()))
-				.toList();
-		return new AccountResult(account.accountNumber(), AccountStatus.OK, plan.code(), fees);
 	}
 
 	private AccountResult failed(Account account, AccountStatus status) {
@@ -145,51 +155,75 @@ public class PrototypeRuleEngine implements RuleEngine {
 	}
 
 	private FeeResult price(FeeRequest request, Plan plan, List<AccountAttribute> attributes) {
-		List<PlanFee> matches = plan.fees().stream()
-				.filter(candidate -> candidate.code().equals(request.code()))
-				.toList();
-		if (matches.isEmpty()) {
-			return new FeeResult(request.feeRequestId(), FeeStatus.FEE_NOT_FOUND, null, null, null);
-		}
-		PlanFee fee = requireOne(matches, "Pricing Plan Fee");
-		if (fee.type() == FeeType.PERCENT && request.transactionAmount() == null) {
-			return new FeeResult(request.feeRequestId(), FeeStatus.MISSING_TRANSACTION, null, null, null);
-		}
-		if (fee.type() == FeeType.PERCENT
-				&& (request.transactionAmount().signum() < 0
-						|| request.transactionAmount().scale() > 2)) {
+		try {
+			List<PlanFee> matches = plan.fees().stream()
+					.filter(candidate -> candidate.code().equals(request.code()))
+					.toList();
+			if (matches.isEmpty()) {
+				return new FeeResult(
+						request.feeRequestId(),
+						FeeStatus.FEE_NOT_FOUND,
+						null,
+						null,
+						null);
+			}
+			PlanFee fee = requireOne(matches, "Pricing Plan Fee");
+			if (fee.type() == FeeType.PERCENT && request.transactionAmount() == null) {
+				return new FeeResult(
+						request.feeRequestId(),
+						FeeStatus.MISSING_TRANSACTION,
+						null,
+						null,
+						null);
+			}
+			if (fee.type() == FeeType.PERCENT
+					&& (request.transactionAmount().signum() < 0
+							|| request.transactionAmount().scale() > 2)) {
+				return new FeeResult(
+						request.feeRequestId(),
+						FeeStatus.INVALID_TRANSACTION_AMOUNT,
+						null,
+						null,
+						null);
+			}
+			if (fee.reasons().stream()
+					.flatMap(reason -> reason.conditions().stream())
+					.anyMatch(condition -> !isValid(condition))) {
+				return new FeeResult(
+						request.feeRequestId(),
+						FeeStatus.INVALID_ELIGIBILITY_CONDITION,
+						null,
+						null,
+						null);
+			}
+
+			List<String> reasons = fee.reasons().stream()
+					.filter(reason -> reason.conditions().stream()
+							.allMatch(condition -> matches(condition, attributes)))
+					.map(EligibilityReason::code)
+					.toList();
+			if (!reasons.isEmpty()) {
+				return new FeeResult(
+						request.feeRequestId(),
+						FeeStatus.OK,
+						Decision.WAIVED,
+						null,
+						reasons);
+			}
+
+			BigDecimal amount = switch (fee.type()) {
+				case FLAT -> fee.amount();
+				case PERCENT -> request.transactionAmount().multiply(fee.amount()).movePointLeft(2);
+			};
 			return new FeeResult(
 					request.feeRequestId(),
-					FeeStatus.INVALID_TRANSACTION_AMOUNT,
-					null,
-					null,
+					FeeStatus.OK,
+					Decision.CHARGED,
+					amount.setScale(2, RoundingMode.HALF_UP),
 					null);
-		}
-		if (fee.reasons().stream()
-				.flatMap(reason -> reason.conditions().stream())
-				.anyMatch(condition -> !isValid(condition))) {
+		} catch (RuntimeException exception) {
 			return new FeeResult(request.feeRequestId(), FeeStatus.ERROR, null, null, null);
 		}
-
-		List<String> reasons = fee.reasons().stream()
-				.filter(reason -> reason.conditions().stream()
-						.allMatch(condition -> matches(condition, attributes)))
-				.map(EligibilityReason::code)
-				.toList();
-		if (!reasons.isEmpty()) {
-			return new FeeResult(request.feeRequestId(), FeeStatus.OK, Decision.WAIVED, null, reasons);
-		}
-
-		BigDecimal amount = switch (fee.type()) {
-			case FLAT -> fee.amount();
-			case PERCENT -> request.transactionAmount().multiply(fee.amount()).movePointLeft(2);
-		};
-		return new FeeResult(
-				request.feeRequestId(),
-				FeeStatus.OK,
-				Decision.CHARGED,
-				amount.setScale(2, RoundingMode.HALF_UP),
-				null);
 	}
 
 	private boolean isValid(EligibilityCondition condition) {
@@ -207,12 +241,9 @@ public class PrototypeRuleEngine implements RuleEngine {
 
 		try {
 			switch (condition.attribute().type()) {
-				case TEXT -> {
-				}
+				case TEXT -> {}
 				case BOOLEAN -> {
-					if (!condition.value().equals("true") && !condition.value().equals("false")) {
-						return false;
-					}
+					return (condition.value().equals("true") || condition.value().equals("false"));
 				}
 				case DECIMAL -> new BigDecimal(condition.value());
 				case INTEGER -> new BigDecimal(condition.value()).toBigIntegerExact();

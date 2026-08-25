@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 import com.pricing.backend.generated.model.ErrorResponse;
+import com.pricing.engine.PricingConfigurationAccessException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -84,6 +85,13 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(RecordInUseException.class)
 	public ResponseEntity<ErrorResponse> handleRecordInUse(RecordInUseException ex) {
 		return conflict(ex.getMessage());
+	}
+
+	@ExceptionHandler(PricingConfigurationAccessException.class)
+	public ResponseEntity<ErrorResponse> handlePricingConfigurationAccess(
+			PricingConfigurationAccessException ex) {
+		return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+				.body(new ErrorResponse(ex.getMessage()));
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)

@@ -49,6 +49,7 @@ public record AccountBatchResult(UUID batchId, List<AccountResult> accounts) {
 		FEE_NOT_FOUND,
 		MISSING_TRANSACTION,
 		INVALID_TRANSACTION_AMOUNT,
+		INVALID_ELIGIBILITY_CONDITION,
 		ERROR
 	}
 
