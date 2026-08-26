@@ -23,7 +23,7 @@ import com.pricing.backend.product.ProductEntity;
 import com.pricing.backend.product.ProductRepository;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.backend.region.RegionRepository;
-import com.pricing.backend.simulator.SimulatorDateService;
+import com.pricing.backend.simulator.SimulatorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +70,7 @@ class PricingPlanApiTests {
 	private AccountAttributeRepository accountAttributeRepository;
 
 	@Autowired
-	private SimulatorDateService simulatorDateService;
+	private SimulatorService simulatorService;
 
 	@MockitoBean
 	private Clock clock;
@@ -79,7 +79,7 @@ class PricingPlanApiTests {
 	void setUp() {
 		when(clock.getZone()).thenReturn(ZoneOffset.UTC);
 		when(clock.instant()).thenReturn(Instant.parse("2026-08-11T00:00:00Z"));
-		simulatorDateService.setCurrentDate(LocalDate.of(2026, 8, 11));
+		simulatorService.setCurrentDate(LocalDate.of(2026, 8, 11));
 		pricingPlanRepository.deleteAll();
 		eligibilityReasonRepository.deleteAll();
 		accountAttributeRepository.deleteAll();
@@ -489,7 +489,7 @@ class PricingPlanApiTests {
 								"2026-08-01", "2026-08-10")))
 				.andExpect(status().isBadRequest());
 
-		simulatorDateService.setCurrentDate(LocalDate.of(2026, 8, 12));
+		simulatorService.setCurrentDate(LocalDate.of(2026, 8, 12));
 		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated past plan", firstProduct.getId(),

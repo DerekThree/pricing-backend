@@ -24,7 +24,7 @@ import com.pricing.backend.product.ProductEntity;
 import com.pricing.backend.product.ProductRepository;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.backend.region.RegionRepository;
-import com.pricing.backend.simulator.SimulatorDateService;
+import com.pricing.backend.simulator.SimulatorService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,20 +36,20 @@ public class PricingPlanService {
 	private final RegionRepository regionRepository;
 	private final FeeRepository feeRepository;
 	private final EligibilityReasonRepository eligibilityReasonRepository;
-	private final SimulatorDateService simulatorDateService;
+	private final SimulatorService simulatorService;
 	private final PricingPlanValidator pricingPlanValidator;
 	private final PricingPlanMapper pricingPlanMapper;
 
 	public PricingPlanService(PricingPlanRepository pricingPlanRepository, ProductRepository productRepository,
 			RegionRepository regionRepository, FeeRepository feeRepository,
-			EligibilityReasonRepository eligibilityReasonRepository, SimulatorDateService simulatorDateService,
+			EligibilityReasonRepository eligibilityReasonRepository, SimulatorService simulatorService,
 			PricingPlanValidator pricingPlanValidator, PricingPlanMapper pricingPlanMapper) {
 		this.pricingPlanRepository = pricingPlanRepository;
 		this.productRepository = productRepository;
 		this.regionRepository = regionRepository;
 		this.feeRepository = feeRepository;
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
-		this.simulatorDateService = simulatorDateService;
+		this.simulatorService = simulatorService;
 		this.pricingPlanValidator = pricingPlanValidator;
 		this.pricingPlanMapper = pricingPlanMapper;
 	}
@@ -167,7 +167,7 @@ public class PricingPlanService {
 				regionRepository.findAllByOrderByRegionCodeAsc().stream()
 						.map(pricingPlanMapper::toRegionOption)
 						.toList())
-				.currentDate(simulatorDateService.getCurrentDate())
+				.currentDate(simulatorService.getCurrentDate())
 				.fees(null)
 				.reasons(null)
 				.intervals(null);

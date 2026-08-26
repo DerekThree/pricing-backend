@@ -10,20 +10,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class SimulatorController implements SimulatorApi {
 
-	private final SimulatorDateService simulatorDateService;
+	private final SimulatorService simulatorService;
 
-	public SimulatorController(SimulatorDateService simulatorDateService) {
-		this.simulatorDateService = simulatorDateService;
+	public SimulatorController(SimulatorService simulatorService) {
+		this.simulatorService = simulatorService;
 	}
 
 	@Override
 	public ResponseEntity<SimulatorDate> getSimulatorDate() {
-		return ResponseEntity.ok(new SimulatorDate(simulatorDateService.getCurrentDate()));
+		return ResponseEntity.ok(new SimulatorDate(simulatorService.getCurrentDate()));
 	}
 
 	@Override
 	public ResponseEntity<SimulatorDate> setSimulatorDate(SimulatorDate request) {
-		LocalDate currentDate = simulatorDateService.setCurrentDate(request.getCurrentDate());
+		LocalDate currentDate = simulatorService.setCurrentDate(request.getCurrentDate());
 		return ResponseEntity.ok(new SimulatorDate(currentDate));
 	}
 }

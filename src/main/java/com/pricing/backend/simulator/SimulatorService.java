@@ -6,12 +6,12 @@ import java.time.LocalDate;
 import org.springframework.stereotype.Service;
 
 @Service
-public class SimulatorDateService {
+public class SimulatorService {
 
 	private final Clock systemClock;
 	private volatile Clock applicationClock;
 
-	public SimulatorDateService(Clock systemClock) {
+	public SimulatorService(Clock systemClock) {
 		this.systemClock = systemClock;
 		this.applicationClock = systemClock;
 	}
