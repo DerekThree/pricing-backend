@@ -20,6 +20,22 @@ tags:
   - name: Pricing Plans
 
 paths:
+  /batch:
+    get:
+      tags: [Batch]
+      summary: Get available batch options
+      responses:
+        "200":
+          description: Available products, branches, fees, and account attributes for batch requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOptions"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+
   /branches:
     get:
       tags: [Branches]
@@ -852,6 +868,31 @@ components:
             message: The app could not complete the backend request. Please try again later.
 
   schemas:
+    BatchOptions:
+      type: object
+      required:
+        - products
+        - branches
+        - fees
+        - attributes
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductOption"
+        branches:
+          type: array
+          items:
+            $ref: "#/components/schemas/BranchOption"
+        fees:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeOption"
+        attributes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttributeOption"
+
     ErrorResponse:
       type: object
       required:
@@ -1428,9 +1469,9 @@ components:
         operator:
           $ref: "#/components/schemas/ReasonOperator"
         value:
-          $ref: "#/components/schemas/ReasonConditionValue"
+          $ref: "#/components/schemas/AccountAttributeValue"
 
-    ReasonConditionValue:
+    AccountAttributeValue:
       oneOf:
         - type: string
         - type: number
