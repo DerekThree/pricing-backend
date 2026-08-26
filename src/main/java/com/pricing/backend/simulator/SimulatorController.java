@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import com.pricing.backend.generated.api.SimulatorApi;
 import com.pricing.backend.generated.model.SimulatorDate;
+import com.pricing.backend.generated.model.SimulatorOptions;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,6 +20,11 @@ public class SimulatorController implements SimulatorApi {
 	@Override
 	public ResponseEntity<SimulatorDate> getSimulatorDate() {
 		return ResponseEntity.ok(new SimulatorDate(simulatorService.getCurrentDate()));
+	}
+
+	@Override
+	public ResponseEntity<SimulatorOptions> getSimulatorOptions() {
+		return ResponseEntity.ok(simulatorService.getOptions());
 	}
 
 	@Override

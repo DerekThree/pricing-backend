@@ -3,13 +3,13 @@ package com.pricing.backend.eligibilityreason;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-import com.pricing.backend.generated.model.ReasonConditionValue;
+import com.pricing.backend.generated.model.AccountAttributeValue;
 
-public final class EligibilityReasonConditionScalarValue implements ReasonConditionValue {
+public final class AccountAttributeScalarValue implements AccountAttributeValue {
 
 	private final Object value;
 
-	public EligibilityReasonConditionScalarValue(Object value) {
+	public AccountAttributeScalarValue(Object value) {
 		if (!(value instanceof String) && !(value instanceof BigDecimal) && !(value instanceof Boolean)) {
 			throw new IllegalArgumentException("Condition value must be a string, number, or boolean");
 		}
@@ -27,7 +27,7 @@ public final class EligibilityReasonConditionScalarValue implements ReasonCondit
 			return true;
 		}
 
-		if (!(object instanceof EligibilityReasonConditionScalarValue other)) {
+		if (!(object instanceof AccountAttributeScalarValue other)) {
 			return false;
 		}
 

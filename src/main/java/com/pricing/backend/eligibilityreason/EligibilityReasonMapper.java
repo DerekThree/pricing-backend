@@ -7,7 +7,7 @@ import com.pricing.backend.accountattribute.AccountAttributeEntity;
 import com.pricing.backend.generated.model.AttributeOption;
 import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.ReasonCondition;
-import com.pricing.backend.generated.model.ReasonConditionValue;
+import com.pricing.backend.generated.model.AccountAttributeValue;
 import com.pricing.backend.generated.model.ReasonDetail;
 import com.pricing.backend.generated.model.ReasonListItem;
 import com.pricing.backend.generated.model.ReasonOperator;
@@ -56,7 +56,7 @@ class EligibilityReasonMapper {
 		return new ReasonCondition(
 				entity.getAttribute().getId(),
 				ReasonOperator.fromValue(entity.getOperator()),
-				toReasonConditionValue(entity.getAttribute().getAttributeType(), entity.getAttributeValue())
+				toAccountAttributeValue(entity.getAttribute().getAttributeType(), entity.getAttributeValue())
 		);
 	}
 
@@ -70,11 +70,11 @@ class EligibilityReasonMapper {
 		);
 	}
 
-	private ReasonConditionValue toReasonConditionValue(AttributeType type, String value) {
+	private AccountAttributeValue toAccountAttributeValue(AttributeType type, String value) {
 		return switch (type) {
-			case BOOLEAN -> new EligibilityReasonConditionScalarValue(Boolean.valueOf(value));
-			case DATE, TEXT -> new EligibilityReasonConditionScalarValue(value);
-			case DECIMAL, INTEGER -> new EligibilityReasonConditionScalarValue(new BigDecimal(value));
+			case BOOLEAN -> new AccountAttributeScalarValue(Boolean.valueOf(value));
+			case DATE, TEXT -> new AccountAttributeScalarValue(value);
+			case DECIMAL, INTEGER -> new AccountAttributeScalarValue(new BigDecimal(value));
 		};
 	}
 

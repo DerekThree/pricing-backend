@@ -2,15 +2,15 @@ package com.pricing.backend.config;
 
 import java.math.BigDecimal;
 
-import com.pricing.backend.eligibilityreason.EligibilityReasonConditionScalarValue;
+import com.pricing.backend.eligibilityreason.AccountAttributeScalarValue;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueSerializer;
 
-public class EligibilityReasonConditionValueSerializer extends ValueSerializer<EligibilityReasonConditionScalarValue> {
+public class AccountAttributeValueSerializer extends ValueSerializer<AccountAttributeScalarValue> {
 
 	@Override
-	public void serialize(EligibilityReasonConditionScalarValue value, JsonGenerator generator,
+	public void serialize(AccountAttributeScalarValue value, JsonGenerator generator,
 			SerializationContext context) {
 		Object scalar = value.getValue();
 		if (scalar instanceof String stringValue) {

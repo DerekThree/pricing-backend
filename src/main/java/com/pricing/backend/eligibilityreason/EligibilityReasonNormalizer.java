@@ -5,13 +5,13 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 
 import com.pricing.backend.accountattribute.AccountAttributeEntity;
-import com.pricing.backend.generated.model.ReasonConditionValue;
+import com.pricing.backend.generated.model.AccountAttributeValue;
 import org.springframework.stereotype.Component;
 
 @Component
 class EligibilityReasonNormalizer {
 
-	String normalizeAttributeValue(AccountAttributeEntity attribute, ReasonConditionValue value) {
+	String normalizeAttributeValue(AccountAttributeEntity attribute, AccountAttributeValue value) {
 		Object scalar = extractScalarValue(value);
 		return switch (attribute.getAttributeType()) {
 			case BOOLEAN -> normalizeBooleanValue(attribute, scalar);
@@ -22,7 +22,7 @@ class EligibilityReasonNormalizer {
 		};
 	}
 
-	String serializeScalarValue(ReasonConditionValue value) {
+	String serializeScalarValue(AccountAttributeValue value) {
 		return extractScalarValue(value).toString();
 	}
 
@@ -81,8 +81,8 @@ class EligibilityReasonNormalizer {
 				+ attribute.getAttributeCode() + " must be a string");
 	}
 
-	private Object extractScalarValue(ReasonConditionValue value) {
-		if (value instanceof EligibilityReasonConditionScalarValue scalarValue) {
+	private Object extractScalarValue(AccountAttributeValue value) {
+		if (value instanceof AccountAttributeScalarValue scalarValue) {
 			return scalarValue.getValue();
 		}
 
