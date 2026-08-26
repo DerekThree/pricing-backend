@@ -20,7 +20,7 @@ import com.pricing.backend.product.ProductEntity;
 import com.pricing.backend.product.ProductRepository;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.backend.region.RegionRepository;
-import com.pricing.backend.simulator.SimulatorDateService;
+import com.pricing.backend.simulator.SimulatorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +58,7 @@ class FeeApiTests {
 	private RegionRepository regionRepository;
 
 	@Autowired
-	private SimulatorDateService simulatorDateService;
+	private SimulatorService simulatorService;
 
 	@MockitoBean
 	private Clock clock;
@@ -67,7 +67,7 @@ class FeeApiTests {
 	void setUp() {
 		when(clock.getZone()).thenReturn(ZoneOffset.UTC);
 		when(clock.instant()).thenReturn(Instant.parse("2026-08-11T00:00:00Z"));
-		simulatorDateService.setCurrentDate(LocalDate.of(2026, 8, 11));
+		simulatorService.setCurrentDate(LocalDate.of(2026, 8, 11));
 		pricingPlanRepository.deleteAll();
 		feeRepository.deleteAll();
 		regionRepository.deleteAll();

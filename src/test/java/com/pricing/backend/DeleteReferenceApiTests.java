@@ -21,7 +21,7 @@ import com.pricing.backend.product.ProductEntity;
 import com.pricing.backend.product.ProductRepository;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.backend.region.RegionRepository;
-import com.pricing.backend.simulator.SimulatorDateService;
+import com.pricing.backend.simulator.SimulatorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,11 +64,11 @@ class DeleteReferenceApiTests {
 	private AccountAttributeRepository accountAttributeRepository;
 
 	@Autowired
-	private SimulatorDateService simulatorDateService;
+	private SimulatorService simulatorService;
 
 	@BeforeEach
 	void setUp() {
-		simulatorDateService.setCurrentDate(LocalDate.of(2026, 8, 11));
+		simulatorService.setCurrentDate(LocalDate.of(2026, 8, 11));
 		pricingPlanRepository.deleteAll();
 		eligibilityReasonRepository.deleteAll();
 		feeRepository.deleteAll();

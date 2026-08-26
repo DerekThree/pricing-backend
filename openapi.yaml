@@ -19,23 +19,10 @@ tags:
   - name: Account Attributes
   - name: Eligibility Reasons  
   - name: Pricing Plans
+  - name: Simulator  
 
 paths:
   /batch:
-    get:
-      tags: [Batch]
-      summary: Get available batch options
-      responses:
-        "200":
-          description: Available products, branches, fees, and account attributes for batch requests
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BatchOptions"
-        "500":
-          $ref: "#/components/responses/Error"
-        "503":
-          $ref: "#/components/responses/SyntheticServiceUnavailable"
     post:
       tags: [Batch]
       summary: Price a batch synchronously
@@ -709,6 +696,22 @@ paths:
         "400":
           $ref: "#/components/responses/Error"
 
+  /simulator/options:
+    get:
+      tags: [Simulator]
+      summary: Get available simulator options
+      responses:
+        "200":
+          description: Available products, branches, fees, and account attributes for batch requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulatorOptions"
+        "500":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/SyntheticServiceUnavailable"
+          
   /eligibility-reasons:
     get:
       tags: [Eligibility Reasons]
@@ -1047,7 +1050,8 @@ components:
       minLength: 1
       maxLength: 25
       pattern: "^[A-Z0-9]{1,25}$"
-    BatchOptions:
+
+    SimulatorOptions:
       type: object
       required:
         - products

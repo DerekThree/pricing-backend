@@ -7,20 +7,20 @@ import java.util.stream.Collectors;
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.generated.model.PricingPlanRequest;
 import com.pricing.backend.generated.model.ProductType;
-import com.pricing.backend.simulator.SimulatorDateService;
+import com.pricing.backend.simulator.SimulatorService;
 import org.springframework.stereotype.Component;
 
 @Component
 class PricingPlanValidator {
 
-	private final SimulatorDateService simulatorDateService;
+	private final SimulatorService simulatorService;
 
-	PricingPlanValidator(SimulatorDateService simulatorDateService) {
-		this.simulatorDateService = simulatorDateService;
+	PricingPlanValidator(SimulatorService simulatorService) {
+		this.simulatorService = simulatorService;
 	}
 
 	void validate(PricingPlanEntity entity, PricingPlanRequest request) {
-		LocalDate currentDate = simulatorDateService.getCurrentDate();
+		LocalDate currentDate = simulatorService.getCurrentDate();
 		validateLifecycle(entity, request, currentDate);
 		if (entity.getId() == null && request.getActiveFrom().isBefore(currentDate)) {
 			throw new IllegalArgumentException("Active From must be on or after the application current date");
@@ -28,7 +28,7 @@ class PricingPlanValidator {
 	}
 
 	void validateCanDelete(PricingPlanEntity entity) {
-		if (isActive(entity, simulatorDateService.getCurrentDate())) {
+		if (isActive(entity, simulatorService.getCurrentDate())) {
 			throw new IllegalArgumentException("Active pricing plans cannot be deleted");
 		}
 	}
