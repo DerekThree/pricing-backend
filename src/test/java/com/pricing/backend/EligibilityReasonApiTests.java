@@ -130,7 +130,7 @@ class EligibilityReasonApiTests {
 		mockMvc.perform(get("/eligibility-reasons"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].eligibilityReason").value("ELIG0001 - Min. Balance"))
-				.andExpect(jsonPath("$[0].conditions", contains("ATTR0001 >= 100.5", "ATTR0002 = true")));
+				.andExpect(jsonPath("$[0].conditions", contains("Min Amount >= 100.5", "Active = true")));
 	}
 
 	@Test

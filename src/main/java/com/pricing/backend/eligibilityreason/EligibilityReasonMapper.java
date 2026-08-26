@@ -85,7 +85,7 @@ class EligibilityReasonMapper {
 	}
 
 	private String toConditionSummary(EligibilityReasonConditionEntity entity) {
-		return entity.getAttribute().getAttributeCode() + " " + entity.getOperator() + " "
+		return entity.getAttribute().getAttributeName() + " " + entity.getOperator() + " "
 				+ entity.getAttributeValue();
 	}
 
