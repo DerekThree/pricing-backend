@@ -15,27 +15,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class SimulatorService {
 
 	private final Clock systemClock;
-	private volatile Clock applicationClock;
 	private final ProductRepository productRepository;
 	private final BranchRepository branchRepository;
 	private final FeeRepository feeRepository;
 	private final AccountAttributeRepository accountAttributeRepository;
-	private final SimulatorMapper mapper;
+	private final SimulatorMapper simulatorMapper;
+	private volatile Clock applicationClock;
 
-	public SimulatorService(
-			Clock systemClock,
-			ProductRepository productRepository,
-			BranchRepository branchRepository,
-			FeeRepository feeRepository,
-			AccountAttributeRepository accountAttributeRepository,
-			SimulatorMapper mapper) {
+	public SimulatorService(Clock systemClock, ProductRepository productRepository,
+			BranchRepository branchRepository, FeeRepository feeRepository,
+			AccountAttributeRepository accountAttributeRepository, SimulatorMapper simulatorMapper) {
 		this.systemClock = systemClock;
-		this.applicationClock = systemClock;
 		this.productRepository = productRepository;
 		this.branchRepository = branchRepository;
 		this.feeRepository = feeRepository;
 		this.accountAttributeRepository = accountAttributeRepository;
-		this.mapper = mapper;
+		this.simulatorMapper = simulatorMapper;
+		this.applicationClock = systemClock;
 	}
 
 	public LocalDate getCurrentDate() {
@@ -51,16 +47,16 @@ public class SimulatorService {
 	public SimulatorOptions getOptions() {
 		return new SimulatorOptions(
 				productRepository.findAllByOrderByProductCodeAsc().stream()
-						.map(mapper::toProductOption)
+						.map(simulatorMapper::toProductOption)
 						.toList(),
 				branchRepository.findAllByOrderByBranchCodeAsc().stream()
-						.map(mapper::toBranchOption)
+						.map(simulatorMapper::toBranchOption)
 						.toList(),
 				feeRepository.findAllByOrderByFeeCodeAsc().stream()
-						.map(mapper::toFeeOption)
+						.map(simulatorMapper::toFeeOption)
 						.toList(),
 				accountAttributeRepository.findAllByOrderByAttributeCodeAsc().stream()
-						.map(mapper::toAttributeOption)
+						.map(simulatorMapper::toAttributeOption)
 						.toList()
 		);
 	}

@@ -2,7 +2,7 @@ package com.pricing.backend.config;
 
 import java.math.BigDecimal;
 
-import com.pricing.backend.eligibilityreason.AttributeValue;
+import com.pricing.backend.eligibilityreason.AccountAttributeScalarValue;
 import com.pricing.backend.generated.model.AccountAttributeValue;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
@@ -16,15 +16,15 @@ public class AccountAttributeValueDeserializer extends ValueDeserializer<Account
 	public AccountAttributeValue deserialize(JsonParser parser, DeserializationContext context) {
 		JsonToken token = parser.currentToken();
 		if (token == JsonToken.VALUE_STRING) {
-			return new AttributeValue(parser.getText());
+			return new AccountAttributeScalarValue(parser.getText());
 		}
 
 		if (token == JsonToken.VALUE_NUMBER_INT || token == JsonToken.VALUE_NUMBER_FLOAT) {
-			return new AttributeValue(parser.getDecimalValue());
+			return new AccountAttributeScalarValue(parser.getDecimalValue());
 		}
 
 		if (token == JsonToken.VALUE_TRUE || token == JsonToken.VALUE_FALSE) {
-			return new AttributeValue(parser.getBooleanValue());
+			return new AccountAttributeScalarValue(parser.getBooleanValue());
 		}
 
 		throw InvalidFormatException.from(parser,

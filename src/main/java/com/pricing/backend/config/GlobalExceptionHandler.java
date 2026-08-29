@@ -25,9 +25,9 @@ public class GlobalExceptionHandler {
 	private static final String ACTIVE_PERIOD_ORDER_CONSTRAINT = "chk_pricing_plans_active_period_order";
 	private static final String PRICING_PLAN_FEE_PRIMARY_KEY = "pk_pricing_plan_fees";
 	private static final String PRICING_PLAN_FEE_REASON_PRIMARY_KEY = "pk_pricing_plan_fee_reasons";
-	private static final String FEE_PRODUCT_TYPE_UNIQUE_CONSTRAINT = "uk_fee_product_types_fee_id_product_type";
-	private static final String ACCOUNT_ATTRIBUTE_PRODUCT_TYPE_UNIQUE_CONSTRAINT =
-			"uk_account_attribute_product_types_attribute_id_product_type";
+	private static final String FEE_PRODUCT_TYPE_PRIMARY_KEY = "pk_fee_product_types";
+	private static final String ACCOUNT_ATTRIBUTE_PRODUCT_TYPE_PRIMARY_KEY =
+			"pk_account_attribute_product_types";
 	private static final String UNIQUE_VIOLATION = "23505";
 	private static final String FOREIGN_KEY_VIOLATION = "23503";
 	private static final String H2_FOREIGN_KEY_VIOLATION = "23506";
@@ -112,11 +112,11 @@ public class GlobalExceptionHandler {
 			return badRequest("A fee cannot contain the same eligibility reason twice");
 		}
 
-		if (hasConstraint(ex, FEE_PRODUCT_TYPE_UNIQUE_CONSTRAINT, UNIQUE_VIOLATION)) {
+		if (hasConstraint(ex, FEE_PRODUCT_TYPE_PRIMARY_KEY, UNIQUE_VIOLATION)) {
 			return badRequest("A fee cannot contain the same product type twice");
 		}
 
-		if (hasConstraint(ex, ACCOUNT_ATTRIBUTE_PRODUCT_TYPE_UNIQUE_CONSTRAINT, UNIQUE_VIOLATION)) {
+		if (hasConstraint(ex, ACCOUNT_ATTRIBUTE_PRODUCT_TYPE_PRIMARY_KEY, UNIQUE_VIOLATION)) {
 			return badRequest("An account attribute cannot contain the same product type twice");
 		}
 

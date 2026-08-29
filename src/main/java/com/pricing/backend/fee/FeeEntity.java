@@ -17,7 +17,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -53,7 +52,6 @@ public class FeeEntity {
 	@CollectionTable(name = "fee_product_types", joinColumns = @JoinColumn(name = "fee_id"))
 	@Enumerated(EnumType.STRING)
 	@Column(name = "product_type", nullable = false, length = 20)
-	@OrderColumn(name = "sort_order")
 	@Default
 	private List<ProductType> productTypes = new ArrayList<>();
 

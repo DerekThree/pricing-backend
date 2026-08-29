@@ -5,11 +5,11 @@ import java.util.Objects;
 
 import com.pricing.backend.generated.model.AccountAttributeValue;
 
-public final class AttributeValue implements AccountAttributeValue {
+public final class AccountAttributeScalarValue implements AccountAttributeValue {
 
 	private final Object value;
 
-	public AttributeValue(Object value) {
+	public AccountAttributeScalarValue(Object value) {
 		if (!(value instanceof String) && !(value instanceof BigDecimal) && !(value instanceof Boolean)) {
 			throw new IllegalArgumentException("Condition value must be a string, number, or boolean");
 		}
@@ -27,7 +27,7 @@ public final class AttributeValue implements AccountAttributeValue {
 			return true;
 		}
 
-		if (!(object instanceof AttributeValue other)) {
+		if (!(object instanceof AccountAttributeScalarValue other)) {
 			return false;
 		}
 

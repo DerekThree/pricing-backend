@@ -8,7 +8,7 @@ import com.pricing.backend.generated.model.BatchFeeRequest;
 import com.pricing.backend.generated.model.BatchFeeResult;
 import com.pricing.backend.generated.model.BatchFeeStatus;
 import com.pricing.backend.generated.model.BatchRequest;
-import com.pricing.backend.eligibilityreason.AttributeValue;
+import com.pricing.backend.eligibilityreason.AccountAttributeScalarValue;
 import com.pricing.backend.generated.model.Decision;
 import com.pricing.engine.AccountBatch;
 import com.pricing.engine.AccountBatch.Account;
@@ -44,7 +44,7 @@ class BatchMapper {
 	}
 
 	private AccountBatch.AccountAttribute toAccountAttribute(AccountAttribute attribute) {
-		AttributeValue value = (AttributeValue) attribute.getValue();
+		AccountAttributeScalarValue value = (AccountAttributeScalarValue) attribute.getValue();
 		return new AccountBatch.AccountAttribute(attribute.getCode(), value.getValue());
 	}
 

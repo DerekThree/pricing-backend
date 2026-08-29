@@ -419,7 +419,7 @@ class JpaPriceConfigRepositoryPostgresTests {
 				insert into fees (fee_code, fee_name, fee_type, updated_on, updated_by)
 				values (?, 'Monthly Maintenance Fee', 'FLAT', ?, 'test') returning id
 				""", Long.class, feeCode, OffsetDateTime.now());
-		jdbcTemplate.update("insert into fee_product_types values (?, 0, 'DEPOSIT')", feeId);
+		jdbcTemplate.update("insert into fee_product_types (fee_id, product_type) values (?, 'DEPOSIT')", feeId);
 		return feeId;
 	}
 

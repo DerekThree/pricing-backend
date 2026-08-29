@@ -82,7 +82,7 @@ class EligibilityReasonNormalizer {
 	}
 
 	private Object extractScalarValue(AccountAttributeValue value) {
-		if (value instanceof AttributeValue scalarValue) {
+		if (value instanceof AccountAttributeScalarValue scalarValue) {
 			return scalarValue.getValue();
 		}
 

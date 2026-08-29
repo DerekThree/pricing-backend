@@ -23,13 +23,14 @@ public class SimulatorController implements SimulatorApi {
 	}
 
 	@Override
+	public ResponseEntity<SimulatorOptions> getSimulatorOptions() {
+		return ResponseEntity.ok(simulatorService.getOptions());
+	}
+
+	@Override
 	public ResponseEntity<SimulatorDate> setSimulatorDate(SimulatorDate request) {
 		LocalDate currentDate = simulatorService.setCurrentDate(request.getCurrentDate());
 		return ResponseEntity.ok(new SimulatorDate(currentDate));
 	}
 
-	@Override
-	public ResponseEntity<SimulatorOptions> simulatorOptionsGet() {
-		return ResponseEntity.ok(simulatorService.getOptions());
-	}
 }

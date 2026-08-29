@@ -42,7 +42,7 @@ class SimulatorMapper {
 				attribute.getAttributeCode(),
 				attribute.getAttributeName(),
 				attribute.getAttributeType(),
-				attribute.getProductTypes().stream().toList()
+				attribute.getProductTypes()
 		);
 	}
 }

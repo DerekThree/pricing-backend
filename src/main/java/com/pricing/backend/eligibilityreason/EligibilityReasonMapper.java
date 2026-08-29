@@ -56,7 +56,7 @@ class EligibilityReasonMapper {
 		return new ReasonCondition(
 				entity.getAttribute().getId(),
 				ReasonOperator.fromValue(entity.getOperator()),
-				toReasonConditionValue(entity.getAttribute().getAttributeType(), entity.getAttributeValue())
+				toAccountAttributeValue(entity.getAttribute().getAttributeType(), entity.getAttributeValue())
 		);
 	}
 
@@ -70,11 +70,11 @@ class EligibilityReasonMapper {
 		);
 	}
 
-	private AccountAttributeValue toReasonConditionValue(AttributeType type, String value) {
+	private AccountAttributeValue toAccountAttributeValue(AttributeType type, String value) {
 		return switch (type) {
-			case BOOLEAN -> new AttributeValue(Boolean.valueOf(value));
-			case DATE, TEXT -> new AttributeValue(value);
-			case DECIMAL, INTEGER -> new AttributeValue(new BigDecimal(value));
+			case BOOLEAN -> new AccountAttributeScalarValue(Boolean.valueOf(value));
+			case DATE, TEXT -> new AccountAttributeScalarValue(value);
+			case DECIMAL, INTEGER -> new AccountAttributeScalarValue(new BigDecimal(value));
 		};
 	}
 

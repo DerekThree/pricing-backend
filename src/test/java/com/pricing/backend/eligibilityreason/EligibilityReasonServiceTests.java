@@ -53,11 +53,11 @@ class EligibilityReasonServiceTests {
 						new ReasonCondition(
 								amount.getId(),
 								ReasonOperator.GREATER_THAN_OR_EQUAL_TO,
-								new AttributeValue(new BigDecimal("100.50"))),
+								new AccountAttributeScalarValue(new BigDecimal("100.50"))),
 						new ReasonCondition(
 								active.getId(),
 								ReasonOperator.EQUAL,
-								new AttributeValue(Boolean.TRUE))),
+								new AccountAttributeScalarValue(Boolean.TRUE))),
 				"Derek Ochal"
 		);
 
@@ -85,7 +85,7 @@ class EligibilityReasonServiceTests {
 						List.of(new ReasonCondition(
 								openDate.getId(),
 								ReasonOperator.EQUAL,
-						new AttributeValue("2026-01-01"))),
+								new AccountAttributeScalarValue("2026-01-01"))),
 						"Derek Ochal"
 				));
 		ReasonRequest updateRequest = new ReasonRequest(
@@ -94,7 +94,7 @@ class EligibilityReasonServiceTests {
 				List.of(new ReasonCondition(
 						active.getId(),
 						ReasonOperator.EQUAL,
-						new AttributeValue(Boolean.FALSE))),
+						new AccountAttributeScalarValue(Boolean.FALSE))),
 				"Jane Smith"
 		);
 
@@ -119,7 +119,7 @@ class EligibilityReasonServiceTests {
 						List.of(new ReasonCondition(
 								amount.getId(),
 								ReasonOperator.GREATER_THAN,
-						new AttributeValue(new BigDecimal("10")))),
+								new AccountAttributeScalarValue(new BigDecimal("10")))),
 						"Derek Ochal"
 				));
 

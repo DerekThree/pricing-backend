@@ -699,6 +699,7 @@ paths:
   /simulator/options:
     get:
       tags: [Simulator]
+      operationId: getSimulatorOptions
       summary: Get available simulator options
       responses:
         "200":
