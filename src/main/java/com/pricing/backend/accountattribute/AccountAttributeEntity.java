@@ -17,7 +17,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -54,7 +53,6 @@ public class AccountAttributeEntity {
 			joinColumns = @JoinColumn(name = "attribute_id"))
 	@Enumerated(EnumType.STRING)
 	@Column(name = "product_type", nullable = false, length = 20)
-	@OrderColumn(name = "sort_order")
 	@Default
 	private List<ProductType> productTypes = new ArrayList<>();
 

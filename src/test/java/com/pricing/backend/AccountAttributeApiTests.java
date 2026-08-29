@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -66,16 +67,14 @@ class AccountAttributeApiTests {
 				.andExpect(jsonPath("$.attributeCode").value("ATTR0001"))
 				.andExpect(jsonPath("$.attributeName").value("Account Age"))
 				.andExpect(jsonPath("$.attributeType").value("INTEGER"))
-				.andExpect(jsonPath("$.productTypes[0]").value("DEPOSIT"))
-				.andExpect(jsonPath("$.productTypes[1]").value("CREDIT"));
+				.andExpect(jsonPath("$.productTypes", containsInAnyOrder("DEPOSIT", "CREDIT")));
 
 		mockMvc.perform(get("/account-attributes"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$", hasSize(1)))
 				.andExpect(jsonPath("$[0].attribute").value("ATTR0001 - Account Age"))
 				.andExpect(jsonPath("$[0].type").value("INTEGER"))
-				.andExpect(jsonPath("$[0].productTypes[0]").value("DEPOSIT"))
-				.andExpect(jsonPath("$[0].productTypes[1]").value("CREDIT"));
+				.andExpect(jsonPath("$[0].productTypes", containsInAnyOrder("DEPOSIT", "CREDIT")));
 	}
 
 	@Test
@@ -132,8 +131,7 @@ class AccountAttributeApiTests {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("[\"CREDIT\", \"DEPOSIT\"]")))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.productTypes[0]").value("CREDIT"))
-				.andExpect(jsonPath("$.productTypes[1]").value("DEPOSIT"));
+				.andExpect(jsonPath("$.productTypes", containsInAnyOrder("DEPOSIT", "CREDIT")));
 	}
 
 	private String attributeRequestJson(String productTypes) {

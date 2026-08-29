@@ -75,7 +75,7 @@ class GlobalExceptionHandlerTests {
 	@Test
 	void mapsDuplicateFeeProductTypesToBadRequests() {
 		SQLException cause = new SQLException(
-				"ERROR: duplicate key value violates unique constraint \"uk_fee_product_types_fee_id_product_type\"",
+				"ERROR: duplicate key value violates unique constraint \"pk_fee_product_types\"",
 				"23505");
 
 		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
@@ -89,7 +89,7 @@ class GlobalExceptionHandlerTests {
 	void mapsDuplicateAccountAttributeProductTypesToBadRequests() {
 		SQLException cause = new SQLException(
 				"ERROR: duplicate key value violates unique constraint "
-						+ "\"uk_account_attribute_product_types_attribute_id_product_type\"",
+						+ "\"pk_account_attribute_product_types\"",
 				"23505");
 
 		ResponseEntity<ErrorResponse> response = new GlobalExceptionHandler()
