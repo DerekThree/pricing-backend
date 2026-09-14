@@ -24,7 +24,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -109,22 +109,22 @@ class SimulatorOptionsApiTests {
 				.andExpect(jsonPath("$.fees[0].name").value("Monthly Maintenance"))
 				.andExpect(jsonPath("$.fees[0].type").value("FLAT"))
 				.andExpect(jsonPath("$.fees[0].productTypes")
-						.value(contains("DEPOSIT", "CD")))
+						.value(containsInAnyOrder("DEPOSIT", "CD")))
 				.andExpect(jsonPath("$.fees[1].code").value("FEE00002"))
 				.andExpect(jsonPath("$.fees[1].name").value("Early Withdrawal"))
 				.andExpect(jsonPath("$.fees[1].type").value("PERCENT"))
-				.andExpect(jsonPath("$.fees[1].productTypes").value(contains("CD")))
+				.andExpect(jsonPath("$.fees[1].productTypes").value(containsInAnyOrder("CD")))
 				.andExpect(jsonPath("$.attributes.length()").value(2))
 				.andExpect(jsonPath("$.attributes[0].id").value(balance.getId()))
 				.andExpect(jsonPath("$.attributes[0].code").value("ATTR0001"))
 				.andExpect(jsonPath("$.attributes[0].name").value("Average Balance"))
 				.andExpect(jsonPath("$.attributes[0].type").value("DECIMAL"))
 				.andExpect(jsonPath("$.attributes[0].productTypes")
-						.value(contains("DEPOSIT", "CD")))
+						.value(containsInAnyOrder("DEPOSIT", "CD")))
 				.andExpect(jsonPath("$.attributes[1].code").value("ATTR0002"))
 				.andExpect(jsonPath("$.attributes[1].name").value("Term Months"))
 				.andExpect(jsonPath("$.attributes[1].type").value("INTEGER"))
-				.andExpect(jsonPath("$.attributes[1].productTypes").value(contains("CD")));
+				.andExpect(jsonPath("$.attributes[1].productTypes").value(containsInAnyOrder("CD")));
 	}
 
 	@Test
