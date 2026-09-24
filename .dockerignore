@@ -1,0 +1,13 @@
+.git
+.gitignore
+.gitattributes
+
+target/
+
+.env
+.env.*
+
+README.md
+compose.yaml
+
+mvnw.cmd
