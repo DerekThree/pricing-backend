@@ -300,7 +300,7 @@ class JpaPriceConfigRepositoryPostgresTests {
 				values ('REGION002', 'Southwest', ?, 'test') returning id
 				""", Long.class, OffsetDateTime.now());
 		jdbcTemplate.update(
-				"insert into region_states (region_id, state_code) values (?, 'TX')",
+				"insert into region_states (region_id, state_code) values (?, 'NM')",
 				secondRegionId);
 		jdbcTemplate.update(
 				"insert into region_zip_codes (region_id, zip_code) values (?, '75001')",
