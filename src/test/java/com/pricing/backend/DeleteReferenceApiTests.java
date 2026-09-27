@@ -12,6 +12,12 @@ import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.generated.api.AccountAttributesApi;
+import com.pricing.backend.generated.api.BranchesApi;
+import com.pricing.backend.generated.api.EligibilityReasonsApi;
+import com.pricing.backend.generated.api.PricingPlansApi;
+import com.pricing.backend.generated.api.ProductsApi;
+import com.pricing.backend.generated.api.RegionsApi;
 import com.pricing.backend.generated.model.ProductType;
 import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.FeeType;
@@ -107,7 +113,7 @@ class DeleteReferenceApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
 
-		mockMvc.perform(delete("/products/{id}", product.getId()))
+		mockMvc.perform(delete(ProductsApi.PATH_DELETE_PRODUCT, product.getId()))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This product is used by pricing plan with code 11111111. Please update the pricing plan first."));
@@ -142,7 +148,7 @@ class DeleteReferenceApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
 
-		mockMvc.perform(delete("/regions/{id}", region.getId()))
+		mockMvc.perform(delete(RegionsApi.PATH_DELETE_REGION, region.getId()))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This region is used by pricing plan with code 11111111. Please update the pricing plan first."));
@@ -168,7 +174,7 @@ class DeleteReferenceApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
 
-		mockMvc.perform(delete("/branches/{id}", branch.getId()))
+		mockMvc.perform(delete(BranchesApi.PATH_DELETE_BRANCH, branch.getId()))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This branch is used by region with code REG00001. Please update the region first."));
@@ -185,7 +191,7 @@ class DeleteReferenceApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
 
-		mockMvc.perform(post("/eligibility-reasons")
+		mockMvc.perform(post(EligibilityReasonsApi.PATH_CREATE_REASON)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -197,7 +203,7 @@ class DeleteReferenceApiTests {
 								""".formatted(attribute.getId())))
 				.andExpect(status().isCreated());
 
-		mockMvc.perform(delete("/account-attributes/{id}", attribute.getId()))
+		mockMvc.perform(delete(AccountAttributesApi.PATH_DELETE_ATTRIBUTE, attribute.getId()))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This account attribute is used by eligibility reason with code ELIG0001. "
@@ -237,7 +243,7 @@ class DeleteReferenceApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
 
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -253,7 +259,7 @@ class DeleteReferenceApiTests {
 								""".formatted(product.getId(), region.getId(), fee.getId(), reason.getId())))
 				.andExpect(status().isCreated());
 
-		mockMvc.perform(delete("/eligibility-reasons/{id}", reason.getId()))
+		mockMvc.perform(delete(EligibilityReasonsApi.PATH_DELETE_REASON, reason.getId()))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0001. "

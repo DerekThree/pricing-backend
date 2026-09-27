@@ -12,6 +12,7 @@ import com.pricing.engine.AccountBatchResult.AccountStatus;
 import com.pricing.engine.AccountBatchResult.FeeResult;
 import com.pricing.engine.AccountBatchResult.FeeStatus;
 import com.pricing.engine.RuleEngine;
+import com.pricing.backend.generated.api.BatchApi;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -53,7 +54,7 @@ class BatchRequestContractApiTests {
 	void rejectsRequestContractViolationsBeforePricing(
 			String scenario,
 			String request) throws Exception {
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(request))
 				.andExpect(status().isBadRequest());
@@ -71,7 +72,7 @@ class BatchRequestContractApiTests {
 				null)));
 		when(ruleEngine.price(any())).thenReturn(result);
 
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(requestWithAccount(validAccount().replace(
 							"\"attributes\": []",
@@ -103,7 +104,7 @@ class BatchRequestContractApiTests {
 		String secondAccount = validAccount()
 				.replace("\"accountNumber\": \"ACCOUNT001\"", "\"accountNumber\": \"ACCOUNT002\"");
 
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(requestWithAccounts("[" + firstAccount + "," + secondAccount + "]")))
 				.andExpect(status().isOk());
@@ -135,7 +136,7 @@ class BatchRequestContractApiTests {
 						null)))));
 		when(ruleEngine.price(any())).thenReturn(result);
 
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 							{
@@ -171,7 +172,7 @@ class BatchRequestContractApiTests {
 
 	@Test
 	void rejectsDuplicateAccountNumbersBeforePricing() throws Exception {
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 							{
@@ -208,7 +209,7 @@ class BatchRequestContractApiTests {
 	void rejectsDuplicateFeeRequestIdsWithinAnAccountBeforePricing() throws Exception {
 		String account = validAccount().replace(validFee(), validFee() + "," + validFee());
 
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(requestWithAccount(account)))
 				.andExpect(status().isBadRequest());

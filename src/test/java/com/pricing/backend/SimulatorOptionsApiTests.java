@@ -10,6 +10,7 @@ import com.pricing.backend.branch.BranchRepository;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.generated.api.SimulatorApi;
 import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.FeeType;
 import com.pricing.backend.generated.model.ProductType;
@@ -88,7 +89,7 @@ class SimulatorOptionsApiTests {
 				"ATTR0001", "Average Balance", AttributeType.DECIMAL,
 				ProductType.DEPOSIT, ProductType.CD);
 
-		mockMvc.perform(get("/simulator/options"))
+		mockMvc.perform(get(SimulatorApi.PATH_GET_SIMULATOR_OPTIONS))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.products.length()").value(2))
 				.andExpect(jsonPath("$.products[0].id").value(deposit.getId()))
@@ -130,7 +131,7 @@ class SimulatorOptionsApiTests {
 
 	@Test
 	void returnsFourPresentEmptyArraysWhenNoOptionsExist() throws Exception {
-		mockMvc.perform(get("/simulator/options"))
+		mockMvc.perform(get(SimulatorApi.PATH_GET_SIMULATOR_OPTIONS))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.products").value(empty()))
 				.andExpect(jsonPath("$.branches").value(empty()))

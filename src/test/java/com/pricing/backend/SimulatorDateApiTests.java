@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+import com.pricing.backend.generated.api.SimulatorApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,7 @@ class SimulatorDateApiTests {
 
 	@Test
 	void readsConfiguredSystemDate() throws Exception {
-		mockMvc.perform(get("/simulator/date"))
+		mockMvc.perform(get(SimulatorApi.PATH_GET_SIMULATOR_DATE))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.currentDate").value("2026-08-11"));
 	}
@@ -51,7 +52,7 @@ class SimulatorDateApiTests {
 	}
 
 	private void setDate(String date) throws Exception {
-		mockMvc.perform(put("/simulator/date")
+		mockMvc.perform(put(SimulatorApi.PATH_SET_SIMULATOR_DATE)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("{\"currentDate\":\"%s\"}".formatted(date)))
 				.andExpect(status().isOk())
@@ -59,7 +60,7 @@ class SimulatorDateApiTests {
 	}
 
 	private void readDate(String date) throws Exception {
-		mockMvc.perform(get("/simulator/date"))
+		mockMvc.perform(get(SimulatorApi.PATH_GET_SIMULATOR_DATE))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.currentDate").value(date));
 	}

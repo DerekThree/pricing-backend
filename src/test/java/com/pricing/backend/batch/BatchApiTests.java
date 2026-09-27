@@ -14,6 +14,7 @@ import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.generated.api.BatchApi;
 import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.FeeType;
 import com.pricing.backend.generated.model.ProductType;
@@ -90,7 +91,7 @@ class BatchApiTests {
 	void pricesOneFlatFeeEndToEnd() throws Exception {
 		saveFeeConfiguration(FeeType.FLAT, new BigDecimal("7.5000"), "STANDARD");
 
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(batchRequestJson("PREMIER", null)))
 				.andExpect(status().isOk())
@@ -109,7 +110,7 @@ class BatchApiTests {
 	void waivesOneFlatFeeEndToEnd() throws Exception {
 		saveFeeConfiguration(FeeType.FLAT, new BigDecimal("7.5000"), "PREMIER");
 
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(batchRequestJson(" premier ", null)))
 				.andExpect(status().isOk())
@@ -128,7 +129,7 @@ class BatchApiTests {
 	void pricesOnePercentageFeeEndToEnd() throws Exception {
 		saveFeeConfiguration(FeeType.PERCENT, new BigDecimal("5.0000"), "STANDARD");
 
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(batchRequestJson("PREMIER", new BigDecimal("123.45"))))
 				.andExpect(status().isOk())
@@ -142,7 +143,7 @@ class BatchApiTests {
 	void waivesOnePercentageFeeEndToEnd() throws Exception {
 		saveFeeConfiguration(FeeType.PERCENT, new BigDecimal("5.0000"), "PREMIER");
 
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(batchRequestJson(" premier ", new BigDecimal("10.00"))))
 				.andExpect(status().isOk())
@@ -262,7 +263,7 @@ class BatchApiTests {
 				.updatedBy("test")
 				.build());
 
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -289,7 +290,7 @@ class BatchApiTests {
 
 	@Test
 	void rejectsOverlongAccountNumber() throws Exception {
-		mockMvc.perform(post("/batch")
+		mockMvc.perform(post(BatchApi.PATH_POST_BATCH)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content("""
 							{

@@ -22,9 +22,10 @@ tags:
   - name: Simulator  
 
 paths:
-  /batch:
+  /api/v1/batch:
     post:
       tags: [Batch]
+      operationId: postBatch
       summary: Price a batch synchronously
       requestBody:
         required: true
@@ -44,7 +45,7 @@ paths:
         "503":
           $ref: "#/components/responses/Error"
 
-  /branches:
+  /api/v1/branches:
     get:
       tags: [Branches]
       operationId: listBranches
@@ -82,7 +83,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /branches/{id}:
+  /api/v1/branches/{id}:
     parameters:
       - $ref: "#/components/parameters/ResourceId"
     get:
@@ -133,7 +134,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /regions:
+  /api/v1/regions:
     get:
       tags: [Regions]
       operationId: listRegions
@@ -171,7 +172,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /regions/options:
+  /api/v1/regions/options:
     get:
       tags: [Regions]
       operationId: getRegionOptions
@@ -195,7 +196,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /regions/{id}:
+  /api/v1/regions/{id}:
     parameters:
       - $ref: "#/components/parameters/ResourceId"
     get:
@@ -246,7 +247,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /products:
+  /api/v1/products:
     get:
       tags: [Products]
       operationId: listProducts
@@ -284,7 +285,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /products/{id}:
+  /api/v1/products/{id}:
     parameters:
       - $ref: "#/components/parameters/ResourceId"
     get:
@@ -335,7 +336,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /fees:
+  /api/v1/fees:
     get:
       tags: [Fees]
       operationId: listFees
@@ -373,7 +374,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /fees/{id}:
+  /api/v1/fees/{id}:
     parameters:
       - $ref: "#/components/parameters/ResourceId"
     get:
@@ -426,7 +427,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /pricing-plans:
+  /api/v1/pricing-plans:
     get:
       tags: [Pricing Plans]
       operationId: listPricingPlans
@@ -464,7 +465,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /pricing-plans/options:
+  /api/v1/pricing-plans/options:
     get:
       tags: [Pricing Plans]
       operationId: getPricingPlanOptions
@@ -488,7 +489,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /pricing-plans/options/secondary:
+  /api/v1/pricing-plans/options/secondary:
     get:
       tags: [Pricing Plans]
       operationId: getPricingPlanSecondaryOptions
@@ -522,7 +523,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /pricing-plans/{id}:
+  /api/v1/pricing-plans/{id}:
     parameters:
       - $ref: "#/components/parameters/ResourceId"
     get:
@@ -573,7 +574,7 @@ paths:
         "503":
           $ref: "#/components/responses/Error"
 
-  /account-attributes:
+  /api/v1/account-attributes:
     get:
       tags: [Account Attributes]
       operationId: listAttributes
@@ -611,7 +612,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /account-attributes/{id}:
+  /api/v1/account-attributes/{id}:
     parameters:
       - $ref: "#/components/parameters/ResourceId"
     get:
@@ -664,7 +665,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /simulator/date:
+  /api/v1/simulator/date:
     get:
       tags: [Simulator]
       operationId: getSimulatorDate
@@ -696,7 +697,7 @@ paths:
         "400":
           $ref: "#/components/responses/Error"
 
-  /simulator/options:
+  /api/v1/simulator/options:
     get:
       tags: [Simulator]
       operationId: getSimulatorOptions
@@ -713,7 +714,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
           
-  /eligibility-reasons:
+  /api/v1/eligibility-reasons:
     get:
       tags: [Eligibility Reasons]
       operationId: listReasons
@@ -751,7 +752,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /eligibility-reasons/options:
+  /api/v1/eligibility-reasons/options:
     get:
       tags: [Eligibility Reasons]
       operationId: getReasonOptions
@@ -768,7 +769,7 @@ paths:
         "503":
           $ref: "#/components/responses/SyntheticServiceUnavailable"
 
-  /eligibility-reasons/{id}:
+  /api/v1/eligibility-reasons/{id}:
     parameters:
       - $ref: "#/components/parameters/ResourceId"
     get:

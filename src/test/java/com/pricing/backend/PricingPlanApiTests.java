@@ -14,6 +14,7 @@ import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.generated.api.PricingPlansApi;
 import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.FeeType;
 import com.pricing.backend.generated.model.ProductType;
@@ -121,7 +122,7 @@ class PricingPlanApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
 
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -159,7 +160,7 @@ class PricingPlanApiTests {
 				.andExpect(jsonPath("$.formOptions").doesNotExist());
 
 		Long pricingPlanId = pricingPlanRepository.findAllByOrderByPlanCodeAsc().getFirst().getId();
-		mockMvc.perform(get("/pricing-plans/{id}", pricingPlanId))
+		mockMvc.perform(get(PricingPlansApi.PATH_GET_PRICING_PLAN, pricingPlanId))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.fees", hasSize(1)))
 				.andExpect(jsonPath("$.fees[0].reasonIds", contains(reason.getId().intValue())));
@@ -199,11 +200,11 @@ class PricingPlanApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 				.build());
 
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanRequestJson("PLAN0001", firstProduct.getId(), region.getId(), fee.getId())))
 				.andExpect(status().isCreated());
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanRequestJson("PLAN0002", secondProduct.getId(), region.getId(), fee.getId())))
 				.andExpect(status().isCreated());
@@ -228,7 +229,7 @@ class PricingPlanApiTests {
 						.updatedOn(OffsetDateTime.parse("2026-06-06T09:00:00+08:00"))
 						.build());
 
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -246,7 +247,7 @@ class PricingPlanApiTests {
 								}
 								""".formatted(product.getId(), region.getId(), fee.getId(), fee.getId())))
 				.andExpect(status().isConflict());
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -264,12 +265,12 @@ class PricingPlanApiTests {
 				""".formatted(product.getId(), region.getId(), fee.getId(), reason.getId(),
 						reason.getId())))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Test Plan", product.getId(), region.getId(),
 								"2026-08-11", "2026-12-31", fee.getId(), "7.50", 999_999L)))
 				.andExpect(status().isConflict());
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0004", "Test Plan", product.getId(), 999_999L,
 								"2026-08-11", "2026-12-31", fee.getId(), "7.50", reason.getId())))
@@ -302,7 +303,7 @@ class PricingPlanApiTests {
 				"PLAN0001", "Test Plan", product.getId(), region.getId(), "2026-08-12", "2026-12-31",
 				fee.getId(), "7.50", reason.getId());
 
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(request))
 				.andExpect(status().isBadRequest())
@@ -311,7 +312,7 @@ class PricingPlanApiTests {
 
 		PricingPlanEntity scheduled = pricingPlanRepository.save(pricingPlan(
 				"PLAN0001", product, region, "2026-08-12", "2026-12-31"));
-		mockMvc.perform(put("/pricing-plans/{id}", scheduled.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(request))
 				.andExpect(status().isBadRequest())
@@ -340,38 +341,38 @@ class PricingPlanApiTests {
 		PricingPlanEntity existing = pricingPlanRepository.save(pricingPlan("PLAN0001", firstProduct,
 				firstRegion, "2026-08-20", "2026-08-30"));
 
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0002", firstProduct.getId(), firstRegion.getId(),
 								"2026-08-10", "2026-08-10")))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0003", firstProduct.getId(), firstRegion.getId(),
 								"2026-08-11", "2026-08-11")))
 				.andExpect(status().isCreated());
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0004", firstProduct.getId(), firstRegion.getId(),
 								"2026-09-02", "2026-09-01")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message").value("Active Through must be on or after Active From"));
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0005", firstProduct.getId(), firstRegion.getId(),
 								"2026-08-31", "2026-09-01")))
 				.andExpect(status().isCreated());
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0006", secondProduct.getId(), firstRegion.getId(),
 								"2026-08-20", "2026-08-30")))
 				.andExpect(status().isCreated());
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0007", firstProduct.getId(), secondRegion.getId(),
 								"2026-08-20", "2026-08-30")))
 				.andExpect(status().isCreated());
-		mockMvc.perform(put("/pricing-plans/{id}", existing.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, existing.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0001", firstProduct.getId(), firstRegion.getId(),
 								"2026-08-20", "2026-08-30")))
@@ -413,14 +414,14 @@ class PricingPlanApiTests {
 		PricingPlanEntity scheduled = pricingPlanRepository.save(pricingPlan("PLAN0001", firstProduct,
 				firstRegion, "2026-08-12", "2026-08-20"));
 
-		mockMvc.perform(put("/pricing-plans/{id}", scheduled.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0002", "Updated scheduled plan", secondProduct.getId(),
 								secondRegion.getId(), "2026-08-13", "2026-08-20", secondFee.getId(), "8.50",
 								secondReason.getId())))
 				.andExpect(status().isOk());
 
-		mockMvc.perform(post("/pricing-plans")
+		mockMvc.perform(post(PricingPlansApi.PATH_CREATE_PRICING_PLAN)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Active plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-20", firstFee.getId(), "7.50",
@@ -431,50 +432,50 @@ class PricingPlanApiTests {
 				.findFirst()
 				.orElseThrow();
 
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated active plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-11", firstFee.getId(), "7.50",
 								firstReason.getId())))
 				.andExpect(status().isOk());
 
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN9999", "Updated active plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-11", firstFee.getId(), "7.50",
 								firstReason.getId())))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated active plan", secondProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-11", firstFee.getId(), "7.50",
 								firstReason.getId())))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated active plan", firstProduct.getId(),
 								secondRegion.getId(), "2026-08-11", "2026-08-11", firstFee.getId(), "7.50",
 								firstReason.getId())))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated active plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-10", "2026-08-11", firstFee.getId(), "7.50",
 								firstReason.getId())))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated active plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-11", secondFee.getId(), "7.50",
 								firstReason.getId())))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated active plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-11", firstFee.getId(), "8.50",
 								firstReason.getId())))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated active plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-11", firstFee.getId(), "7.50",
@@ -483,26 +484,26 @@ class PricingPlanApiTests {
 
 		PricingPlanEntity active = pricingPlanRepository.save(pricingPlan("PLAN0004", firstProduct,
 				secondRegion, "2026-08-01", "2026-08-20"));
-		mockMvc.perform(put("/pricing-plans/{id}", active.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanPeriodRequestJson("PLAN0004", firstProduct.getId(), secondRegion.getId(),
 								"2026-08-01", "2026-08-10")))
 				.andExpect(status().isBadRequest());
 
 		simulatorService.setCurrentDate(LocalDate.of(2026, 8, 12));
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated past plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-11", firstFee.getId(), "7.50",
 								firstReason.getId())))
 				.andExpect(status().isOk());
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated past plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-11", firstFee.getId(), "8.50",
 								firstReason.getId())))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(put("/pricing-plans/{id}", activeAtStart.getId())
+		mockMvc.perform(put(PricingPlansApi.PATH_UPDATE_PRICING_PLAN, activeAtStart.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(pricingPlanFeeRequestJson("PLAN0003", "Updated past plan", firstProduct.getId(),
 								firstRegion.getId(), "2026-08-11", "2026-08-12", firstFee.getId(), "7.50",
@@ -527,11 +528,11 @@ class PricingPlanApiTests {
 		PricingPlanEntity past = pricingPlanRepository.save(pricingPlan("PLAN0003", product, region,
 				"2026-08-01", "2026-08-10"));
 
-		mockMvc.perform(delete("/pricing-plans/{id}", scheduled.getId()))
+		mockMvc.perform(delete(PricingPlansApi.PATH_DELETE_PRICING_PLAN, scheduled.getId()))
 				.andExpect(status().isNoContent());
-		mockMvc.perform(delete("/pricing-plans/{id}", active.getId()))
+		mockMvc.perform(delete(PricingPlansApi.PATH_DELETE_PRICING_PLAN, active.getId()))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(delete("/pricing-plans/{id}", past.getId()))
+		mockMvc.perform(delete(PricingPlansApi.PATH_DELETE_PRICING_PLAN, past.getId()))
 				.andExpect(status().isNoContent());
 	}
 
@@ -576,7 +577,7 @@ class PricingPlanApiTests {
 		pricingPlanRepository.save(pricingPlan("PLAN0004", checking, northeast, "2026-08-11", "2026-12-31"));
 		pricingPlanRepository.save(pricingPlan("PLAN0005", loan, midwest, "2026-08-11", "2026-12-31"));
 
-		mockMvc.perform(get("/pricing-plans/options"))
+		mockMvc.perform(get(PricingPlansApi.PATH_GET_PRICING_PLAN_OPTIONS))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.currentDate").value("2026-08-11"))
 				.andExpect(jsonPath("$.products", hasSize(2)))
@@ -587,7 +588,7 @@ class PricingPlanApiTests {
 				.andExpect(jsonPath("$.reasons").doesNotExist())
 				.andExpect(jsonPath("$.intervals").doesNotExist());
 
-		mockMvc.perform(get("/pricing-plans/options").param("recordId", String.valueOf(active.getId())))
+		mockMvc.perform(get(PricingPlansApi.PATH_GET_PRICING_PLAN_OPTIONS).param("recordId", String.valueOf(active.getId())))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.productId").value(checking.getId()))
 				.andExpect(jsonPath("$.regionId").value(midwest.getId()))
@@ -597,7 +598,7 @@ class PricingPlanApiTests {
 				.andExpect(jsonPath("$.intervals[*].activeFrom",
 						contains("2026-09-01")));
 
-		mockMvc.perform(get("/pricing-plans/options/secondary")
+		mockMvc.perform(get(PricingPlansApi.PATH_GET_PRICING_PLAN_SECONDARY_OPTIONS)
 						.param("productId", String.valueOf(checking.getId()))
 						.param("regionId", String.valueOf(midwest.getId())))
 				.andExpect(status().isOk())
@@ -608,7 +609,7 @@ class PricingPlanApiTests {
 				.andExpect(jsonPath("$.intervals[*].activeFrom",
 						containsInAnyOrder("2026-08-11", "2026-09-01")));
 
-		mockMvc.perform(get("/pricing-plans/options/secondary"))
+		mockMvc.perform(get(PricingPlansApi.PATH_GET_PRICING_PLAN_SECONDARY_OPTIONS))
 				.andExpect(status().isBadRequest());
 	}
 

@@ -6,6 +6,7 @@ import com.pricing.backend.branch.BranchEntity;
 import com.pricing.backend.branch.BranchRepository;
 import com.pricing.backend.pricingplan.PricingPlanRepository;
 import com.pricing.backend.region.RegionRepository;
+import com.pricing.backend.generated.api.BranchesApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +55,7 @@ class DuplicateCodeApiTests {
 				OffsetDateTime.parse("2026-06-06T09:00:00+08:00"),
 				"Derek Ochal"
 		));
-		mockMvc.perform(post("/branches")
+		mockMvc.perform(post(BranchesApi.PATH_CREATE_BRANCH)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(branchRequestJson("10000001", "Austin Central", "TX", "73301", "Jane Smith")))
 				.andExpect(status().isConflict())
@@ -81,7 +82,7 @@ class DuplicateCodeApiTests {
 				OffsetDateTime.parse("2026-06-06T09:00:00+08:00"),
 				"John Smith"
 		));
-		mockMvc.perform(put("/branches/{id}", originalBranch.getId())
+		mockMvc.perform(put(BranchesApi.PATH_UPDATE_BRANCH, originalBranch.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(branchRequestJson("10000002", "Chicago Loop", "IL", "60601", "Jane Smith")))
 				.andExpect(status().isConflict())

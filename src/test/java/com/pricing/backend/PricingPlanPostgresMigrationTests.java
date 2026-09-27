@@ -58,7 +58,7 @@ class PricingPlanPostgresMigrationTests {
 	void cleanUp() {
 		jdbcTemplate.update("delete from pricing_plans");
 		jdbcTemplate.update("delete from products");
-		jdbcTemplate.update("delete from regions");
+		jdbcTemplate.update("delete from regions where region_code in (?, ?)", "REG00001", "REG00002");
 	}
 
 	@Test

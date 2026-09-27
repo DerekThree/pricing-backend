@@ -21,7 +21,7 @@ public class BatchController implements BatchApi {
 	}
 
 	@Override
-	public ResponseEntity<BatchResult> batchPost(BatchRequest request) {
+	public ResponseEntity<BatchResult> postBatch(BatchRequest request) {
 		validator.validate(request);
 		return ResponseEntity.ok(mapper.toResponse(ruleEngine.price(mapper.toAccountBatch(request))));
 	}

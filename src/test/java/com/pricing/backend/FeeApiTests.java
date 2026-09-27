@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.pricing.backend.fee.FeeEntity;
 import com.pricing.backend.fee.FeeRepository;
+import com.pricing.backend.generated.api.FeesApi;
 import com.pricing.backend.generated.model.FeeType;
 import com.pricing.backend.generated.model.ProductType;
 import com.pricing.backend.pricingplan.PricingPlanEntity;
@@ -76,7 +77,7 @@ class FeeApiTests {
 
 	@Test
 	void createsFeeAndListsIt() throws Exception {
-		mockMvc.perform(post("/fees")
+		mockMvc.perform(post(FeesApi.PATH_CREATE_FEE)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -93,7 +94,7 @@ class FeeApiTests {
 				.andExpect(jsonPath("$.feeType").value("FLAT"))
 				.andExpect(jsonPath("$.productTypes[0]").value("DEPOSIT"));
 
-		mockMvc.perform(get("/fees"))
+		mockMvc.perform(get(FeesApi.PATH_LIST_FEES))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$", hasSize(1)))
 				.andExpect(jsonPath("$[0].fee").value("FEE00001 - Monthly Maintenance Fee"))
@@ -103,13 +104,13 @@ class FeeApiTests {
 
 	@Test
 	void rejectsEmptyAndDuplicateProductTypes() throws Exception {
-		mockMvc.perform(post("/fees")
+		mockMvc.perform(post(FeesApi.PATH_CREATE_FEE)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE00001", "Monthly Maintenance Fee", "[]")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message")
 						.value("Applicable Product Types must contain at least one item"));
-		mockMvc.perform(post("/fees")
+		mockMvc.perform(post(FeesApi.PATH_CREATE_FEE)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE00001", "Monthly Maintenance Fee",
 								"[\"DEPOSIT\", \"DEPOSIT\"]")))
@@ -143,26 +144,26 @@ class FeeApiTests {
 		savePricingPlan("PLAN0002", product, region, active, "2026-08-11", "2026-08-11");
 		savePricingPlan("PLAN0003", product, region, scheduled, "2026-08-12", "2026-08-20");
 
-		mockMvc.perform(put("/fees/{id}", past.getId())
+		mockMvc.perform(put(FeesApi.PATH_UPDATE_FEE, past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE00001", "Updated Past", "[\"DEPOSIT\"]")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.feeName").value("Updated Past"));
-		mockMvc.perform(put("/fees/{id}", past.getId())
+		mockMvc.perform(put(FeesApi.PATH_UPDATE_FEE, past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE9998", "Updated Past", "[\"DEPOSIT\"]")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This fee is used by pricing plan with code PLAN0001. "
 								+ "Please update the pricing plan first."));
-		mockMvc.perform(put("/fees/{id}", active.getId())
+		mockMvc.perform(put(FeesApi.PATH_UPDATE_FEE, active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE00002", "Updated Active", "[\"CREDIT\"]")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This fee is used by pricing plan with code PLAN0002. "
 								+ "Please update the pricing plan first."));
-		mockMvc.perform(put("/fees/{id}", scheduled.getId())
+		mockMvc.perform(put(FeesApi.PATH_UPDATE_FEE, scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE9999", "Updated Scheduled", "[\"CREDIT\"]")))
 				.andExpect(status().isConflict())
@@ -199,7 +200,7 @@ class FeeApiTests {
 				.build());
 		savePricingPlan("PLAN0001", product, region, fee, "2026-08-12", "2026-08-20");
 
-		mockMvc.perform(put("/fees/{id}", fee.getId())
+		mockMvc.perform(put(FeesApi.PATH_UPDATE_FEE, fee.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(feeRequestJson("FEE00001", "Monthly Maintenance Fee",
 								"[\"CREDIT\", \"DEPOSIT\"]")))

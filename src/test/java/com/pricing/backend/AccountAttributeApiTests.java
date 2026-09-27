@@ -8,6 +8,7 @@ import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.eligibilityreason.EligibilityReasonConditionEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
+import com.pricing.backend.generated.api.AccountAttributesApi;
 import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.ProductType;
 import com.pricing.backend.pricingplan.PricingPlanRepository;
@@ -52,7 +53,7 @@ class AccountAttributeApiTests {
 
 	@Test
 	void createsAccountAttributeAndListsIt() throws Exception {
-		mockMvc.perform(post("/account-attributes")
+		mockMvc.perform(post(AccountAttributesApi.PATH_CREATE_ATTRIBUTE)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -69,7 +70,7 @@ class AccountAttributeApiTests {
 				.andExpect(jsonPath("$.attributeType").value("INTEGER"))
 				.andExpect(jsonPath("$.productTypes", containsInAnyOrder("DEPOSIT", "CREDIT")));
 
-		mockMvc.perform(get("/account-attributes"))
+		mockMvc.perform(get(AccountAttributesApi.PATH_LIST_ATTRIBUTES))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$", hasSize(1)))
 				.andExpect(jsonPath("$[0].attribute").value("ATTR0001 - Account Age"))
@@ -79,13 +80,13 @@ class AccountAttributeApiTests {
 
 	@Test
 	void rejectsEmptyAndDuplicateProductTypes() throws Exception {
-		mockMvc.perform(post("/account-attributes")
+		mockMvc.perform(post(AccountAttributesApi.PATH_CREATE_ATTRIBUTE)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("[]")))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.message")
 						.value("Applicable Product Types must contain at least one item"));
-		mockMvc.perform(post("/account-attributes")
+		mockMvc.perform(post(AccountAttributesApi.PATH_CREATE_ATTRIBUTE)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("[\"DEPOSIT\", \"DEPOSIT\"]")))
 				.andExpect(status().isBadRequest())
@@ -120,14 +121,14 @@ class AccountAttributeApiTests {
 				.build());
 		eligibilityReasonRepository.saveAndFlush(reason);
 
-		mockMvc.perform(put("/account-attributes/{id}", attribute.getId())
+		mockMvc.perform(put(AccountAttributesApi.PATH_UPDATE_ATTRIBUTE, attribute.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("[\"DEPOSIT\"]")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This account attribute is used by eligibility reason with code ELIG0001. "
 								+ "Please update the eligibility reason first."));
-		mockMvc.perform(put("/account-attributes/{id}", attribute.getId())
+		mockMvc.perform(put(AccountAttributesApi.PATH_UPDATE_ATTRIBUTE, attribute.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("[\"CREDIT\", \"DEPOSIT\"]")))
 				.andExpect(status().isOk())

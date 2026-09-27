@@ -8,6 +8,7 @@ import com.pricing.backend.branch.BranchRepository;
 import com.pricing.backend.pricingplan.PricingPlanRepository;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.backend.region.RegionRepository;
+import com.pricing.backend.generated.api.RegionsApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,7 +82,7 @@ class RegionApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:30:00+08:00"))
 				.build());
 
-		mockMvc.perform(get("/regions/{id}", midwest.getId()))
+		mockMvc.perform(get(RegionsApi.PATH_GET_REGION, midwest.getId()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").value(midwest.getId()))
 				.andExpect(jsonPath("$.regionCode").value("MIDWEST1"))
@@ -123,7 +124,7 @@ class RegionApiTests {
 				.updatedOn(OffsetDateTime.parse("2026-06-06T09:30:00+08:00"))
 				.build());
 
-		mockMvc.perform(get("/regions/options"))
+		mockMvc.perform(get(RegionsApi.PATH_GET_REGION_OPTIONS))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.states", contains("TX")))
 				.andExpect(jsonPath("$.zipCodes", contains("78759")))
@@ -131,7 +132,7 @@ class RegionApiTests {
 				.andExpect(jsonPath("$.branches[0].code").value("10000002"))
 				.andExpect(jsonPath("$.branches[0].name").value("Austin Mopec"));
 
-		mockMvc.perform(get("/regions/options").param("recordId", String.valueOf(midwest.getId())))
+		mockMvc.perform(get(RegionsApi.PATH_GET_REGION_OPTIONS).param("recordId", String.valueOf(midwest.getId())))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.states", containsInAnyOrder("IL", "TX")))
 				.andExpect(jsonPath("$.zipCodes", containsInAnyOrder("60459", "78759")))

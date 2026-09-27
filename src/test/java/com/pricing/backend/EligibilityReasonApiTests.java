@@ -13,6 +13,8 @@ import com.pricing.backend.accountattribute.AccountAttributeRepository;
 import com.pricing.backend.eligibilityreason.EligibilityReasonConditionEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonEntity;
 import com.pricing.backend.eligibilityreason.EligibilityReasonRepository;
+import com.pricing.backend.generated.api.AccountAttributesApi;
+import com.pricing.backend.generated.api.EligibilityReasonsApi;
 import com.pricing.backend.generated.model.AttributeType;
 import com.pricing.backend.generated.model.FeeType;
 import com.pricing.backend.generated.model.ProductType;
@@ -94,7 +96,7 @@ class EligibilityReasonApiTests {
 		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AttributeType.DECIMAL);
 		AccountAttributeEntity active = saveAttribute("ATTR0002", "Active", AttributeType.BOOLEAN);
 
-		mockMvc.perform(post("/eligibility-reasons")
+		mockMvc.perform(post(EligibilityReasonsApi.PATH_CREATE_REASON)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -127,7 +129,7 @@ class EligibilityReasonApiTests {
 				.andExpect(jsonPath("$.recordOptions.attributes[1].productTypes[0]").value("DEPOSIT"))
 				.andExpect(jsonPath("$.formOptions").doesNotExist());
 
-		mockMvc.perform(get("/eligibility-reasons"))
+		mockMvc.perform(get(EligibilityReasonsApi.PATH_LIST_REASONS))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].eligibilityReason").value("ELIG0001 - Min. Balance"))
 				.andExpect(jsonPath("$[0].conditions", contains("Min Amount >= 100.5", "Active = true")));
@@ -137,7 +139,7 @@ class EligibilityReasonApiTests {
 	void allowsConditionsWithSameAttributeAndOperator() throws Exception {
 		AccountAttributeEntity amount = saveAttribute("ATTR0001", "Min Amount", AttributeType.DECIMAL);
 
-		mockMvc.perform(post("/eligibility-reasons")
+		mockMvc.perform(post(EligibilityReasonsApi.PATH_CREATE_REASON)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -165,7 +167,7 @@ class EligibilityReasonApiTests {
 		saveAttribute("ATTR0001", "Min Amount", AttributeType.INTEGER);
 		saveAttribute("ATTR0002", "Active", AttributeType.BOOLEAN);
 
-		mockMvc.perform(get("/eligibility-reasons/options"))
+		mockMvc.perform(get(EligibilityReasonsApi.PATH_GET_REASON_OPTIONS))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.attributes", hasSize(2)))
 				.andExpect(jsonPath("$.attributes[0].code").value("ATTR0001"))
@@ -181,7 +183,7 @@ class EligibilityReasonApiTests {
 		AccountAttributeEntity attribute = saveAttribute("ATTR0001", "Active", AttributeType.BOOLEAN);
 		EligibilityReasonEntity reason = saveReasonWithCondition("ELIG0001", attribute);
 
-		mockMvc.perform(get("/eligibility-reasons/{id}", reason.getId()))
+		mockMvc.perform(get(EligibilityReasonsApi.PATH_GET_REASON, reason.getId()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.recordOptions.attributes[0].productTypes[0]").value("DEPOSIT"));
 	}
@@ -193,7 +195,7 @@ class EligibilityReasonApiTests {
 		AccountAttributeEntity credit = saveAttribute(
 				"ATTR0002", "Active", AttributeType.BOOLEAN, ProductType.CREDIT);
 
-		mockMvc.perform(post("/eligibility-reasons")
+		mockMvc.perform(post(EligibilityReasonsApi.PATH_CREATE_REASON)
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -247,52 +249,52 @@ class EligibilityReasonApiTests {
 		savePricingPlan("PLAN0002", product, region, fee, "2026-08-11", "2026-08-11", active, mixed);
 		savePricingPlan("PLAN0003", product, region, fee, "2026-08-12", "2026-08-20", scheduled);
 
-		mockMvc.perform(put("/eligibility-reasons/{id}", past.getId())
+		mockMvc.perform(put(EligibilityReasonsApi.PATH_UPDATE_REASON, past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG0001", "Updated Past")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reasonName").value("Updated Past"));
-		mockMvc.perform(put("/eligibility-reasons/{id}", past.getId())
+		mockMvc.perform(put(EligibilityReasonsApi.PATH_UPDATE_REASON, past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG9998", "Updated Past")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0001. "
 								+ "Please update the pricing plan first."));
-		mockMvc.perform(put("/eligibility-reasons/{id}", scheduled.getId())
+		mockMvc.perform(put(EligibilityReasonsApi.PATH_UPDATE_REASON, scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG9999", "Updated Scheduled")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0003. "
 								+ "Please update the pricing plan first."));
-		mockMvc.perform(put("/eligibility-reasons/{id}", scheduled.getId())
+		mockMvc.perform(put(EligibilityReasonsApi.PATH_UPDATE_REASON, scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestWithConditionJson("ELIG0002", "Updated Scheduled", attribute.getId())))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0003. "
 								+ "Please update the pricing plan first."));
-		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
+		mockMvc.perform(put(EligibilityReasonsApi.PATH_UPDATE_REASON, active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG0003", "Updated Active")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.reasonName").value("Updated Active"));
-		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
+		mockMvc.perform(put(EligibilityReasonsApi.PATH_UPDATE_REASON, active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestJson("ELIG9997", "Updated Active")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0002. "
 								+ "Please update the pricing plan first."));
-		mockMvc.perform(put("/eligibility-reasons/{id}", active.getId())
+		mockMvc.perform(put(EligibilityReasonsApi.PATH_UPDATE_REASON, active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestWithConditionJson("ELIG0003", "Updated Active", attribute.getId())))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This eligibility reason is used by pricing plan with code PLAN0002. "
 								+ "Please update the pricing plan first."));
-		mockMvc.perform(put("/eligibility-reasons/{id}", mixed.getId())
+		mockMvc.perform(put(EligibilityReasonsApi.PATH_UPDATE_REASON, mixed.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reasonRequestWithConditionJson("ELIG0004", "Updated Mixed", attribute.getId())))
 				.andExpect(status().isConflict())
@@ -338,26 +340,26 @@ class EligibilityReasonApiTests {
 		savePricingPlan("PLAN0002", product, region, fee, "2026-08-11", "2026-08-11", activeReason);
 		savePricingPlan("PLAN0003", product, region, fee, "2026-08-12", "2026-08-20", scheduledReason);
 
-		mockMvc.perform(put("/account-attributes/{id}", past.getId())
+		mockMvc.perform(put(AccountAttributesApi.PATH_UPDATE_ATTRIBUTE, past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("ATTR0001", "Updated Past", "BOOLEAN")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.attributeName").value("Updated Past"));
-		mockMvc.perform(put("/account-attributes/{id}", past.getId())
+		mockMvc.perform(put(AccountAttributesApi.PATH_UPDATE_ATTRIBUTE, past.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("ATTR9998", "Updated Past", "BOOLEAN")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This account attribute is used by eligibility reason with code ELIG0001. "
 								+ "Please update the eligibility reason first."));
-		mockMvc.perform(put("/account-attributes/{id}", active.getId())
+		mockMvc.perform(put(AccountAttributesApi.PATH_UPDATE_ATTRIBUTE, active.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("ATTR0002", "Updated Active", "INTEGER")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").value(
 						"This account attribute is used by eligibility reason with code ELIG0002. "
 								+ "Please update the eligibility reason first."));
-		mockMvc.perform(put("/account-attributes/{id}", scheduled.getId())
+		mockMvc.perform(put(AccountAttributesApi.PATH_UPDATE_ATTRIBUTE, scheduled.getId())
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(attributeRequestJson("ATTR0003", "Updated Scheduled", "INTEGER")))
 				.andExpect(status().isConflict())
