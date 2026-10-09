@@ -4,8 +4,6 @@ import java.time.OffsetDateTime;
 
 import com.pricing.backend.generated.model.BranchDetail;
 import com.pricing.backend.generated.model.BranchRequest;
-import com.pricing.backend.region.RegionRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,15 +19,6 @@ class BranchServiceTests {
 	@Autowired
 	private BranchRepository branchRepository;
 
-	@Autowired
-	private RegionRepository regionRepository;
-
-	@BeforeEach
-	void setUp() {
-		regionRepository.deleteAll();
-		branchRepository.deleteAll();
-	}
-
 	@Test
 	void createsBranch() {
 		BranchRequest request = new BranchRequest(
@@ -41,15 +30,18 @@ class BranchServiceTests {
 		);
 
 		BranchDetail createdBranch = branchService.create(request);
-
-		assertThat(createdBranch.getId()).isNotNull();
-		assertThat(createdBranch.getBranchCode()).isEqualTo(request.getBranchCode());
-		assertThat(createdBranch.getBranchName()).isEqualTo(request.getBranchName());
-		assertThat(createdBranch.getState()).isEqualTo(request.getState());
-		assertThat(createdBranch.getZipCode()).isEqualTo(request.getZipCode());
-		assertThat(createdBranch.getUpdatedBy()).isEqualTo(request.getUpdatedBy());
-		assertThat(createdBranch.getUpdatedOn()).isNotNull();
-		assertThat(branchRepository.findById(createdBranch.getId())).isPresent();
+		try {
+			assertThat(createdBranch.getId()).isNotNull();
+			assertThat(createdBranch.getBranchCode()).isEqualTo(request.getBranchCode());
+			assertThat(createdBranch.getBranchName()).isEqualTo(request.getBranchName());
+			assertThat(createdBranch.getState()).isEqualTo(request.getState());
+			assertThat(createdBranch.getZipCode()).isEqualTo(request.getZipCode());
+			assertThat(createdBranch.getUpdatedBy()).isEqualTo(request.getUpdatedBy());
+			assertThat(createdBranch.getUpdatedOn()).isNotNull();
+			assertThat(branchRepository.findById(createdBranch.getId())).isPresent();
+		} finally {
+			branchRepository.deleteById(createdBranch.getId());
+		}
 	}
 
 	@Test
@@ -63,18 +55,21 @@ class BranchServiceTests {
 				OffsetDateTime.parse("2026-06-06T09:00:00+08:00"),
 				"Derek Ochal"
 		));
+		try {
+			BranchDetail returnedBranch = branchService.get(savedBranch.getId()).orElseThrow();
 
-		BranchDetail returnedBranch = branchService.get(savedBranch.getId()).orElseThrow();
-
-		assertThat(returnedBranch).isEqualTo(new BranchDetail(
-				savedBranch.getBranchCode(),
-				savedBranch.getBranchName(),
-				savedBranch.getState(),
-				savedBranch.getZipCode(),
-				savedBranch.getUpdatedBy(),
-				savedBranch.getId(),
-				savedBranch.getUpdatedOn()
-		));
+			assertThat(returnedBranch).isEqualTo(new BranchDetail(
+					savedBranch.getBranchCode(),
+					savedBranch.getBranchName(),
+					savedBranch.getState(),
+					savedBranch.getZipCode(),
+					savedBranch.getUpdatedBy(),
+					savedBranch.getId(),
+					savedBranch.getUpdatedOn()
+			));
+		} finally {
+			branchRepository.deleteById(savedBranch.getId());
+		}
 	}
 
 	@Test
@@ -88,24 +83,28 @@ class BranchServiceTests {
 				OffsetDateTime.parse("2026-06-06T09:00:00+08:00"),
 				"Derek Ochal"
 		));
-		BranchRequest request = new BranchRequest(
-				"10000099",
-				"Chicago Loop",
-				"IL",
-				"60601",
-				"Jane Smith"
-		);
+		try {
+			BranchRequest request = new BranchRequest(
+					"10000099",
+					"Chicago Loop",
+					"IL",
+					"60601",
+					"Jane Smith"
+			);
 
-		BranchDetail updatedBranch = branchService.update(savedBranch.getId(), request).orElseThrow();
+			BranchDetail updatedBranch = branchService.update(savedBranch.getId(), request).orElseThrow();
 
-		assertThat(updatedBranch.getId()).isEqualTo(savedBranch.getId());
-		assertThat(updatedBranch.getBranchCode()).isEqualTo(request.getBranchCode());
-		assertThat(updatedBranch.getBranchName()).isEqualTo(request.getBranchName());
-		assertThat(updatedBranch.getState()).isEqualTo(request.getState());
-		assertThat(updatedBranch.getZipCode()).isEqualTo(request.getZipCode());
-		assertThat(updatedBranch.getUpdatedBy()).isEqualTo(request.getUpdatedBy());
-		assertThat(updatedBranch.getUpdatedOn()).isNotNull();
-		assertThat(updatedBranch.getUpdatedOn()).isAfter(savedBranch.getUpdatedOn());
+			assertThat(updatedBranch.getId()).isEqualTo(savedBranch.getId());
+			assertThat(updatedBranch.getBranchCode()).isEqualTo(request.getBranchCode());
+			assertThat(updatedBranch.getBranchName()).isEqualTo(request.getBranchName());
+			assertThat(updatedBranch.getState()).isEqualTo(request.getState());
+			assertThat(updatedBranch.getZipCode()).isEqualTo(request.getZipCode());
+			assertThat(updatedBranch.getUpdatedBy()).isEqualTo(request.getUpdatedBy());
+			assertThat(updatedBranch.getUpdatedOn()).isNotNull();
+			assertThat(updatedBranch.getUpdatedOn()).isAfter(savedBranch.getUpdatedOn());
+		} finally {
+			branchRepository.deleteById(savedBranch.getId());
+		}
 	}
 
 	@Test
@@ -119,10 +118,13 @@ class BranchServiceTests {
 				OffsetDateTime.parse("2026-06-06T09:00:00+08:00"),
 				"Derek Ochal"
 		));
+		try {
+			boolean deleted = branchService.delete(savedBranch.getId());
 
-		boolean deleted = branchService.delete(savedBranch.getId());
-
-		assertThat(deleted).isTrue();
-		assertThat(branchRepository.findById(savedBranch.getId())).isEmpty();
+			assertThat(deleted).isTrue();
+			assertThat(branchRepository.findById(savedBranch.getId())).isEmpty();
+		} finally {
+			branchRepository.findById(savedBranch.getId()).ifPresent(branchRepository::delete);
+		}
 	}
 }
