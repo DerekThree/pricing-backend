@@ -125,7 +125,7 @@ jobs:
             --output text)
 
           if [[ "$expected" != sha256:* || "$actual" != "$expected" ]]; then
-            echo "::error::Deployed image does not match CI image."
+            echo "::error::Deployed image does not match the image published to ECR."
             exit 1
           fi          
           
