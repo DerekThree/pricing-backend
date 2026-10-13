@@ -100,4 +100,32 @@ jobs:
             echo "::error::New ECS deployment did not succeed. Possible rollback."
             exit 1
           fi
+
+      - name: Verify deployed image against published image
+        env:
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          expected=$(aws ecr batch-get-image \
+            --repository-name pricing-backend \
+            --image-ids "imageTag=$COMMIT_SHA" \
+            --query 'images[0].imageId.imageDigest' \
+            --output text)
+
+          task=$(aws ecs list-tasks \
+            --cluster pricing-app-cluster \
+            --service-name pricing-backend-service \
+            --desired-status RUNNING \
+            --query 'taskArns[0]' \
+            --output text)
+
+          actual=$(aws ecs describe-tasks \
+            --cluster pricing-app-cluster \
+            --tasks "$task" \
+            --query "tasks[0].containers[?name=='Main'].imageDigest | [0]" \
+            --output text)
+
+          if [[ "$expected" != sha256:* || "$actual" != "$expected" ]]; then
+            echo "::error::Deployed image does not match CI image."
+            exit 1
+          fi          
           
