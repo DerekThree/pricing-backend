@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Authenticate to AWS using OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::064550674390:role/pricing-backend-github-deploy
           aws-region: us-east-1
