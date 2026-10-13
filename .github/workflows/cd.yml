@@ -11,6 +11,10 @@ permissions:
   actions: read
   id-token: write
 
+concurrency:
+  group: backend-cd
+  cancel-in-progress: false
+  
 jobs:
   deploy:
     if: >-
