@@ -1,0 +1,48 @@
+name: Backend Deployment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Authenticate to AWS using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::064550674390:role/pricing-backend-github-deploy
+          aws-region: us-east-1
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Verify backend infrastructure is running
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          service_json=$(aws ecs describe-services \
+            --cluster pricing-app-cluster \
+            --services pricing-backend-service \
+            --output json)
+
+          if ! jq -e '
+            (.failures | length == 0) and
+            (.services | length == 1) and
+            (.services[0].status == "ACTIVE") and
+            (.services[0].desiredCount > 0) and
+            (.services[0].runningCount >= .services[0].desiredCount) and
+            (.services[0].deployments | length == 1) and
+            (.services[0].deployments[0].rolloutState == "COMPLETED")
+          ' <<< "$service_json" > /dev/null; then
+            echo "::error::Deployment blocked: ECS infrastructure is stopped or not ready."
+            echo "::error::Start the Pricing App environment before deploying."
+            exit 1
+          fi
+
+          echo "Backend ECS service is running and ready."
