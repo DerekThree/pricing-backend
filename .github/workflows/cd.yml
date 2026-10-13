@@ -56,3 +56,44 @@ jobs:
 
       - name: Load CI image
         run: docker load --input pricing-backend-image.tar
+
+      - name: Publish CI image to ECR
+        env:
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          registry=064550674390.dkr.ecr.us-east-1.amazonaws.com
+          image="$registry/pricing-backend"
+
+          aws ecr get-login-password |
+            docker login --username AWS --password-stdin "$registry"
+
+          docker tag pricing-backend:ci "$image:$COMMIT_SHA"
+          docker tag pricing-backend:ci "$image:latest"
+
+          docker push "$image:$COMMIT_SHA"
+          docker push "$image:latest"
+
+      - name: Deploy and verify ECS
+        run: |
+          deployment_id=$(aws ecs update-service \
+            --cluster pricing-app-cluster \
+            --service pricing-backend-service \
+            --force-new-deployment \
+            --query "service.deployments[?status=='PRIMARY'].id | [0]" \
+            --output text)
+
+          aws ecs wait services-stable \
+            --cluster pricing-app-cluster \
+            --services pricing-backend-service
+
+          active_id=$(aws ecs describe-services \
+            --cluster pricing-app-cluster \
+            --services pricing-backend-service \
+            --query "services[0].deployments[?status=='PRIMARY'].id | [0]" \
+            --output text)
+
+          if [ "$active_id" != "$deployment_id" ]; then
+            echo "::error::New ECS deployment did not succeed. Possible rollback."
+            exit 1
+          fi
+          
