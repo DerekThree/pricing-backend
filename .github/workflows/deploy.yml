@@ -8,36 +8,35 @@ on:
       - completed
 
 permissions:
-  contents: read
+  actions: read
   id-token: write
 
 jobs:
-  preflight:
+  deploy:
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository
+      }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Authenticate to AWS using OIDC
+      - name: Authenticate to AWS
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::064550674390:role/pricing-backend-github-deploy
           aws-region: us-east-1
 
-      - name: Verify AWS identity
-        run: aws sts get-caller-identity
-
-      - name: Verify backend infrastructure is running
-        shell: bash
+      - name: Verify ECS is ready
         run: |
-          set -euo pipefail
-
           service_json=$(aws ecs describe-services \
             --cluster pricing-app-cluster \
             --services pricing-backend-service \
             --output json)
 
           if ! jq -e '
-            (.failures | length == 0) and
-            (.services | length == 1) and
             (.services[0].status == "ACTIVE") and
             (.services[0].desiredCount > 0) and
             (.services[0].runningCount >= .services[0].desiredCount) and
@@ -45,8 +44,15 @@ jobs:
             (.services[0].deployments[0].rolloutState == "COMPLETED")
           ' <<< "$service_json" > /dev/null; then
             echo "::error::Deployment blocked: ECS infrastructure is stopped or not ready."
-            echo "::error::Start the Pricing App environment before deploying."
             exit 1
           fi
 
-          echo "Backend ECS service is running and ready."
+      - name: Download CI image
+        uses: actions/download-artifact@v7
+        with:
+          name: pricing-backend-image
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Load CI image
+        run: docker load --input pricing-backend-image.tar
