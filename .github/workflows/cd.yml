@@ -58,7 +58,7 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Load CI image to Docker
+      - name: Load CI image
         run: docker load --input pricing-backend-image.tar
 
       - name: Publish CI image to ECR
