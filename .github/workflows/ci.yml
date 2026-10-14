@@ -44,4 +44,4 @@ jobs:
           name: pricing-backend-image
           path: pricing-backend-image.tar
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 1
