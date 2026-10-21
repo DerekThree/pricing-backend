@@ -3,13 +3,13 @@ package com.pricing.backend.batch;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -33,26 +33,24 @@ import com.pricing.engine.RuleEngine;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
+import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest
-@Testcontainers(disabledWithoutDocker = true)
-class JpaPriceConfigRepositoryPostgresTests {
-
-	@Container
-	private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
+@SpringBootTest(properties = {
+		"spring.jpa.properties.hibernate.generate_statistics=true",
+		"spring.jpa.properties.hibernate.session_factory.statement_inspector="
+				+ "com.pricing.backend.batch.JpaPriceConfigRepositoryTests$RegionReadPause"
+})
+class JpaPriceConfigRepositoryTests {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
@@ -69,14 +67,9 @@ class JpaPriceConfigRepositoryPostgresTests {
 	@Autowired
 	private DataSource dataSource;
 
-	@DynamicPropertySource
-	static void configureProperties(DynamicPropertyRegistry registry) {
-		registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-		registry.add("spring.datasource.username", POSTGRES::getUsername);
-		registry.add("spring.datasource.password", POSTGRES::getPassword);
-		registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-		registry.add("spring.flyway.locations", () -> "classpath:db/migration,classpath:db/postgresql");
-		registry.add("spring.jpa.properties.hibernate.generate_statistics", () -> "true");
+	@BeforeEach
+	void setUp() {
+		cleanUp();
 	}
 
 	@AfterEach
@@ -97,7 +90,7 @@ class JpaPriceConfigRepositoryPostgresTests {
 	}
 
 	@Test
-	void pricesFlatFeeFromPostgresConfiguration() {
+	void pricesFlatFeeFromPersistedConfiguration() {
 		UUID batchId = UUID.fromString("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b");
 		Long productId = insertProduct();
 		Long branchId = insertBranch();
@@ -295,10 +288,10 @@ class JpaPriceConfigRepositoryPostgresTests {
 
 		AccountBatchResult oneRegionResult = ruleEngine.price(batch);
 		long oneRegionQueryCount = statistics.getPrepareStatementCount();
-		Long secondRegionId = jdbcTemplate.queryForObject("""
+		Long secondRegionId = insert("""
 				insert into regions (region_code, region_name, updated_on, updated_by)
-				values ('REGION002', 'Southwest', ?, 'test') returning id
-				""", Long.class, OffsetDateTime.now());
+				values ('REGION002', 'Southwest', ?, 'test')
+				""", OffsetDateTime.now());
 		jdbcTemplate.update(
 				"insert into region_states (region_id, state_code) values (?, 'NM')",
 				secondRegionId);
@@ -342,101 +335,114 @@ class JpaPriceConfigRepositoryPostgresTests {
 		try (ExecutorService executor = Executors.newSingleThreadExecutor();
 				Connection writer = dataSource.getConnection()) {
 			writer.setAutoCommit(false);
-			try (Statement statement = writer.createStatement()) {
-				statement.execute("lock table regions in access exclusive mode");
+			RegionReadPause pause = new RegionReadPause();
+			RegionReadPause.active = pause;
+			try {
 				Future<AccountBatchResult> resultFuture = executor.submit(
 						() -> ruleEngine.price(batch));
-				awaitBlockedRegionRead();
+				assertTrue(pause.reached.await(10, TimeUnit.SECONDS),
+						"Pricing Configuration load did not reach the Region phase");
 				try (PreparedStatement deleteMembership = writer.prepareStatement(
 						"delete from region_branches where region_id = ?")) {
 					deleteMembership.setLong(1, regionId);
-					deleteMembership.executeUpdate();
+					assertEquals(1, deleteMembership.executeUpdate());
 				}
 				writer.commit();
+				assertEquals(0, jdbcTemplate.queryForObject(
+						"select count(*) from region_branches where region_id = ?",
+						Integer.class, regionId));
+				pause.resume.countDown();
 
 				AccountBatchResult result = resultFuture.get(10, TimeUnit.SECONDS);
 
 				assertEquals(AccountStatus.OK, result.accounts().getFirst().status());
+			} finally {
+				RegionReadPause.active = null;
+				pause.resume.countDown();
 			}
 		}
 	}
 
-	private void awaitBlockedRegionRead() throws InterruptedException {
-		for (int attempt = 0; attempt < 100; attempt++) {
-			Integer blockedReads = jdbcTemplate.queryForObject("""
-					select count(*)
-					from pg_stat_activity
-					where datname = current_database()
-					  and pid <> pg_backend_pid()
-					  and state = 'active'
-					  and wait_event_type = 'Lock'
-					  and query like '%from regions%'
-					""", Integer.class);
-			if (blockedReads != null && blockedReads > 0) {
-				return;
+	public static class RegionReadPause implements StatementInspector {
+		private static volatile RegionReadPause active;
+		private final CountDownLatch reached = new CountDownLatch(1);
+		private final CountDownLatch resume = new CountDownLatch(1);
+
+		@Override
+		public String inspect(String sql) {
+			RegionReadPause pause = active;
+			if (pause != null && sql.contains(" from regions ")) {
+				active = null;
+				pause.reached.countDown();
+				try {
+					assertTrue(pause.resume.await(10, TimeUnit.SECONDS),
+							"Concurrent membership change did not complete");
+				} catch (InterruptedException exception) {
+					Thread.currentThread().interrupt();
+					throw new IllegalStateException(exception);
+				}
 			}
-			Thread.sleep(50);
+			return sql;
 		}
-		fail("Pricing Configuration load did not block on the Region phase");
 	}
 
 	private Long insertProduct() {
-		return jdbcTemplate.queryForObject("""
+		return insert("""
 				insert into products (product_code, product_name, product_type, updated_on, updated_by)
-				values ('PROD0001', 'Premier Checking', 'DEPOSIT', ?, 'test') returning id
-				""", Long.class, OffsetDateTime.now());
+				values ('PROD0001', 'Premier Checking', 'DEPOSIT', ?, 'test')
+				""", OffsetDateTime.now());
 	}
 
 	private Long insertBranch() {
-		return jdbcTemplate.queryForObject("""
+		return insert("""
 				insert into branches (branch_code, branch_name, state, zip_code, updated_on, updated_by)
-				values ('BRANCH001', 'Chicago 104th St.', 'IL', '60459', ?, 'test') returning id
-				""", Long.class, OffsetDateTime.now());
+				values ('BRANCH001', 'Chicago 104th St.', 'IL', '60459', ?, 'test')
+				""", OffsetDateTime.now());
 	}
 
 	private Long insertRegion(Long branchId) {
-		Long regionId = jdbcTemplate.queryForObject("""
+		Long regionId = insert("""
 				insert into regions (region_code, region_name, updated_on, updated_by)
-				values ('REGION001', 'Midwest', ?, 'test') returning id
-				""", Long.class, OffsetDateTime.now());
+				values ('REGION001', 'Midwest', ?, 'test')
+				""", OffsetDateTime.now());
 		jdbcTemplate.update("insert into region_branches (region_id, branch_id) values (?, ?)",
 				regionId, branchId);
 		return regionId;
 	}
 
 	private Long insertRegionByZipCode() {
-		Long regionId = jdbcTemplate.queryForObject("""
+		Long regionId = insert("""
 				insert into regions (region_code, region_name, updated_on, updated_by)
-				values ('REGION001', 'Midwest', ?, 'test') returning id
-				""", Long.class, OffsetDateTime.now());
+				values ('REGION001', 'Midwest', ?, 'test')
+				""", OffsetDateTime.now());
 		jdbcTemplate.update("insert into region_zip_codes (region_id, zip_code) values (?, '60459')",
 				regionId);
 		return regionId;
 	}
 
 	private Long insertFee(String feeCode) {
-		Long feeId = jdbcTemplate.queryForObject("""
+		Long feeId = insert("""
 				insert into fees (fee_code, fee_name, fee_type, updated_on, updated_by)
-				values (?, 'Monthly Maintenance Fee', 'FLAT', ?, 'test') returning id
-				""", Long.class, feeCode, OffsetDateTime.now());
+				values (?, 'Monthly Maintenance Fee', 'FLAT', ?, 'test')
+				""", feeCode, OffsetDateTime.now());
 		jdbcTemplate.update("insert into fee_product_types (fee_id, product_type) values (?, 'DEPOSIT')", feeId);
 		return feeId;
 	}
 
 	private Long insertTextAttribute() {
-		return jdbcTemplate.queryForObject("""
+		return insert("""
 				insert into account_attributes (
 						attribute_code, attribute_name, attribute_type, updated_on, updated_by)
-				values ('ATTR0001', 'Account Tier', 'TEXT', ?, 'test') returning id
-				""", Long.class, OffsetDateTime.now());
+				values ('ATTR0001', 'Account Tier', 'TEXT', ?, 'test')
+				""", OffsetDateTime.now());
 	}
 
 	private Long insertReason(String reasonCode) {
-		return jdbcTemplate.queryForObject("""
+		return insert("""
 				insert into eligibility_reasons (
 						reason_code, reason_name, updated_on, updated_by)
-				values (?, 'Premier Account', ?, 'test') returning id
-				""", Long.class, reasonCode, OffsetDateTime.now());
+				values (?, 'Premier Account', ?, 'test')
+				""", reasonCode, OffsetDateTime.now());
 	}
 
 	private void insertCondition(Long reasonId, Long attributeId, String value) {
@@ -453,12 +459,23 @@ class JpaPriceConfigRepositoryPostgresTests {
 			Long regionId,
 			LocalDate activeFrom,
 			LocalDate activeThrough) {
-		return jdbcTemplate.queryForObject("""
+		return insert("""
 				insert into pricing_plans (plan_code, plan_name, product_id, region_id, active_from,
 						active_through, updated_on, updated_by)
 				values (?, 'Premier Midwest', ?, ?, ?, ?, ?, 'test')
-				returning id
-				""", Long.class, planCode, productId, regionId, activeFrom, activeThrough,
+				""", planCode, productId, regionId, activeFrom, activeThrough,
 				OffsetDateTime.now());
+	}
+
+	private Long insert(String sql, Object... values) {
+		GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+		jdbcTemplate.update(connection -> {
+			PreparedStatement statement = connection.prepareStatement(sql, new String[] { "id" });
+			for (int index = 0; index < values.length; index++) {
+				statement.setObject(index + 1, values[index]);
+			}
+			return statement;
+		}, keyHolder);
+		return keyHolder.getKey().longValue();
 	}
 }
