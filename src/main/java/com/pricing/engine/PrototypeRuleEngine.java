@@ -8,14 +8,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.pricing.engine.AccountBatch.Account;
-import com.pricing.engine.AccountBatch.AccountAttribute;
-import com.pricing.engine.AccountBatch.FeeRequest;
-import com.pricing.engine.AccountBatchResult.AccountResult;
-import com.pricing.engine.AccountBatchResult.AccountStatus;
-import com.pricing.engine.AccountBatchResult.Decision;
-import com.pricing.engine.AccountBatchResult.FeeResult;
-import com.pricing.engine.AccountBatchResult.FeeStatus;
+import com.pricing.engine.RuleEngineBatch.*;
+import com.pricing.engine.RuleEngineBatchResult.*;
 import com.pricing.engine.PriceConfig.AttributeDefinition;
 import com.pricing.engine.PriceConfig.Branch;
 import com.pricing.engine.PriceConfig.EligibilityCondition;
@@ -36,7 +30,7 @@ public class PrototypeRuleEngine implements RuleEngine {
 	}
 
 	@Override
-	public AccountBatchResult price(AccountBatch batch) {
+	public RuleEngineBatchResult price(RuleEngineBatch batch) {
 		Set<LocalDate> pricingDates = batch.accounts().stream()
 				.map(Account::pricingDate)
 				.collect(Collectors.toUnmodifiableSet());
@@ -46,7 +40,7 @@ public class PrototypeRuleEngine implements RuleEngine {
 		} catch (RuntimeException exception) {
 			throw new PricingConfigurationAccessException(exception);
 		}
-		return new AccountBatchResult(batch.batchId(), batch.accounts().stream()
+		return new RuleEngineBatchResult(batch.batchId(), batch.accounts().stream()
 				.map(account -> price(account, config))
 				.toList());
 	}
@@ -104,7 +98,7 @@ public class PrototypeRuleEngine implements RuleEngine {
 					.map(AttributeDefinition::code)
 					.collect(Collectors.toSet());
 			Set<String> suppliedAttributeCodes = account.attributes().stream()
-					.map(AccountBatch.AccountAttribute::code)
+					.map(RuleEngineBatch.AccountAttribute::code)
 					.collect(Collectors.toSet());
 			if (requiredAttributeCodes.stream().anyMatch(code -> account.attributes().stream()
 							.filter(attribute -> attribute.code().equals(code))

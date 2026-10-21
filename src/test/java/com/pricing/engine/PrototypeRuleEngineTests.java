@@ -14,14 +14,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static com.pricing.engine.AccountBatch.Account;
-import static com.pricing.engine.AccountBatch.AccountAttribute;
-import static com.pricing.engine.AccountBatch.FeeRequest;
-import static com.pricing.engine.AccountBatchResult.AccountResult;
-import static com.pricing.engine.AccountBatchResult.AccountStatus;
-import static com.pricing.engine.AccountBatchResult.Decision;
-import static com.pricing.engine.AccountBatchResult.FeeResult;
-import static com.pricing.engine.AccountBatchResult.FeeStatus;
+import static com.pricing.engine.RuleEngineBatch.*;
+import static com.pricing.engine.RuleEngineBatchResult.*;
 import static com.pricing.engine.PriceConfig.AttributeDefinition;
 import static com.pricing.engine.PriceConfig.AttributeType;
 import static com.pricing.engine.PriceConfig.Branch;
@@ -49,7 +43,7 @@ class PrototypeRuleEngineTests {
 		FakePriceConfigRepository repository = new FakePriceConfigRepository(config);
 		RuleEngine engine = new PrototypeRuleEngine(repository);
 
-		AccountBatchResult result = engine.price(batch("PROD0001", "BRANCH001", AUGUST_31));
+		RuleEngineBatchResult result = engine.price(batch("PROD0001", "BRANCH001", AUGUST_31));
 
 		assertEquals(chargedResult("PLAN0001"), result);
 		assertEquals(1, repository.loadCount);
@@ -63,7 +57,7 @@ class PrototypeRuleEngineTests {
 				flatFee("FEE00002"))));
 		FakePriceConfigRepository repository = new FakePriceConfigRepository(config);
 		RuleEngine engine = new PrototypeRuleEngine(repository);
-		AccountBatch batch = new AccountBatch(BATCH_ID, List.of(
+		RuleEngineBatch batch = new RuleEngineBatch(BATCH_ID, List.of(
 				new Account(
 						"ACCOUNT001",
 						"PROD0001",
@@ -83,7 +77,7 @@ class PrototypeRuleEngineTests {
 								new FeeRequest(3L, "FEE00001", null),
 								new FeeRequest(4L, "FEE00002", null)))));
 
-		AccountBatchResult result = engine.price(batch);
+		RuleEngineBatchResult result = engine.price(batch);
 
 		assertEquals(Map.of(
 				"ACCOUNT001", AccountStatus.OK,
@@ -111,7 +105,7 @@ class PrototypeRuleEngineTests {
 		PriceConfig config = config(
 				plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31));
 
-		AccountBatchResult result = price(config, "PROD0001 ", "BRANCH001", AUGUST_15);
+		RuleEngineBatchResult result = price(config, "PROD0001 ", "BRANCH001", AUGUST_15);
 
 		assertEquals(failedResult(AccountStatus.PLAN_NOT_FOUND), result);
 	}
@@ -120,7 +114,7 @@ class PrototypeRuleEngineTests {
 	void returnsBranchNotFoundForAnInexactBranchCode() {
 		PriceConfig config = config(List.of(), List.of());
 
-		AccountBatchResult result = price(config, "PROD0001", "branch001", AUGUST_15);
+		RuleEngineBatchResult result = price(config, "PROD0001", "branch001", AUGUST_15);
 
 		assertEquals(failedResult(AccountStatus.BRANCH_NOT_FOUND), result);
 	}
@@ -131,7 +125,7 @@ class PrototypeRuleEngineTests {
 				List.of(region("REGION001", Set.of(), Set.of("60459"), Set.of())),
 				List.of(plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31)));
 
-		AccountBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
+		RuleEngineBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
 
 		assertEquals(chargedResult("PLAN0001"), result);
 	}
@@ -142,7 +136,7 @@ class PrototypeRuleEngineTests {
 				List.of(region("REGION001", Set.of(), Set.of(), Set.of("IL"))),
 				List.of(plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31)));
 
-		AccountBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
+		RuleEngineBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
 
 		assertEquals(chargedResult("PLAN0001"), result);
 	}
@@ -156,14 +150,14 @@ class PrototypeRuleEngineTests {
 						region("REGION003", Set.of(), Set.of("60459"), Set.of("IL"))),
 				List.of(plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31)));
 
-		AccountBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
+		RuleEngineBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
 
 		assertEquals(chargedResult("PLAN0001"), result);
 	}
 
 	@Test
 	void returnsRegionNotFoundWhenNoRegionTierMatches() {
-		AccountBatchResult result = price(config(List.of(), List.of()),
+		RuleEngineBatchResult result = price(config(List.of(), List.of()),
 				"PROD0001", "BRANCH001", AUGUST_15);
 
 		assertEquals(failedResult(AccountStatus.REGION_NOT_FOUND), result);
@@ -177,7 +171,7 @@ class PrototypeRuleEngineTests {
 						region("REGION002", Set.of("BRANCH001"), Set.of(), Set.of())),
 				List.of());
 
-		AccountBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
+		RuleEngineBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
 
 		assertEquals(failedResult(AccountStatus.ERROR), result);
 	}
@@ -190,7 +184,7 @@ class PrototypeRuleEngineTests {
 				plan("PLAN0003", "PROD0001", "REGION002", AUGUST_1, AUGUST_31),
 				plan("PLAN0004", "PROD0001", "REGION001", AUGUST_15, AUGUST_31));
 
-		AccountBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_1);
+		RuleEngineBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_1);
 
 		assertEquals(chargedResult("PLAN0001"), result);
 	}
@@ -200,7 +194,7 @@ class PrototypeRuleEngineTests {
 		PriceConfig config = config(
 				plan("PLAN0001", "PROD0001", "REGION001", AUGUST_1, AUGUST_31));
 
-		AccountBatchResult result = price(config, "PROD0001", "BRANCH001",
+		RuleEngineBatchResult result = price(config, "PROD0001", "BRANCH001",
 				LocalDate.of(2026, 9, 1));
 
 		assertEquals(failedResult(AccountStatus.PLAN_NOT_FOUND), result);
@@ -213,14 +207,14 @@ class PrototypeRuleEngineTests {
 				plan("PLAN0002", "PROD0001", "REGION001", AUGUST_15,
 						LocalDate.of(2026, 9, 15)));
 
-		AccountBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
+		RuleEngineBatchResult result = price(config, "PROD0001", "BRANCH001", AUGUST_15);
 
 		assertEquals(failedResult(AccountStatus.ERROR), result);
 	}
 
 	@Test
 	void returnsMissingAttributeWhenARequestedPlanFeeRequiresAnAbsentAttribute() {
-		AccountBatchResult result = price(
+		RuleEngineBatchResult result = price(
 				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
 				List.of());
 
@@ -229,7 +223,7 @@ class PrototypeRuleEngineTests {
 
 	@Test
 	void returnsDuplicateAttribute() {
-		AccountBatchResult result = price(
+		RuleEngineBatchResult result = price(
 				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
 				List.of(
 						new AccountAttribute("ATTR0001", "FIRST"),
@@ -240,7 +234,7 @@ class PrototypeRuleEngineTests {
 
 	@Test
 	void returnsInvalidAttributeType() {
-		AccountBatchResult result = price(
+		RuleEngineBatchResult result = price(
 				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
 				List.of(new AccountAttribute("ATTR0001", true)));
 
@@ -250,7 +244,7 @@ class PrototypeRuleEngineTests {
 	@ParameterizedTest
 	@MethodSource("validAttributeValues")
 	void acceptsEveryConfiguredAttributeRepresentation(AttributeType type, Object value) {
-		AccountBatchResult result = price(
+		RuleEngineBatchResult result = price(
 				fee("FEE00001", new AttributeDefinition("ATTR0001", type)),
 				List.of(new AccountAttribute("ATTR0001", value)));
 
@@ -263,7 +257,7 @@ class PrototypeRuleEngineTests {
 				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)),
 				flatFee("FEE00002"));
 
-		AccountBatchResult result = price(config, batch(
+		RuleEngineBatchResult result = price(config, batch(
 				List.of(),
 				List.of(new FeeRequest(1L, "FEE00002", null))));
 
@@ -275,7 +269,7 @@ class PrototypeRuleEngineTests {
 		PriceConfig config = config(
 				fee("FEE00001", new AttributeDefinition("ATTR0001", AttributeType.TEXT)));
 
-		AccountBatchResult result = price(config, batch(
+		RuleEngineBatchResult result = price(config, batch(
 				List.of(),
 				List.of(new FeeRequest(1L, "FEE99999", null))));
 
@@ -320,7 +314,7 @@ class PrototypeRuleEngineTests {
 	@MethodSource("satisfyingTypedComparisons")
 	void supportsEveryTypedEligibilityOperator(
 			AttributeType type, Object accountValue, String operator, String conditionValue) {
-		AccountBatchResult result = price(
+		RuleEngineBatchResult result = price(
 				feeWithReasons("FEE00001", reason("REASON001",
 						condition("ATTR0001", type, operator, conditionValue))),
 				List.of(new AccountAttribute("ATTR0001", accountValue)));
@@ -330,7 +324,7 @@ class PrototypeRuleEngineTests {
 
 	@Test
 	void requiresEveryConditionWithinOneEligibilityReason() {
-		AccountBatchResult result = price(
+		RuleEngineBatchResult result = price(
 				feeWithReasons("FEE00001", reason("REASON001",
 						condition("ATTR0001", AttributeType.TEXT, "=", "PREMIER"),
 						condition("ATTR0002", AttributeType.DECIMAL, ">", "100"))),
@@ -343,7 +337,7 @@ class PrototypeRuleEngineTests {
 
 	@Test
 	void waivesForAnySatisfiedReasonAndReturnsEverySatisfiedReasonCode() {
-		AccountBatchResult result = price(
+		RuleEngineBatchResult result = price(
 				feeWithReasons(
 						"FEE00001",
 						reason("TEXT_REASON",
@@ -366,7 +360,7 @@ class PrototypeRuleEngineTests {
 
 	@Test
 	void treatsAnEligibilityReasonWithoutConditionsAsSatisfied() {
-		AccountBatchResult result = price(
+		RuleEngineBatchResult result = price(
 				feeWithReasons("FEE00001", reason("ALWAYS")),
 				List.of());
 
@@ -380,7 +374,7 @@ class PrototypeRuleEngineTests {
 						condition("ATTR0001", AttributeType.BOOLEAN, ">", "false"))),
 				flatFee("FEE00002"));
 
-		AccountBatchResult result = price(config, batch(
+		RuleEngineBatchResult result = price(config, batch(
 				List.of(new AccountAttribute("ATTR0001", true)),
 				List.of(
 						new FeeRequest(1L, "FEE00001", null),
@@ -397,7 +391,7 @@ class PrototypeRuleEngineTests {
 	@MethodSource("invalidConditionValues")
 	void returnsInvalidEligibilityConditionForAnInvalidPersistedConditionValue(
 			AttributeType type, Object accountValue, String conditionValue) {
-		AccountBatchResult result = price(
+		RuleEngineBatchResult result = price(
 				feeWithReasons("FEE00001", reason("INVALID",
 						condition("ATTR0001", type, "=", conditionValue))),
 				List.of(new AccountAttribute("ATTR0001", accountValue)));
@@ -405,7 +399,7 @@ class PrototypeRuleEngineTests {
 		assertEquals(okResult(failedFee(FeeStatus.INVALID_ELIGIBILITY_CONDITION)), result);
 	}
 
-	private AccountBatchResult price(
+	private RuleEngineBatchResult price(
 			PriceConfig config,
 			String productCode,
 			String branchCode,
@@ -414,11 +408,11 @@ class PrototypeRuleEngineTests {
 				.price(batch(productCode, branchCode, pricingDate));
 	}
 
-	private AccountBatchResult price(PriceConfig config, AccountBatch batch) {
+	private RuleEngineBatchResult price(PriceConfig config, RuleEngineBatch batch) {
 		return new PrototypeRuleEngine(new FakePriceConfigRepository(config)).price(batch);
 	}
 
-	private AccountBatchResult price(PlanFee fee, List<AccountAttribute> attributes) {
+	private RuleEngineBatchResult price(PlanFee fee, List<AccountAttribute> attributes) {
 		return price(config(fee), batch(
 				attributes,
 				List.of(new FeeRequest(1L, fee.code(), null))));
@@ -431,8 +425,8 @@ class PrototypeRuleEngineTests {
 				.accounts().getFirst().fees().getFirst();
 	}
 
-	private AccountBatch batch(String productCode, String branchCode, LocalDate pricingDate) {
-		return new AccountBatch(BATCH_ID, List.of(new Account(
+	private RuleEngineBatch batch(String productCode, String branchCode, LocalDate pricingDate) {
+		return new RuleEngineBatch(BATCH_ID, List.of(new Account(
 				"ACCOUNT001",
 				productCode,
 				branchCode,
@@ -441,8 +435,8 @@ class PrototypeRuleEngineTests {
 				List.of(new FeeRequest(1L, "FEE00001", null)))));
 	}
 
-	private AccountBatch batch(List<AccountAttribute> attributes, List<FeeRequest> fees) {
-		return new AccountBatch(BATCH_ID, List.of(new Account(
+	private RuleEngineBatch batch(List<AccountAttribute> attributes, List<FeeRequest> fees) {
+		return new RuleEngineBatch(BATCH_ID, List.of(new Account(
 				"ACCOUNT001",
 				"PROD0001",
 				"BRANCH001",
@@ -547,20 +541,20 @@ class PrototypeRuleEngineTests {
 		};
 	}
 
-	private AccountBatchResult chargedResult(String planCode) {
+	private RuleEngineBatchResult chargedResult(String planCode) {
 		return okResult(planCode, chargedFee("7.50"));
 	}
 
-	private AccountBatchResult waivedResult(String... reasons) {
+	private RuleEngineBatchResult waivedResult(String... reasons) {
 		return okResult(waivedFee(reasons));
 	}
 
-	private AccountBatchResult okResult(FeeResult... fees) {
+	private RuleEngineBatchResult okResult(FeeResult... fees) {
 		return okResult("PLAN0001", fees);
 	}
 
-	private AccountBatchResult okResult(String planCode, FeeResult... fees) {
-		return new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
+	private RuleEngineBatchResult okResult(String planCode, FeeResult... fees) {
+		return new RuleEngineBatchResult(BATCH_ID, List.of(new AccountResult(
 				"ACCOUNT001",
 				AccountStatus.OK,
 				planCode,
@@ -588,8 +582,8 @@ class PrototypeRuleEngineTests {
 		return new FeeResult(1L, status, null, null, null);
 	}
 
-	private AccountBatchResult failedResult(AccountStatus status) {
-		return new AccountBatchResult(BATCH_ID, List.of(new AccountResult(
+	private RuleEngineBatchResult failedResult(AccountStatus status) {
+		return new RuleEngineBatchResult(BATCH_ID, List.of(new AccountResult(
 				"ACCOUNT001", status, null, null)));
 	}
 

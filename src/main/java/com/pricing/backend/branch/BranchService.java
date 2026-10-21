@@ -9,52 +9,59 @@ import com.pricing.backend.generated.model.BranchDetail;
 import com.pricing.backend.generated.model.BranchListItem;
 import com.pricing.backend.generated.model.BranchRequest;
 import com.pricing.backend.region.RegionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BranchService {
 
+	private static final Logger log = LoggerFactory.getLogger(BranchService.class);
+
 	private final BranchRepository branchRepository;
 	private final RegionRepository regionRepository;
-	private final BranchMapper branchMapper;
+	private final BranchMapper mapper;
 
-	public BranchService(BranchRepository branchRepository, RegionRepository regionRepository, BranchMapper branchMapper) {
+	public BranchService(BranchRepository branchRepository, RegionRepository regionRepository, BranchMapper mapper) {
 		this.branchRepository = branchRepository;
 		this.regionRepository = regionRepository;
-		this.branchMapper = branchMapper;
+		this.mapper = mapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<BranchListItem> list() {
 		return branchRepository.findAllByOrderByBranchCodeAsc().stream()
-				.map(branchMapper::toBranchListItem)
+				.map(mapper::toBranchListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<BranchDetail> get(Long id) {
-		return branchRepository.findById(id).map(branchMapper::toBranchDetail);
+		return branchRepository.findById(id).map(mapper::toBranchDetail);
 	}
 
 	@Transactional
 	public BranchDetail create(BranchRequest request) {
+		log.info("Create Branch requested: code={}", request.getBranchCode());
 		BranchEntity entity = new BranchEntity();
 		apply(entity, request);
-		return branchMapper.toBranchDetail(branchRepository.save(entity));
+		return mapper.toBranchDetail(branchRepository.save(entity));
 	}
 
 	@Transactional
 	public Optional<BranchDetail> update(Long id, BranchRequest request) {
+		log.info("Update Branch requested: id={}", id);
 		return branchRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return branchMapper.toBranchDetail(branchRepository.save(entity));
+					return mapper.toBranchDetail(branchRepository.save(entity));
 				});
 	}
 
 	@Transactional
 	public boolean delete(Long id) {
+		log.info("Delete Branch requested: id={}", id);
 		if (!branchRepository.existsById(id)) {
 			return false;
 		}

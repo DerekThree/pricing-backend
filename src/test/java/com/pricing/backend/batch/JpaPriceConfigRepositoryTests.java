@@ -18,15 +18,10 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import com.pricing.engine.AccountBatch;
-import com.pricing.engine.AccountBatch.Account;
-import com.pricing.engine.AccountBatch.FeeRequest;
-import com.pricing.engine.AccountBatchResult;
-import com.pricing.engine.AccountBatchResult.AccountResult;
-import com.pricing.engine.AccountBatchResult.AccountStatus;
-import com.pricing.engine.AccountBatchResult.Decision;
-import com.pricing.engine.AccountBatchResult.FeeResult;
-import com.pricing.engine.AccountBatchResult.FeeStatus;
+import com.pricing.engine.RuleEngineBatch;
+import com.pricing.engine.RuleEngineBatch.*;
+import com.pricing.engine.RuleEngineBatchResult;
+import com.pricing.engine.RuleEngineBatchResult.*;
 import com.pricing.engine.PriceConfig;
 import com.pricing.engine.PriceConfigRepository;
 import com.pricing.engine.RuleEngine;
@@ -104,7 +99,7 @@ class JpaPriceConfigRepositoryTests {
 				LocalDate.of(2026, 8, 31));
 		jdbcTemplate.update("insert into pricing_plan_fees values (?, ?, ?)",
 				pricingPlanId, feeId, new BigDecimal("7.5000"));
-		AccountBatch batch = new AccountBatch(batchId, List.of(new Account(
+		RuleEngineBatch batch = new RuleEngineBatch(batchId, List.of(new Account(
 				"ACCOUNT001",
 				"PROD0001",
 				"BRANCH001",
@@ -112,9 +107,9 @@ class JpaPriceConfigRepositoryTests {
 				List.of(),
 				List.of(new FeeRequest(1L, "FEE00001", null)))));
 
-		AccountBatchResult result = ruleEngine.price(batch);
+		RuleEngineBatchResult result = ruleEngine.price(batch);
 
-		assertEquals(new AccountBatchResult(batchId, List.of(new AccountResult(
+		assertEquals(new RuleEngineBatchResult(batchId, List.of(new AccountResult(
 				"ACCOUNT001",
 				AccountStatus.OK,
 				"PLAN0001",
@@ -153,19 +148,19 @@ class JpaPriceConfigRepositoryTests {
 				pricingPlanId, waivedFeeId, waivedReasonId);
 		jdbcTemplate.update("insert into pricing_plan_fee_reasons values (?, ?, ?)",
 				pricingPlanId, chargedFeeId, chargedReasonId);
-		AccountBatch batch = new AccountBatch(batchId, List.of(new Account(
+		RuleEngineBatch batch = new RuleEngineBatch(batchId, List.of(new Account(
 				"ACCOUNT001",
 				"PROD0001",
 				"BRANCH001",
 				LocalDate.of(2026, 8, 31),
-				List.of(new AccountBatch.AccountAttribute("ATTR0001", " premier ")),
+				List.of(new RuleEngineBatch.AccountAttribute("ATTR0001", " premier ")),
 				List.of(
 						new FeeRequest(1L, "FEE00001", null),
 						new FeeRequest(2L, "FEE00002", null)))));
 
-		AccountBatchResult result = ruleEngine.price(batch);
+		RuleEngineBatchResult result = ruleEngine.price(batch);
 
-		assertEquals(new AccountBatchResult(batchId, List.of(new AccountResult(
+		assertEquals(new RuleEngineBatchResult(batchId, List.of(new AccountResult(
 				"ACCOUNT001",
 				AccountStatus.OK,
 				"PLAN0001",
@@ -231,7 +226,7 @@ class JpaPriceConfigRepositoryTests {
 				LocalDate.of(2026, 8, 31));
 		jdbcTemplate.update("insert into pricing_plan_fees values (?, ?, ?)",
 				pricingPlanId, feeId, new BigDecimal("7.5000"));
-		AccountBatch batch = new AccountBatch(
+		RuleEngineBatch batch = new RuleEngineBatch(
 				UUID.fromString("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b"),
 				List.of(
 						new Account(
@@ -249,7 +244,7 @@ class JpaPriceConfigRepositoryTests {
 								List.of(),
 								List.of(new FeeRequest(2L, "FEE00001", null)))));
 
-		AccountBatchResult result = ruleEngine.price(batch);
+		RuleEngineBatchResult result = ruleEngine.price(batch);
 
 		Map<String, AccountResult> accounts = result.accounts().stream()
 				.collect(Collectors.toMap(AccountResult::accountNumber, account -> account));
@@ -274,7 +269,7 @@ class JpaPriceConfigRepositoryTests {
 	void additionalRegionMembershipsDoNotAddConfigurationQueries() {
 		Long branchId = insertBranch();
 		insertRegion(branchId);
-		AccountBatch batch = new AccountBatch(
+		RuleEngineBatch batch = new RuleEngineBatch(
 				UUID.fromString("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b"),
 				List.of(new Account(
 						"ACCOUNT001",
@@ -286,7 +281,7 @@ class JpaPriceConfigRepositoryTests {
 		Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
 		statistics.clear();
 
-		AccountBatchResult oneRegionResult = ruleEngine.price(batch);
+		RuleEngineBatchResult oneRegionResult = ruleEngine.price(batch);
 		long oneRegionQueryCount = statistics.getPrepareStatementCount();
 		Long secondRegionId = insert("""
 				insert into regions (region_code, region_name, updated_on, updated_by)
@@ -300,7 +295,7 @@ class JpaPriceConfigRepositoryTests {
 				secondRegionId);
 		statistics.clear();
 
-		AccountBatchResult twoRegionResult = ruleEngine.price(batch);
+		RuleEngineBatchResult twoRegionResult = ruleEngine.price(batch);
 
 		assertEquals(AccountStatus.PLAN_NOT_FOUND,
 				oneRegionResult.accounts().getFirst().status());
@@ -324,7 +319,7 @@ class JpaPriceConfigRepositoryTests {
 				LocalDate.of(2026, 8, 31));
 		jdbcTemplate.update("insert into pricing_plan_fees values (?, ?, ?)",
 				pricingPlanId, feeId, new BigDecimal("7.5000"));
-		AccountBatch batch = new AccountBatch(batchId, List.of(new Account(
+		RuleEngineBatch batch = new RuleEngineBatch(batchId, List.of(new Account(
 				"ACCOUNT001",
 				"PROD0001",
 				"BRANCH001",
@@ -338,7 +333,7 @@ class JpaPriceConfigRepositoryTests {
 			RegionReadPause pause = new RegionReadPause();
 			RegionReadPause.active = pause;
 			try {
-				Future<AccountBatchResult> resultFuture = executor.submit(
+				Future<RuleEngineBatchResult> resultFuture = executor.submit(
 						() -> ruleEngine.price(batch));
 				assertTrue(pause.reached.await(10, TimeUnit.SECONDS),
 						"Pricing Configuration load did not reach the Region phase");
@@ -353,7 +348,7 @@ class JpaPriceConfigRepositoryTests {
 						Integer.class, regionId));
 				pause.resume.countDown();
 
-				AccountBatchResult result = resultFuture.get(10, TimeUnit.SECONDS);
+				RuleEngineBatchResult result = resultFuture.get(10, TimeUnit.SECONDS);
 
 				assertEquals(AccountStatus.OK, result.accounts().getFirst().status());
 			} finally {

@@ -16,35 +16,39 @@ import com.pricing.backend.generated.model.RegionListItem;
 import com.pricing.backend.generated.model.RegionOptions;
 import com.pricing.backend.generated.model.RegionRequest;
 import com.pricing.backend.pricingplan.PricingPlanRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RegionService {
 
+	private static final Logger log = LoggerFactory.getLogger(RegionService.class);
+
 	private final RegionRepository regionRepository;
 	private final BranchRepository branchRepository;
 	private final PricingPlanRepository pricingPlanRepository;
-	private final RegionMapper regionMapper;
+	private final RegionMapper mapper;
 
 	public RegionService(RegionRepository regionRepository, BranchRepository branchRepository,
-			PricingPlanRepository pricingPlanRepository, RegionMapper regionMapper) {
+			PricingPlanRepository pricingPlanRepository, RegionMapper mapper) {
 		this.regionRepository = regionRepository;
 		this.branchRepository = branchRepository;
 		this.pricingPlanRepository = pricingPlanRepository;
-		this.regionMapper = regionMapper;
+		this.mapper = mapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<RegionListItem> list() {
 		return regionRepository.findAllByOrderByRegionCodeAsc().stream()
-				.map(regionMapper::toRegionListItem)
+				.map(mapper::toRegionListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<RegionDetail> get(Long id) {
-		return regionRepository.findById(id).map(regionMapper::toRegionDetail);
+		return regionRepository.findById(id).map(mapper::toRegionDetail);
 	}
 
 	@Transactional(readOnly = true)
@@ -56,22 +60,25 @@ public class RegionService {
 
 	@Transactional
 	public RegionDetail create(RegionRequest request) {
+		log.info("Create Region requested: code={}", request.getRegionCode());
 		RegionEntity entity = new RegionEntity();
 		apply(entity, request);
-		return regionMapper.toRegionDetail(regionRepository.save(entity));
+		return mapper.toRegionDetail(regionRepository.save(entity));
 	}
 
 	@Transactional
 	public Optional<RegionDetail> update(Long id, RegionRequest request) {
+		log.info("Update Region requested: id={}", id);
 		return regionRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return regionMapper.toRegionDetail(regionRepository.save(entity));
+					return mapper.toRegionDetail(regionRepository.save(entity));
 				});
 	}
 
 	@Transactional
 	public boolean delete(Long id) {
+		log.info("Delete Region requested: id={}", id);
 		if (!regionRepository.existsById(id)) {
 			return false;
 		}
@@ -117,7 +124,7 @@ public class RegionService {
 				.toList();
 		List<BranchOption> availableBranches = branches.stream()
 				.filter(branch -> !usedBranchIds.contains(branch.getId()))
-				.map(regionMapper::toBranchOption)
+				.map(mapper::toBranchOption)
 				.toList();
 
 		return new RegionOptions(availableStates, availableZipCodes, availableBranches);

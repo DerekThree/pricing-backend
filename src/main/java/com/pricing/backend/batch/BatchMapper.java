@@ -10,24 +10,22 @@ import com.pricing.backend.generated.model.BatchFeeStatus;
 import com.pricing.backend.generated.model.BatchRequest;
 import com.pricing.backend.eligibilityreason.AccountAttributeScalarValue;
 import com.pricing.backend.generated.model.Decision;
-import com.pricing.engine.AccountBatch;
-import com.pricing.engine.AccountBatch.Account;
-import com.pricing.engine.AccountBatch.FeeRequest;
-import com.pricing.engine.AccountBatchResult;
-import com.pricing.engine.AccountBatchResult.AccountResult;
-import com.pricing.engine.AccountBatchResult.FeeResult;
+import com.pricing.engine.RuleEngineBatch;
+import com.pricing.engine.RuleEngineBatch.*;
+import com.pricing.engine.RuleEngineBatchResult;
+import com.pricing.engine.RuleEngineBatchResult.*;
 import org.springframework.stereotype.Component;
 
 @Component
 class BatchMapper {
 
-	AccountBatch toAccountBatch(BatchRequest request) {
-		return new AccountBatch(request.getBatchId(), request.getAccounts().stream()
+	RuleEngineBatch toRuleEngineBatch(BatchRequest request) {
+		return new RuleEngineBatch(request.getBatchId(), request.getAccounts().stream()
 				.map(this::toAccount)
 				.toList());
 	}
 
-	com.pricing.backend.generated.model.BatchResult toResponse(AccountBatchResult result) {
+	com.pricing.backend.generated.model.BatchResult toResponse(RuleEngineBatchResult result) {
 		return new com.pricing.backend.generated.model.BatchResult(
 				result.batchId(),
 				result.accounts().stream().map(this::toAccountResult).toList());
@@ -43,9 +41,9 @@ class BatchMapper {
 				account.getFees().stream().map(this::toFeeRequest).toList());
 	}
 
-	private AccountBatch.AccountAttribute toAccountAttribute(AccountAttribute attribute) {
+	private RuleEngineBatch.AccountAttribute toAccountAttribute(AccountAttribute attribute) {
 		AccountAttributeScalarValue value = (AccountAttributeScalarValue) attribute.getValue();
-		return new AccountBatch.AccountAttribute(attribute.getCode(), value.getValue());
+		return new RuleEngineBatch.AccountAttribute(attribute.getCode(), value.getValue());
 	}
 
 	private FeeRequest toFeeRequest(BatchFeeRequest fee) {

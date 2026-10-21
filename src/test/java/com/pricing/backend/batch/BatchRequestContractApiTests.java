@@ -5,12 +5,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.pricing.engine.AccountBatch;
-import com.pricing.engine.AccountBatchResult;
-import com.pricing.engine.AccountBatchResult.AccountResult;
-import com.pricing.engine.AccountBatchResult.AccountStatus;
-import com.pricing.engine.AccountBatchResult.FeeResult;
-import com.pricing.engine.AccountBatchResult.FeeStatus;
+import com.pricing.engine.RuleEngineBatch;
+import com.pricing.engine.RuleEngineBatchResult;
+import com.pricing.engine.RuleEngineBatchResult.*;
 import com.pricing.engine.RuleEngine;
 import com.pricing.backend.generated.api.BatchApi;
 import org.junit.jupiter.api.Test;
@@ -25,8 +22,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static com.pricing.engine.AccountBatchResult.AccountStatus.OK;
-import static com.pricing.engine.AccountBatchResult.Decision.CHARGED;
+import static com.pricing.engine.RuleEngineBatchResult.AccountStatus.OK;
+import static com.pricing.engine.RuleEngineBatchResult.Decision.CHARGED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
@@ -65,7 +62,7 @@ class BatchRequestContractApiTests {
 	@Test
 	void mapsEveryValidAccountAttributeScalar() throws Exception {
 		UUID batchId = UUID.fromString(BATCH_ID);
-		AccountBatchResult result = new AccountBatchResult(batchId, List.of(new AccountResult(
+		RuleEngineBatchResult result = new RuleEngineBatchResult(batchId, List.of(new AccountResult(
 				"ACCOUNT001",
 				AccountStatus.ERROR,
 				null,
@@ -82,9 +79,9 @@ class BatchRequestContractApiTests {
 									+ "{\"code\":\"BOOLEAN\",\"value\":true}]"))))
 				.andExpect(status().isOk());
 
-		ArgumentCaptor<AccountBatch> batchCaptor = ArgumentCaptor.forClass(AccountBatch.class);
+		ArgumentCaptor<RuleEngineBatch> batchCaptor = ArgumentCaptor.forClass(RuleEngineBatch.class);
 		verify(ruleEngine).price(batchCaptor.capture());
-		List<AccountBatch.AccountAttribute> attributes = batchCaptor.getValue()
+		List<RuleEngineBatch.AccountAttribute> attributes = batchCaptor.getValue()
 				.accounts().getFirst().attributes();
 		assertEquals("Value", attributes.get(0).value());
 		assertEquals(new BigDecimal("12.50"), attributes.get(1).value());
@@ -94,7 +91,7 @@ class BatchRequestContractApiTests {
 	@Test
 	void allowsFeeRequestIdsAcrossAccountsAndRepeatedFeeCodesWithinAnAccount() throws Exception {
 		UUID batchId = UUID.fromString(BATCH_ID);
-		when(ruleEngine.price(any())).thenReturn(new AccountBatchResult(batchId, List.of(
+		when(ruleEngine.price(any())).thenReturn(new RuleEngineBatchResult(batchId, List.of(
 				new AccountResult("ACCOUNT001", AccountStatus.ERROR, null, null),
 				new AccountResult("ACCOUNT002", AccountStatus.ERROR, null, null))));
 		String firstAccount = validAccount()
@@ -109,22 +106,22 @@ class BatchRequestContractApiTests {
 					.content(requestWithAccounts("[" + firstAccount + "," + secondAccount + "]")))
 				.andExpect(status().isOk());
 
-		ArgumentCaptor<AccountBatch> batchCaptor = ArgumentCaptor.forClass(AccountBatch.class);
+		ArgumentCaptor<RuleEngineBatch> batchCaptor = ArgumentCaptor.forClass(RuleEngineBatch.class);
 		verify(ruleEngine).price(batchCaptor.capture());
-		List<AccountBatch.Account> accounts = batchCaptor.getValue().accounts();
+		List<RuleEngineBatch.Account> accounts = batchCaptor.getValue().accounts();
 		assertEquals(List.of(1L, 2L), accounts.get(0).fees().stream()
-				.map(AccountBatch.FeeRequest::feeRequestId)
+				.map(RuleEngineBatch.FeeRequest::feeRequestId)
 				.toList());
 		assertEquals(1L, accounts.get(1).fees().getFirst().feeRequestId());
 		assertEquals(List.of("FEE00001", "FEE00001"), accounts.get(0).fees().stream()
-				.map(AccountBatch.FeeRequest::code)
+				.map(RuleEngineBatch.FeeRequest::code)
 				.toList());
 	}
 
 	@Test
 	void preservesValidCorrelationValuesAndTransactionAmount() throws Exception {
 		UUID batchId = UUID.fromString("5fd2879b-7f17-4a05-8fbe-7ebce6958f3b");
-		AccountBatchResult result = new AccountBatchResult(batchId, List.of(new AccountResult(
+		RuleEngineBatchResult result = new RuleEngineBatchResult(batchId, List.of(new AccountResult(
 				"ACCOUNT01",
 				OK,
 				"PLAN0001",
@@ -160,9 +157,9 @@ class BatchRequestContractApiTests {
 				.andExpect(jsonPath("$.accounts[0].accountNumber").value("ACCOUNT01"))
 				.andExpect(jsonPath("$.accounts[0].fees[0].feeRequestId").value(123));
 
-		ArgumentCaptor<AccountBatch> batchCaptor = ArgumentCaptor.forClass(AccountBatch.class);
+		ArgumentCaptor<RuleEngineBatch> batchCaptor = ArgumentCaptor.forClass(RuleEngineBatch.class);
 		verify(ruleEngine).price(batchCaptor.capture());
-		AccountBatch batch = batchCaptor.getValue();
+		RuleEngineBatch batch = batchCaptor.getValue();
 		assertEquals(batchId, batch.batchId());
 		assertEquals("ACCOUNT01", batch.accounts().getFirst().accountNumber());
 		assertEquals(123L, batch.accounts().getFirst().fees().getFirst().feeRequestId());

@@ -25,11 +25,15 @@ import com.pricing.backend.product.ProductRepository;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.backend.region.RegionRepository;
 import com.pricing.backend.simulator.SimulatorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PricingPlanService {
+
+	private static final Logger log = LoggerFactory.getLogger(PricingPlanService.class);
 
 	private final PricingPlanRepository pricingPlanRepository;
 	private final ProductRepository productRepository;
@@ -37,33 +41,33 @@ public class PricingPlanService {
 	private final FeeRepository feeRepository;
 	private final EligibilityReasonRepository eligibilityReasonRepository;
 	private final SimulatorService simulatorService;
-	private final PricingPlanValidator pricingPlanValidator;
-	private final PricingPlanMapper pricingPlanMapper;
+	private final PricingPlanValidator validator;
+	private final PricingPlanMapper mapper;
 
 	public PricingPlanService(PricingPlanRepository pricingPlanRepository, ProductRepository productRepository,
 			RegionRepository regionRepository, FeeRepository feeRepository,
 			EligibilityReasonRepository eligibilityReasonRepository, SimulatorService simulatorService,
-			PricingPlanValidator pricingPlanValidator, PricingPlanMapper pricingPlanMapper) {
+			PricingPlanValidator validator, PricingPlanMapper mapper) {
 		this.pricingPlanRepository = pricingPlanRepository;
 		this.productRepository = productRepository;
 		this.regionRepository = regionRepository;
 		this.feeRepository = feeRepository;
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
 		this.simulatorService = simulatorService;
-		this.pricingPlanValidator = pricingPlanValidator;
-		this.pricingPlanMapper = pricingPlanMapper;
+		this.validator = validator;
+		this.mapper = mapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<PricingPlanListItem> list() {
 		return pricingPlanRepository.findAllByOrderByPlanCodeAsc().stream()
-				.map(pricingPlanMapper::toPricingPlanListItem)
+				.map(mapper::toPricingPlanListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<PricingPlanDetail> get(Long id) {
-		return pricingPlanRepository.findById(id).map(pricingPlanMapper::toPricingPlanDetail);
+		return pricingPlanRepository.findById(id).map(mapper::toPricingPlanDetail);
 	}
 
 	@Transactional(readOnly = true)
@@ -89,25 +93,28 @@ public class PricingPlanService {
 
 	@Transactional
 	public PricingPlanDetail create(PricingPlanRequest request) {
+		log.info("Create Pricing Plan requested: code={}", request.getPlanCode());
 		PricingPlanEntity entity = new PricingPlanEntity();
 		apply(entity, request);
-		return pricingPlanMapper.toPricingPlanDetail(pricingPlanRepository.saveAndFlush(entity));
+		return mapper.toPricingPlanDetail(pricingPlanRepository.saveAndFlush(entity));
 	}
 
 	@Transactional
 	public Optional<PricingPlanDetail> update(Long id, PricingPlanRequest request) {
+		log.info("Update Pricing Plan requested: id={}", id);
 		return pricingPlanRepository.findById(id)
 				.map(entity -> {
 					apply(entity, request);
-					return pricingPlanMapper.toPricingPlanDetail(pricingPlanRepository.saveAndFlush(entity));
+					return mapper.toPricingPlanDetail(pricingPlanRepository.saveAndFlush(entity));
 				});
 	}
 
 	@Transactional
 	public boolean delete(Long id) {
+		log.info("Delete Pricing Plan requested: id={}", id);
 		return pricingPlanRepository.findById(id)
 				.map(entity -> {
-					pricingPlanValidator.validateCanDelete(entity);
+					validator.validateCanDelete(entity);
 					pricingPlanRepository.delete(entity);
 					return true;
 				})
@@ -115,7 +122,7 @@ public class PricingPlanService {
 	}
 
 	private void apply(PricingPlanEntity entity, PricingPlanRequest request) {
-		pricingPlanValidator.validate(entity, request);
+		validator.validate(entity, request);
 		ProductEntity product = productRepository.findById(request.getProductId()).orElse(null);
 		var region = regionRepository.getReferenceById(request.getRegionId());
 		Map<Long, FeeEntity> feesById = feeRepository
@@ -151,7 +158,7 @@ public class PricingPlanService {
 			for (Long reasonId : feeRequest.getReasonIds()) {
 				EligibilityReasonEntity reason = reasonsById.get(reasonId);
 				if (product != null && reason != null) {
-					pricingPlanValidator.validateReasonProductType(product.getProductType(), reason);
+					validator.validateReasonProductType(product.getProductType(), reason);
 				}
 				pricingPlanFee.getReasons().add(eligibilityReasonRepository.getReferenceById(reasonId));
 			}
@@ -162,10 +169,10 @@ public class PricingPlanService {
 	private PricingPlanOptions buildPricingPlanOptions() {
 		return new PricingPlanOptions(
 				productRepository.findAllByOrderByProductCodeAsc().stream()
-						.map(pricingPlanMapper::toProductOption)
+						.map(mapper::toProductOption)
 						.toList(),
 				regionRepository.findAllByOrderByRegionCodeAsc().stream()
-						.map(pricingPlanMapper::toRegionOption)
+						.map(mapper::toRegionOption)
 						.toList())
 				.currentDate(simulatorService.getCurrentDate())
 				.fees(null)
@@ -181,10 +188,10 @@ public class PricingPlanService {
 				.regionId(region.getId())
 				.fees(feeRepository.findAllByOrderByFeeCodeAsc().stream()
 						.filter(fee -> fee.getProductTypes().contains(product.getProductType()))
-						.map(pricingPlanMapper::toFeeOption)
+						.map(mapper::toFeeOption)
 						.toList())
 				.reasons(eligibilityReasonRepository.findAllByOrderByReasonCodeAsc().stream()
-						.map(pricingPlanMapper::toReasonOption)
+						.map(mapper::toReasonOption)
 						.toList())
 				.intervals(pricingPlanRepository
 						.findAllByProductIdAndRegionIdAndActiveThroughGreaterThanEqual(product.getId(), region.getId(), currentDate)

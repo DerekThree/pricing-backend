@@ -16,42 +16,46 @@ import com.pricing.backend.generated.model.ReasonListItem;
 import com.pricing.backend.generated.model.ReasonOptions;
 import com.pricing.backend.generated.model.ReasonRequest;
 import com.pricing.backend.pricingplan.PricingPlanFeeRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EligibilityReasonService {
 
+	private static final Logger log = LoggerFactory.getLogger(EligibilityReasonService.class);
+
 	private final EligibilityReasonRepository eligibilityReasonRepository;
 	private final AccountAttributeRepository accountAttributeRepository;
 	private final PricingPlanFeeRepository pricingPlanFeeRepository;
-	private final EligibilityReasonValidator eligibilityReasonValidator;
+	private final EligibilityReasonValidator validator;
 	private final EligibilityReasonNormalizer eligibilityReasonNormalizer;
-	private final EligibilityReasonMapper eligibilityReasonMapper;
+	private final EligibilityReasonMapper mapper;
 
 	public EligibilityReasonService(EligibilityReasonRepository eligibilityReasonRepository,
 			AccountAttributeRepository accountAttributeRepository, PricingPlanFeeRepository pricingPlanFeeRepository,
-			EligibilityReasonValidator eligibilityReasonValidator,
+			EligibilityReasonValidator validator,
 			EligibilityReasonNormalizer eEligibilityReasonNormalizer,
-			EligibilityReasonMapper eligibilityReasonMapper) {
+			EligibilityReasonMapper mapper) {
 		this.eligibilityReasonRepository = eligibilityReasonRepository;
 		this.accountAttributeRepository = accountAttributeRepository;
 		this.pricingPlanFeeRepository = pricingPlanFeeRepository;
-		this.eligibilityReasonValidator = eligibilityReasonValidator;
+		this.validator = validator;
 		this.eligibilityReasonNormalizer = eEligibilityReasonNormalizer;
-		this.eligibilityReasonMapper = eligibilityReasonMapper;
+		this.mapper = mapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<ReasonListItem> list() {
 		return eligibilityReasonRepository.findAllByOrderByReasonCodeAsc().stream()
-				.map(eligibilityReasonMapper::toReasonListItem)
+				.map(mapper::toReasonListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<ReasonDetail> get(Long id) {
-		return eligibilityReasonRepository.findById(id).map(eligibilityReasonMapper::toReasonDetail);
+		return eligibilityReasonRepository.findById(id).map(mapper::toReasonDetail);
 	}
 
 	@Transactional(readOnly = true)
@@ -61,23 +65,26 @@ public class EligibilityReasonService {
 
 	@Transactional
 	public ReasonDetail create(ReasonRequest request) {
+		log.info("Create Eligibility Reason requested: code={}", request.getReasonCode());
 		EligibilityReasonEntity entity = new EligibilityReasonEntity();
 		apply(entity, request);
-		return eligibilityReasonMapper.toReasonDetail(eligibilityReasonRepository.save(entity));
+		return mapper.toReasonDetail(eligibilityReasonRepository.save(entity));
 	}
 
 	@Transactional
 	public Optional<ReasonDetail> update(Long id, ReasonRequest request) {
+		log.info("Update Eligibility Reason requested: id={}", id);
 		return eligibilityReasonRepository.findById(id)
 				.map(entity -> {
-					eligibilityReasonValidator.validateCanUpdate(entity, request);
+					validator.validateCanUpdate(entity, request);
 					apply(entity, request);
-					return eligibilityReasonMapper.toReasonDetail(eligibilityReasonRepository.save(entity));
+					return mapper.toReasonDetail(eligibilityReasonRepository.save(entity));
 				});
 	}
 
 	@Transactional
 	public boolean delete(Long id) {
+		log.info("Delete Eligibility Reason requested: id={}", id);
 		if (!eligibilityReasonRepository.existsById(id)) {
 			return false;
 		}
@@ -97,7 +104,7 @@ public class EligibilityReasonService {
 				.findAllById(request.getConditions().stream().map(ReasonCondition::getAttributeId).toList())
 				.stream()
 				.collect(Collectors.toMap(AccountAttributeEntity::getId, Function.identity()));
-		eligibilityReasonValidator.validateProductTypes(attributesById.values());
+		validator.validateProductTypes(attributesById.values());
 		entity.setReasonCode(request.getReasonCode());
 		entity.setReasonName(request.getReasonName());
 		entity.setUpdatedBy(request.getUpdatedBy());
@@ -120,7 +127,7 @@ public class EligibilityReasonService {
 	private ReasonOptions buildOptions() {
 		return new ReasonOptions(
 				accountAttributeRepository.findAllByOrderByAttributeCodeAsc().stream()
-						.map(eligibilityReasonMapper::toAttributeOption)
+						.map(mapper::toAttributeOption)
 						.toList()
 		);
 	}

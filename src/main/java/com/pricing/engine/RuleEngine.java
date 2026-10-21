@@ -2,5 +2,5 @@ package com.pricing.engine;
 
 public interface RuleEngine {
 
-	AccountBatchResult price(AccountBatch batch);
+	RuleEngineBatchResult price(RuleEngineBatch batch);
 }

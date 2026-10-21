@@ -9,56 +9,63 @@ import com.pricing.backend.generated.model.FeeDetail;
 import com.pricing.backend.generated.model.FeeListItem;
 import com.pricing.backend.generated.model.FeeRequest;
 import com.pricing.backend.pricingplan.PricingPlanFeeRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FeeService {
 
+	private static final Logger log = LoggerFactory.getLogger(FeeService.class);
+
 	private final FeeRepository feeRepository;
 	private final PricingPlanFeeRepository pricingPlanFeeRepository;
-	private final FeeValidator feeValidator;
-	private final FeeMapper feeMapper;
+	private final FeeValidator validator;
+	private final FeeMapper mapper;
 
 	public FeeService(FeeRepository feeRepository, PricingPlanFeeRepository pricingPlanFeeRepository,
-			FeeValidator feeValidator, FeeMapper feeMapper) {
+			FeeValidator validator, FeeMapper mapper) {
 		this.feeRepository = feeRepository;
 		this.pricingPlanFeeRepository = pricingPlanFeeRepository;
-		this.feeValidator = feeValidator;
-		this.feeMapper = feeMapper;
+		this.validator = validator;
+		this.mapper = mapper;
 	}
 
 	@Transactional(readOnly = true)
 	public List<FeeListItem> list() {
 		return feeRepository.findAllByOrderByFeeCodeAsc().stream()
-				.map(feeMapper::toFeeListItem)
+				.map(mapper::toFeeListItem)
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
 	public Optional<FeeDetail> get(Long id) {
-		return feeRepository.findById(id).map(feeMapper::toFeeDetail);
+		return feeRepository.findById(id).map(mapper::toFeeDetail);
 	}
 
 	@Transactional
 	public FeeDetail create(FeeRequest request) {
+		log.info("Create Fee requested: code={}", request.getFeeCode());
 		FeeEntity entity = new FeeEntity();
 		apply(entity, request);
-		return feeMapper.toFeeDetail(feeRepository.save(entity));
+		return mapper.toFeeDetail(feeRepository.save(entity));
 	}
 
 	@Transactional
 	public Optional<FeeDetail> update(Long id, FeeRequest request) {
+		log.info("Update Fee requested: id={}", id);
 		return feeRepository.findById(id)
 				.map(entity -> {
-					feeValidator.validateCanUpdate(entity, request);
+					validator.validateCanUpdate(entity, request);
 					apply(entity, request);
-					return feeMapper.toFeeDetail(feeRepository.save(entity));
+					return mapper.toFeeDetail(feeRepository.save(entity));
 				});
 	}
 
 	@Transactional
 	public boolean delete(Long id) {
+		log.info("Delete Fee requested: id={}", id);
 		if (!feeRepository.existsById(id)) {
 			return false;
 		}

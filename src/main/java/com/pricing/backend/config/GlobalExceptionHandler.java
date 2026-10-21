@@ -7,6 +7,8 @@ import java.util.stream.Collectors;
 import com.pricing.backend.generated.model.ErrorResponse;
 import com.pricing.engine.PricingConfigurationAccessException;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
 	private static final String ACTIVE_PERIOD_OVERLAP_CONSTRAINT = "excl_pricing_plans_active_period";
 	private static final String ACTIVE_PERIOD_ORDER_CONSTRAINT = "chk_pricing_plans_active_period_order";
@@ -90,6 +94,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(PricingConfigurationAccessException.class)
 	public ResponseEntity<ErrorResponse> handlePricingConfigurationAccess(
 			PricingConfigurationAccessException ex) {
+		log.error("Pricing Configuration access failed", ex);
 		return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
 				.body(new ErrorResponse(ex.getMessage()));
 	}
@@ -147,6 +152,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex) {
+		log.error("Unexpected request failure", ex);
 		return ResponseEntity.internalServerError()
 				.body(new ErrorResponse(ex.getMessage() == null ? "An unexpected error occurred" : ex.getMessage()));
 	}

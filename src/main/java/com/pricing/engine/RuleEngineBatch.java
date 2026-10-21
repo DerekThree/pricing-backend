@@ -5,9 +5,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-public record AccountBatch(UUID batchId, List<Account> accounts) {
+public record RuleEngineBatch(UUID batchId, List<Account> accounts) {
 
-	public AccountBatch {
+	public RuleEngineBatch {
 		accounts = List.copyOf(accounts);
 	}
 
