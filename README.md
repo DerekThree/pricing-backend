@@ -13,24 +13,30 @@ operations do not leave stale artifacts behind, then copies Maven resources.
 
 ## Local Postgres
 
-Create a local `.env` file from `.env.example`, then start PostgreSQL:
+From the main `pricing-app` repository, copy `deploy/local/.env.example` to
+`deploy/local/.env`, set separate database passwords, then start PostgreSQL:
 
 ```powershell
-docker compose up -d
+docker compose --env-file deploy/local/.env -f deploy/local/compose.yaml up -d postgres
 ```
 
 The example local PostgreSQL configuration uses these values:
 
 - database: `pricingdb`
 - username: `pricinguser`
-- password: `pricingpass`
+- password: `POSTGRES_PASSWORD` from `deploy/local/.env`
 - port: `5432`
 
 Override them with `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and
 `SPRING_DATASOURCE_PASSWORD` if needed.
 
-Then run the backend:
+Then run the backend from this repository with its datasource password set:
 
 ```powershell
-./mvnw spring-boot:run
+$env:SPRING_DATASOURCE_PASSWORD = Read-Host 'Pricing database password'
+.\mvnw.cmd spring-boot:run
 ```
+
+The shared Compose file also starts the Backend, Mock Processor, and Dashboard when run without
+the `postgres` service argument. `GET /actuator/health` reports database-aware health without
+exposing internal details.

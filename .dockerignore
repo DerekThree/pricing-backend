@@ -8,6 +8,5 @@ target/
 .env.*
 
 README.md
-compose.yaml
 
 mvnw.cmd

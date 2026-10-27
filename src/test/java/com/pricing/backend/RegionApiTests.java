@@ -9,6 +9,7 @@ import com.pricing.backend.pricingplan.PricingPlanRepository;
 import com.pricing.backend.region.RegionEntity;
 import com.pricing.backend.region.RegionRepository;
 import com.pricing.backend.generated.api.RegionsApi;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ class RegionApiTests {
 	private PricingPlanRepository pricingPlanRepository;
 
 	@BeforeEach
+	@AfterEach
 	void setUp() {
 		pricingPlanRepository.deleteAll();
 		regionRepository.deleteAll();

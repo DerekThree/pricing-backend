@@ -7,6 +7,7 @@ import com.pricing.backend.branch.BranchRepository;
 import com.pricing.backend.pricingplan.PricingPlanRepository;
 import com.pricing.backend.region.RegionRepository;
 import com.pricing.backend.generated.api.BranchesApi;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,7 @@ class DuplicateCodeApiTests {
 	private PricingPlanRepository pricingPlanRepository;
 
 	@BeforeEach
+	@AfterEach
 	void setUp() {
 		pricingPlanRepository.deleteAll();
 		regionRepository.deleteAll();
