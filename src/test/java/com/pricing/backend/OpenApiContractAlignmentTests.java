@@ -20,7 +20,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -50,6 +52,18 @@ class OpenApiContractAlignmentTests {
 				comparableSchemas(generatedSpec.path("components").path("schemas"), generatedSpec),
 				"OpenAPI schemas should match"
 		);
+	}
+
+	@Test
+	void removesTheBatchOperationAndKeepsConfigurationApisAvailable() throws Exception {
+		JsonNode contract = loadContractSpec();
+		JsonNode generated = loadGeneratedSpec();
+		assertFalse(contract.path("paths").has("/api/v1/batch"));
+		assertFalse(generated.path("paths").has("/api/v1/batch"));
+		assertFalse(contract.path("components").path("schemas").has("BatchRequest"));
+		mockMvc.perform(post("/api/v1/batch").contentType("application/json").content("{}"))
+				.andExpect(status().isNotFound());
+		mockMvc.perform(get("/api/v1/branches")).andExpect(status().isOk());
 	}
 
 	private JsonNode loadContractSpec() throws IOException {
