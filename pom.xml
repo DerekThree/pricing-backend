@@ -115,6 +115,18 @@
 				</includes>
 			</resource>
 		</resources>
+		<testResources>
+			<testResource>
+				<directory>src/test/resources</directory>
+			</testResource>
+			<testResource>
+				<directory>../pricing-engine/src/main/resources</directory>
+				<includes>
+					<include>db/migration/V*__*.sql</include>
+					<include>db/postgresql/V*__*.sql</include>
+				</includes>
+			</testResource>
+		</testResources>
 		<plugins>
 			<plugin>
 				<groupId>org.openapitools</groupId>
