@@ -33,7 +33,7 @@ Override them with `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and
 Then run the backend from this repository with its datasource password set:
 
 ```powershell
-$env:SPRING_DATASOURCE_PASSWORD = Read-Host 'Pricing database password'
+$env:SPRING_DATASOURCE_PASSWORD = Read-Host 'Pricing Store password'
 .\mvnw.cmd spring-boot:run
 ```
 
